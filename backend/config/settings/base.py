@@ -170,6 +170,14 @@ SPECTACULAR_SETTINGS = {
     "VERSION": "1.0.0",
     "SERVE_INCLUDE_SCHEMA": False,
     "COMPONENT_SPLIT_REQUEST": True,
+    "ENUM_NAME_OVERRIDES": {
+        "TicketCategoryEnum": "apps.tickets.models.TicketCategory",
+        "TicketPriorityEnum": "apps.tickets.models.TicketPriority",
+        "TicketStatusEnum": "apps.tickets.models.TicketStatus",
+        "AIStatusEnum": "apps.tickets.models.AIStatus",
+        "ClassificationSourceEnum": "apps.tickets.models.ClassificationSource",
+        "MessageKindEnum": "apps.tickets.models.MessageKind",
+    },
 }
 
 # --- CORS ---

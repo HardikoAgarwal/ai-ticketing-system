@@ -1,0 +1,1736 @@
+openapi: 3.0.3
+info:
+  title: BookLeaf Author Support API
+  version: 1.0.0
+  description: 'REST API for the BookLeaf Author Support & Communication Portal. Authenticate
+    via POST /api/v1/auth/login/ and pass `Authorization: Bearer <access>`.'
+paths:
+  /api/v1/admin/agents/:
+    get:
+      operationId: v1_admin_agents_list
+      summary: List BookLeaf team members (for ticket assignment)
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - Admin
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserBrief'
+          description: ''
+  /api/v1/admin/analytics/summary/:
+    get:
+      operationId: v1_admin_analytics_summary_retrieve
+      summary: 'Support analytics: volume, response times, SLA, AI accuracy and cost'
+      parameters:
+      - in: query
+        name: days
+        schema:
+          type: integer
+        description: 7, 30 or 90 (default 30)
+      tags:
+      - Admin
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/auth/login/:
+    post:
+      operationId: v1_auth_login_create
+      description: |-
+        Takes a set of user credentials and returns an access and refresh JSON web
+        token pair to prove the authentication of those credentials.
+      summary: Log in with email and password; returns JWT pair and user profile
+      tags:
+      - Auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+        required: true
+      security:
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /api/v1/auth/me/:
+    get:
+      operationId: v1_auth_me_retrieve
+      summary: Current authenticated user
+      tags:
+      - Auth
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+  /api/v1/auth/refresh/:
+    post:
+      operationId: v1_auth_refresh_create
+      description: |-
+        Takes a refresh type JSON web token and returns an access type JSON web
+        token if the refresh token is valid.
+      summary: Exchange refresh token for a new access token
+      tags:
+      - Auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRefreshRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenRefreshRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenRefreshRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenRefresh'
+          description: ''
+  /api/v1/books/:
+    get:
+      operationId: v1_books_list
+      summary: List books (authors see only their own; admins see all, filter by ?author=AUTH001)
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - Books
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Book'
+          description: ''
+  /api/v1/books/{id}/:
+    get:
+      operationId: v1_books_retrieve
+      summary: Book detail
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Books
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Book'
+          description: ''
+  /api/v1/me/summary/:
+    get:
+      operationId: v1_me_summary_retrieve
+      summary: Author dashboard summary (totals, next payout window, ticket counts)
+      tags:
+      - Books
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthorSummary'
+          description: ''
+  /api/v1/tickets/:
+    get:
+      operationId: v1_tickets_list
+      summary: 'List tickets (authors: own tickets; admins: all, with filters)'
+      parameters:
+      - in: query
+        name: assigned
+        schema:
+          type: string
+        description: me | unassigned | <user id>
+      - in: query
+        name: book
+        schema:
+          type: number
+      - in: query
+        name: category
+        schema:
+          type: array
+          items:
+            type: string
+        description: Multiple values may be separated by commas.
+        explode: false
+        style: form
+      - in: query
+        name: created_after
+        schema:
+          type: string
+          format: date-time
+      - in: query
+        name: created_before
+        schema:
+          type: string
+          format: date-time
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: priority
+        schema:
+          type: array
+          items:
+            type: string
+        description: Multiple values may be separated by commas.
+        explode: false
+        style: form
+      - in: query
+        name: q
+        schema:
+          type: string
+        description: Search subject, description, author, TKT-0001
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: sla
+        schema:
+          type: string
+        description: overdue | at_risk
+      - in: query
+        name: status
+        schema:
+          type: array
+          items:
+            type: string
+        description: Comma-separated, e.g. OPEN,IN_PROGRESS
+        explode: false
+        style: form
+      tags:
+      - Tickets
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAuthorTicketList'
+          description: ''
+    post:
+      operationId: v1_tickets_create
+      summary: Author raises a ticket (multipart; optional attachments)
+      tags:
+      - Tickets
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TicketCreateRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthorTicketDetail'
+          description: ''
+  /api/v1/tickets/{id}/:
+    get:
+      operationId: v1_tickets_retrieve
+      summary: Ticket detail with conversation (internal notes only for admins)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this ticket.
+        required: true
+      tags:
+      - Tickets
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthorTicketDetail'
+          description: ''
+    patch:
+      operationId: v1_tickets_partial_update
+      summary: Admin updates status, category, priority or assignee
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this ticket.
+        required: true
+      tags:
+      - Tickets
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedAdminTicketUpdateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedAdminTicketUpdateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedAdminTicketUpdateRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminTicketDetail'
+          description: ''
+  /api/v1/tickets/{id}/assign-to-me/:
+    post:
+      operationId: v1_tickets_assign_to_me_create
+      summary: Assign the ticket to the current admin
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this ticket.
+        required: true
+      tags:
+      - Tickets
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminTicketDetail'
+          description: ''
+  /api/v1/tickets/{id}/attachments/{attachment_id}/:
+    get:
+      operationId: v1_tickets_attachments_retrieve
+      summary: Short-lived download URL for an attachment
+      parameters:
+      - in: path
+        name: attachment_id
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this ticket.
+        required: true
+      tags:
+      - Tickets
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AttachmentUrl'
+          description: ''
+  /api/v1/tickets/{id}/confirm-resolution/:
+    post:
+      operationId: v1_tickets_confirm_resolution_create
+      summary: Author confirms a resolved ticket (closes it) or says they still need
+        help (reopens it)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this ticket.
+        required: true
+      tags:
+      - Tickets
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConfirmResolutionRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ConfirmResolutionRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ConfirmResolutionRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthorTicketDetail'
+          description: ''
+  /api/v1/tickets/{id}/draft/:
+    get:
+      operationId: v1_tickets_draft_retrieve
+      summary: Get the AI-drafted reply for this ticket (generated in the background)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this ticket.
+        required: true
+      tags:
+      - Tickets
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Draft'
+          description: ''
+  /api/v1/tickets/{id}/draft/regenerate/:
+    post:
+      operationId: v1_tickets_draft_regenerate_create
+      summary: Regenerate the AI draft (bypasses cache)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this ticket.
+        required: true
+      tags:
+      - Tickets
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Draft'
+          description: ''
+  /api/v1/tickets/{id}/mark-seen/:
+    post:
+      operationId: v1_tickets_mark_seen_create
+      summary: Mark the ticket as seen by the current user (clears unread badge)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this ticket.
+        required: true
+      tags:
+      - Tickets
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/tickets/{id}/messages/:
+    get:
+      operationId: v1_tickets_messages_list
+      summary: List messages (authors never receive internal notes)
+      parameters:
+      - in: query
+        name: assigned
+        schema:
+          type: string
+        description: me | unassigned | <user id>
+      - in: query
+        name: book
+        schema:
+          type: number
+      - in: query
+        name: category
+        schema:
+          type: array
+          items:
+            type: string
+        description: Multiple values may be separated by commas.
+        explode: false
+        style: form
+      - in: query
+        name: created_after
+        schema:
+          type: string
+          format: date-time
+      - in: query
+        name: created_before
+        schema:
+          type: string
+          format: date-time
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this ticket.
+        required: true
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: priority
+        schema:
+          type: array
+          items:
+            type: string
+        description: Multiple values may be separated by commas.
+        explode: false
+        style: form
+      - in: query
+        name: q
+        schema:
+          type: string
+        description: Search subject, description, author, TKT-0001
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: sla
+        schema:
+          type: string
+        description: overdue | at_risk
+      - in: query
+        name: status
+        schema:
+          type: array
+          items:
+            type: string
+        description: Comma-separated, e.g. OPEN,IN_PROGRESS
+        explode: false
+        style: form
+      tags:
+      - Tickets
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedMessageList'
+          description: ''
+    post:
+      operationId: v1_tickets_messages_create
+      summary: Post a reply. Admins may post kind=NOTE (internal) and resolve=true;
+        authors post follow-ups.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this ticket.
+        required: true
+      tags:
+      - Tickets
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MessageCreateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MessageCreateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/MessageCreateRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+          description: ''
+  /api/v1/tickets/{id}/reclassify/:
+    post:
+      operationId: v1_tickets_reclassify_create
+      summary: Re-run AI classification (admin overrides are preserved)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this ticket.
+        required: true
+      tags:
+      - Tickets
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminTicket'
+          description: ''
+  /api/v1/tickets/stats/:
+    get:
+      operationId: v1_tickets_stats_retrieve
+      summary: Queue KPI counts for the admin dashboard
+      tags:
+      - Tickets
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QueueStats'
+          description: ''
+components:
+  schemas:
+    AIStatusEnum:
+      enum:
+      - IDLE
+      - PENDING
+      - COMPLETED
+      - FAILED
+      - DISABLED
+      type: string
+      description: |-
+        * `IDLE` - Not started
+        * `PENDING` - Pending
+        * `COMPLETED` - Completed
+        * `FAILED` - Failed
+        * `DISABLED` - Disabled
+    ActionEnum:
+      enum:
+      - CREATED
+      - AI_CLASSIFIED
+      - AI_FAILED
+      - STATUS_CHANGED
+      - CATEGORY_CHANGED
+      - PRIORITY_CHANGED
+      - ASSIGNED
+      - REPLIED
+      - NOTE_ADDED
+      - AUTHOR_REPLIED
+      - AUTHOR_CONFIRMED
+      - AUTHOR_REOPENED
+      type: string
+      description: |-
+        * `CREATED` - Ticket created
+        * `AI_CLASSIFIED` - AI classified
+        * `AI_FAILED` - AI unavailable
+        * `STATUS_CHANGED` - Status changed
+        * `CATEGORY_CHANGED` - Category changed
+        * `PRIORITY_CHANGED` - Priority changed
+        * `ASSIGNED` - Assignment changed
+        * `REPLIED` - Reply sent
+        * `NOTE_ADDED` - Internal note added
+        * `AUTHOR_REPLIED` - Author replied
+        * `AUTHOR_CONFIRMED` - Author confirmed resolution
+        * `AUTHOR_REOPENED` - Author reopened
+    Activity:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        action:
+          $ref: '#/components/schemas/ActionEnum'
+        label:
+          type: string
+          readOnly: true
+        from_value:
+          type: string
+          maxLength: 100
+        to_value:
+          type: string
+          maxLength: 100
+        actor_name:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+      required:
+      - action
+      - actor_name
+      - id
+      - label
+    AdminMessage:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        kind:
+          $ref: '#/components/schemas/MessageKindEnum'
+        is_internal:
+          type: boolean
+          readOnly: true
+        body:
+          type: string
+        sender_name:
+          type: string
+          readOnly: true
+        sender_role:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+        ai_draft_id:
+          type: integer
+          nullable: true
+          readOnly: true
+        ai_draft_edited:
+          type: boolean
+      required:
+      - ai_draft_id
+      - body
+      - id
+      - is_internal
+      - sender_name
+      - sender_role
+    AdminTicket:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        reference:
+          type: string
+          readOnly: true
+        subject:
+          type: string
+          maxLength: 150
+        description:
+          type: string
+        status:
+          $ref: '#/components/schemas/TicketStatusEnum'
+        status_label:
+          type: string
+          readOnly: true
+        category:
+          $ref: '#/components/schemas/TicketCategoryEnum'
+        category_label:
+          type: string
+          readOnly: true
+        category_source:
+          $ref: '#/components/schemas/ClassificationSourceEnum'
+        ai_category:
+          oneOf:
+          - $ref: '#/components/schemas/TicketCategoryEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        priority:
+          $ref: '#/components/schemas/TicketPriorityEnum'
+        priority_label:
+          type: string
+          readOnly: true
+        priority_source:
+          $ref: '#/components/schemas/ClassificationSourceEnum'
+        ai_priority:
+          oneOf:
+          - $ref: '#/components/schemas/TicketPriorityEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        ai_confidence:
+          type: number
+          format: double
+          nullable: true
+        ai_status:
+          $ref: '#/components/schemas/AIStatusEnum'
+        ai_draft_status:
+          $ref: '#/components/schemas/AIStatusEnum'
+        book:
+          allOf:
+          - $ref: '#/components/schemas/BookBrief'
+          readOnly: true
+        author:
+          type: object
+          additionalProperties: {}
+          readOnly: true
+        assigned_to:
+          allOf:
+          - $ref: '#/components/schemas/UserBrief'
+          readOnly: true
+        sla_due_at:
+          type: string
+          format: date-time
+          nullable: true
+        sla_state:
+          type: string
+          readOnly: true
+        has_unread:
+          type: boolean
+          readOnly: true
+        first_response_at:
+          type: string
+          format: date-time
+          nullable: true
+        resolved_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - assigned_to
+      - author
+      - book
+      - category_label
+      - description
+      - has_unread
+      - id
+      - priority_label
+      - reference
+      - sla_state
+      - status_label
+      - subject
+      - updated_at
+    AdminTicketDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        reference:
+          type: string
+          readOnly: true
+        subject:
+          type: string
+          maxLength: 150
+        description:
+          type: string
+        status:
+          $ref: '#/components/schemas/TicketStatusEnum'
+        status_label:
+          type: string
+          readOnly: true
+        category:
+          $ref: '#/components/schemas/TicketCategoryEnum'
+        category_label:
+          type: string
+          readOnly: true
+        category_source:
+          $ref: '#/components/schemas/ClassificationSourceEnum'
+        ai_category:
+          oneOf:
+          - $ref: '#/components/schemas/TicketCategoryEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        priority:
+          $ref: '#/components/schemas/TicketPriorityEnum'
+        priority_label:
+          type: string
+          readOnly: true
+        priority_source:
+          $ref: '#/components/schemas/ClassificationSourceEnum'
+        ai_priority:
+          oneOf:
+          - $ref: '#/components/schemas/TicketPriorityEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        ai_confidence:
+          type: number
+          format: double
+          nullable: true
+        ai_status:
+          $ref: '#/components/schemas/AIStatusEnum'
+        ai_draft_status:
+          $ref: '#/components/schemas/AIStatusEnum'
+        book:
+          allOf:
+          - $ref: '#/components/schemas/BookBrief'
+          readOnly: true
+        author:
+          type: object
+          additionalProperties: {}
+          readOnly: true
+        assigned_to:
+          allOf:
+          - $ref: '#/components/schemas/UserBrief'
+          readOnly: true
+        sla_due_at:
+          type: string
+          format: date-time
+          nullable: true
+        sla_state:
+          type: string
+          readOnly: true
+        has_unread:
+          type: boolean
+          readOnly: true
+        first_response_at:
+          type: string
+          format: date-time
+          nullable: true
+        resolved_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        ai_reasoning:
+          type: string
+        ai_error:
+          type: string
+          maxLength: 255
+        messages:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminMessage'
+          readOnly: true
+        attachments:
+          type: array
+          items:
+            $ref: '#/components/schemas/Attachment'
+          readOnly: true
+        activities:
+          type: array
+          items:
+            $ref: '#/components/schemas/Activity'
+          readOnly: true
+        book_detail:
+          allOf:
+          - $ref: '#/components/schemas/Book'
+          readOnly: true
+        author_profile:
+          type: object
+          additionalProperties: {}
+          readOnly: true
+      required:
+      - activities
+      - assigned_to
+      - attachments
+      - author
+      - author_profile
+      - book
+      - book_detail
+      - category_label
+      - description
+      - has_unread
+      - id
+      - messages
+      - priority_label
+      - reference
+      - sla_state
+      - status_label
+      - subject
+      - updated_at
+    Attachment:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        original_name:
+          type: string
+          maxLength: 255
+        content_type:
+          type: string
+          maxLength: 100
+        size:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        created_at:
+          type: string
+          format: date-time
+      required:
+      - content_type
+      - id
+      - original_name
+      - size
+    AttachmentUrl:
+      type: object
+      properties:
+        url:
+          type: string
+          format: uri
+        name:
+          type: string
+      required:
+      - name
+      - url
+    AuthorProfile:
+      type: object
+      properties:
+        author_code:
+          type: string
+          maxLength: 20
+        phone:
+          type: string
+          maxLength: 30
+        city:
+          type: string
+          maxLength: 80
+        joined_date:
+          type: string
+          format: date
+          nullable: true
+      required:
+      - author_code
+    AuthorSummary:
+      type: object
+      properties:
+        books_published:
+          type: integer
+        books_in_production:
+          type: integer
+        total_copies_sold:
+          type: integer
+        total_royalty_earned:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        total_royalty_paid:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        total_royalty_pending:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        min_payout_threshold:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        next_payout:
+          type: object
+          additionalProperties: {}
+        active_tickets:
+          type: integer
+        unread_tickets:
+          type: integer
+      required:
+      - active_tickets
+      - books_in_production
+      - books_published
+      - min_payout_threshold
+      - next_payout
+      - total_copies_sold
+      - total_royalty_earned
+      - total_royalty_paid
+      - total_royalty_pending
+      - unread_tickets
+    AuthorTicket:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        reference:
+          type: string
+          readOnly: true
+        subject:
+          type: string
+          maxLength: 150
+        description:
+          type: string
+        status:
+          $ref: '#/components/schemas/TicketStatusEnum'
+        status_label:
+          type: string
+          readOnly: true
+        book:
+          allOf:
+          - $ref: '#/components/schemas/BookBrief'
+          readOnly: true
+        has_unread:
+          type: boolean
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        first_response_at:
+          type: string
+          format: date-time
+          nullable: true
+        resolved_at:
+          type: string
+          format: date-time
+          nullable: true
+        last_admin_reply_at:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+      - book
+      - description
+      - has_unread
+      - id
+      - reference
+      - status_label
+      - subject
+      - updated_at
+    AuthorTicketDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        reference:
+          type: string
+          readOnly: true
+        subject:
+          type: string
+          maxLength: 150
+        description:
+          type: string
+        status:
+          $ref: '#/components/schemas/TicketStatusEnum'
+        status_label:
+          type: string
+          readOnly: true
+        book:
+          allOf:
+          - $ref: '#/components/schemas/BookBrief'
+          readOnly: true
+        has_unread:
+          type: boolean
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        first_response_at:
+          type: string
+          format: date-time
+          nullable: true
+        resolved_at:
+          type: string
+          format: date-time
+          nullable: true
+        last_admin_reply_at:
+          type: string
+          format: date-time
+          nullable: true
+        messages:
+          type: array
+          items:
+            $ref: '#/components/schemas/Message'
+          readOnly: true
+        attachments:
+          type: array
+          items:
+            $ref: '#/components/schemas/Attachment'
+          readOnly: true
+      required:
+      - attachments
+      - book
+      - description
+      - has_unread
+      - id
+      - messages
+      - reference
+      - status_label
+      - subject
+      - updated_at
+    BlankEnum:
+      enum:
+      - ''
+    Book:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        book_code:
+          type: string
+          readOnly: true
+        title:
+          type: string
+          readOnly: true
+        isbn:
+          type: string
+          readOnly: true
+        genre:
+          type: string
+          readOnly: true
+        publication_date:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+        stage:
+          allOf:
+          - $ref: '#/components/schemas/StageEnum'
+          readOnly: true
+        status:
+          type: string
+          readOnly: true
+        is_published:
+          type: boolean
+          readOnly: true
+        stage_index:
+          type: integer
+          readOnly: true
+        stage_count:
+          type: integer
+          readOnly: true
+        mrp:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          readOnly: true
+          nullable: true
+        author_royalty_per_copy:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          readOnly: true
+          nullable: true
+        total_copies_sold:
+          type: integer
+          readOnly: true
+        total_royalty_earned:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          readOnly: true
+        royalty_paid:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          readOnly: true
+        royalty_pending:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          readOnly: true
+        last_royalty_payout_date:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+        print_partner:
+          type: string
+          readOnly: true
+        available_on:
+          readOnly: true
+        royalty_notes:
+          type: object
+          additionalProperties: {}
+          readOnly: true
+        author_name:
+          type: string
+          readOnly: true
+        author_code:
+          type: string
+          readOnly: true
+      required:
+      - author_code
+      - author_name
+      - author_royalty_per_copy
+      - available_on
+      - book_code
+      - genre
+      - id
+      - is_published
+      - isbn
+      - last_royalty_payout_date
+      - mrp
+      - print_partner
+      - publication_date
+      - royalty_notes
+      - royalty_paid
+      - royalty_pending
+      - stage
+      - stage_count
+      - stage_index
+      - status
+      - title
+      - total_copies_sold
+      - total_royalty_earned
+    BookBrief:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        book_code:
+          type: string
+          readOnly: true
+        title:
+          type: string
+          readOnly: true
+        status:
+          type: string
+          readOnly: true
+        is_published:
+          type: boolean
+          readOnly: true
+      required:
+      - book_code
+      - id
+      - is_published
+      - status
+      - title
+    ClassificationSourceEnum:
+      enum:
+      - AI
+      - FALLBACK
+      - ADMIN
+      type: string
+      description: |-
+        * `AI` - AI
+        * `FALLBACK` - Rule-based fallback
+        * `ADMIN` - Set by admin
+    ConfirmResolutionRequest:
+      type: object
+      properties:
+        resolved:
+          type: boolean
+        message:
+          type: string
+          maxLength: 5000
+      required:
+      - resolved
+    Draft:
+      type: object
+      properties:
+        status:
+          type: string
+          description: ready | generating | failed | disabled
+        draft:
+          type: object
+          additionalProperties: {}
+          nullable: true
+        error:
+          type: string
+      required:
+      - draft
+      - error
+      - status
+    LoginRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          writeOnly: true
+          minLength: 1
+        password:
+          type: string
+          writeOnly: true
+          minLength: 1
+      required:
+      - email
+      - password
+    Message:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        kind:
+          $ref: '#/components/schemas/MessageKindEnum'
+        is_internal:
+          type: boolean
+          readOnly: true
+        body:
+          type: string
+        sender_name:
+          type: string
+          readOnly: true
+        sender_role:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+      required:
+      - body
+      - id
+      - is_internal
+      - sender_name
+      - sender_role
+    MessageCreateKindEnum:
+      enum:
+      - REPLY
+      - NOTE
+      type: string
+      description: |-
+        * `REPLY` - REPLY
+        * `NOTE` - NOTE
+    MessageCreateRequest:
+      type: object
+      properties:
+        body:
+          type: string
+          minLength: 1
+          maxLength: 5000
+        kind:
+          allOf:
+          - $ref: '#/components/schemas/MessageCreateKindEnum'
+          default: REPLY
+        ai_draft_id:
+          type: integer
+          nullable: true
+        resolve:
+          type: boolean
+          default: false
+      required:
+      - body
+    MessageKindEnum:
+      enum:
+      - REPLY
+      - NOTE
+      - SYSTEM
+      type: string
+      description: |-
+        * `REPLY` - Reply
+        * `NOTE` - Internal note
+        * `SYSTEM` - System
+    PaginatedAuthorTicketList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuthorTicket'
+    PaginatedMessageList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Message'
+    PatchedAdminTicketUpdateRequest:
+      type: object
+      properties:
+        status:
+          $ref: '#/components/schemas/TicketStatusEnum'
+        category:
+          $ref: '#/components/schemas/TicketCategoryEnum'
+        priority:
+          $ref: '#/components/schemas/TicketPriorityEnum'
+        assigned_to:
+          type: integer
+          nullable: true
+    QueueStats:
+      type: object
+      properties:
+        open:
+          type: integer
+        in_progress:
+          type: integer
+        unassigned:
+          type: integer
+        overdue:
+          type: integer
+        critical:
+          type: integer
+        mine:
+          type: integer
+        ai_failed:
+          type: integer
+      required:
+      - ai_failed
+      - critical
+      - in_progress
+      - mine
+      - open
+      - overdue
+      - unassigned
+    RoleEnum:
+      enum:
+      - AUTHOR
+      - ADMIN
+      type: string
+      description: |-
+        * `AUTHOR` - Author
+        * `ADMIN` - Admin
+    StageEnum:
+      enum:
+      - MANUSCRIPT_RECEIVED
+      - EDITING
+      - COVER_DESIGN
+      - TYPESETTING
+      - PROOFREADING
+      - ISBN_ASSIGNMENT
+      - PRINTING
+      - DISTRIBUTION_SETUP
+      - PUBLISHED
+      type: string
+      description: |-
+        * `MANUSCRIPT_RECEIVED` - Manuscript Received
+        * `EDITING` - Editing
+        * `COVER_DESIGN` - Cover Design
+        * `TYPESETTING` - Typesetting
+        * `PROOFREADING` - Proofreading
+        * `ISBN_ASSIGNMENT` - ISBN Assignment
+        * `PRINTING` - Printing
+        * `DISTRIBUTION_SETUP` - Distribution Setup
+        * `PUBLISHED` - Published & Live
+    TicketCategoryEnum:
+      enum:
+      - ROYALTY_PAYMENTS
+      - ISBN_METADATA
+      - PRINTING_QUALITY
+      - DISTRIBUTION
+      - BOOK_STATUS
+      - GENERAL
+      type: string
+      description: |-
+        * `ROYALTY_PAYMENTS` - Royalty & Payments
+        * `ISBN_METADATA` - ISBN & Metadata Issues
+        * `PRINTING_QUALITY` - Printing & Quality
+        * `DISTRIBUTION` - Distribution & Availability
+        * `BOOK_STATUS` - Book Status & Production Updates
+        * `GENERAL` - General Inquiry
+    TicketCreateRequest:
+      type: object
+      properties:
+        book_id:
+          type: integer
+          nullable: true
+          description: Omit or null for 'General / Account Level'.
+        subject:
+          type: string
+          minLength: 5
+          maxLength: 150
+        description:
+          type: string
+          minLength: 20
+          maxLength: 5000
+        attachments:
+          type: array
+          items:
+            type: string
+            format: binary
+      required:
+      - description
+      - subject
+    TicketPriorityEnum:
+      enum:
+      - CRITICAL
+      - HIGH
+      - MEDIUM
+      - LOW
+      type: string
+      description: |-
+        * `CRITICAL` - Critical
+        * `HIGH` - High
+        * `MEDIUM` - Medium
+        * `LOW` - Low
+    TicketStatusEnum:
+      enum:
+      - OPEN
+      - IN_PROGRESS
+      - RESOLVED
+      - CLOSED
+      type: string
+      description: |-
+        * `OPEN` - Open
+        * `IN_PROGRESS` - In Progress
+        * `RESOLVED` - Resolved
+        * `CLOSED` - Closed
+    TokenRefresh:
+      type: object
+      properties:
+        access:
+          type: string
+          readOnly: true
+      required:
+      - access
+    TokenRefreshRequest:
+      type: object
+      properties:
+        refresh:
+          type: string
+          writeOnly: true
+          minLength: 1
+      required:
+      - refresh
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        full_name:
+          type: string
+          maxLength: 150
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+        author_profile:
+          allOf:
+          - $ref: '#/components/schemas/AuthorProfile'
+          readOnly: true
+      required:
+      - author_profile
+      - email
+      - full_name
+      - id
+    UserBrief:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        full_name:
+          type: string
+          maxLength: 150
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+      required:
+      - email
+      - full_name
+      - id
+  securitySchemes:
+    jwtAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

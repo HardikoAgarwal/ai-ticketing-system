@@ -13,6 +13,8 @@ from .serializers import BookSerializer
 
 def books_visible_to(user):
     qs = Book.objects.select_related("author__user")
+    if not user.is_authenticated:
+        return qs.none()
     if user.is_admin:
         return qs
     return qs.filter(author__user=user)
@@ -28,7 +30,7 @@ class BookListView(generics.ListAPIView):
     def get_queryset(self):
         qs = books_visible_to(self.request.user)
         author_code = self.request.query_params.get("author")
-        if author_code and self.request.user.is_admin:
+        if author_code and getattr(self.request.user, "is_admin", False):
             qs = qs.filter(author__author_code=author_code)
         return qs
 

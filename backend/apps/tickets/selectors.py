@@ -17,6 +17,8 @@ def unread_for_admin_q() -> Q:
 
 def tickets_visible_to(user) -> QuerySet[Ticket]:
     qs = Ticket.objects.select_related("author__user", "book", "assigned_to")
+    if not user.is_authenticated:
+        return qs.none()
     if user.is_admin:
         return qs
     return qs.filter(author__user=user)

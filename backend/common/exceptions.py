@@ -46,7 +46,7 @@ def api_exception_handler(exc, context):
     if response is None:
         logger.exception("Unhandled API error", exc_info=exc)
         return Response(
-            {"error": {"code": "server_error", "message": "Something went wrong on our side. Please try again."}},
+            {"error": {"code": "server_error", "message": "Something went wrong on our side. Please try again.", "details": None}},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
@@ -62,6 +62,7 @@ def api_exception_handler(exc, context):
         payload = {
             "code": codes if isinstance(codes, str) else getattr(exc, "default_code", "error"),
             "message": str(detail),
+            "details": None,
         }
 
     response.data = {"error": payload}

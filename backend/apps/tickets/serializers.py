@@ -5,6 +5,7 @@ fields) or other authors' data; admins get the full picture.
 """
 
 from django.conf import settings
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from apps.accounts.models import User
@@ -102,6 +103,7 @@ class AuthorTicketDetailSerializer(AuthorTicketSerializer):
     class Meta(AuthorTicketSerializer.Meta):
         fields = AuthorTicketSerializer.Meta.fields + ("messages", "attachments")
 
+    @extend_schema_field(MessageSerializer(many=True))
     def get_messages(self, obj):
         visible = [m for m in obj.messages.all() if m.kind == MessageKind.REPLY]
         return MessageSerializer(visible, many=True).data

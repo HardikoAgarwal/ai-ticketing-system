@@ -3,6 +3,7 @@ from datetime import timedelta
 from django.db.models import Avg, Count, F, Q, Sum
 from django.db.models.functions import TruncDate
 from django.utils import timezone
+from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -31,6 +32,7 @@ def _minutes(delta) -> float | None:
     tags=["Admin"],
     summary="Support analytics: volume, response times, SLA, AI accuracy and cost",
     parameters=[OpenApiParameter("days", int, description="7, 30 or 90 (default 30)")],
+    responses={200: OpenApiTypes.OBJECT},
 )
 class AnalyticsSummaryView(APIView):
     permission_classes = (IsAdmin,)

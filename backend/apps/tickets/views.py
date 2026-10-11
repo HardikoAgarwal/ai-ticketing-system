@@ -62,7 +62,7 @@ class TicketViewSet(
                 "attachments",
                 Prefetch("activities", queryset=TicketActivity.objects.select_related("actor")),
             )
-        elif self.action == "list" and not self.request.user.is_admin:
+        elif self.action == "list" and not getattr(self.request.user, "is_admin", False):
             qs = qs.order_by("-updated_at")
         return qs
 
