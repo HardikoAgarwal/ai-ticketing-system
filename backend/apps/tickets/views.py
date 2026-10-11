@@ -14,7 +14,7 @@ from apps.ai.models import AIDraft
 from common.exceptions import DomainError
 from common.permissions import IsAdmin, IsAuthor
 
-from . import services
+from . import notifications, services
 from .filters import TicketFilter
 from .models import AIStatus, MessageKind, Ticket, TicketActivity, TicketMessage, TicketPriority
 from .selectors import tickets_visible_to
@@ -29,6 +29,7 @@ from .serializers import (
     DraftSerializer,
     MessageCreateSerializer,
     MessageSerializer,
+    NotificationFeedSerializer,
     TicketCreateSerializer,
 )
 
@@ -185,6 +186,20 @@ class TicketViewSet(
             raise DomainError("Authors can only post replies.", code="forbidden", status_code=403)
         message = services.post_author_message(ticket, request.user, body=data["body"])
         return Response(MessageSerializer(message).data, status=status.HTTP_201_CREATED)
+
+    @extend_schema(
+        summary="Notification feed: new replies and resolutions (authors); new tickets and author replies on your or unassigned tickets (admins)",
+        responses=NotificationFeedSerializer,
+    )
+    @action(detail=False, methods=["get"])
+    def notifications(self, request):
+        return Response(notifications.notification_feed(request.user))
+
+    @extend_schema(summary="Mark every notification as read (resolved tickets stay until the author confirms)", request=None, responses=None)
+    @action(detail=False, methods=["post"], url_path="notifications/mark-all-read")
+    def mark_all_notifications_read(self, request):
+        notifications.mark_all_read(request.user)
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
     @extend_schema(summary="Mark the ticket as seen by the current user (clears unread badge)", request=None, responses=None)
     @action(detail=True, methods=["post"], url_path="mark-seen")

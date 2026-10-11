@@ -34,7 +34,7 @@ createRoot(document.getElementById('root')!).render(
           <RealtimeProvider>
             <TooltipProvider delayDuration={300}>
               <App />
-              <Toaster position="top-right" richColors={false} closeButton />
+              <Toaster position="top-right" offset={{ top: 68, right: 16 }} mobileOffset={{ top: 64 }} richColors={false} closeButton />
             </TooltipProvider>
           </RealtimeProvider>
         </AuthProvider>

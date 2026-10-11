@@ -612,7 +612,11 @@ export function AdminTicketPage() {
   })
 
   useEffect(() => {
-    if (ticket?.has_unread) ticketsApi.markSeen(id).then(() => queryClient.invalidateQueries({ queryKey: ['tickets'] }))
+    if (!ticket?.has_unread) return
+    ticketsApi.markSeen(id).then(() => {
+      queryClient.invalidateQueries({ queryKey: ['tickets'] })
+      queryClient.invalidateQueries({ queryKey: ['notifications'] })
+    })
   }, [id, ticket?.has_unread, queryClient])
 
   const mutation = useMutation({

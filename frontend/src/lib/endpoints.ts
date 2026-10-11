@@ -9,6 +9,7 @@ import type {
   Book,
   DraftResponse,
   Message,
+  NotificationFeed,
   Paginated,
   QueueStats,
   TicketCategory,
@@ -65,6 +66,8 @@ export const ticketsApi = {
   attachmentUrl: (id: number, attachmentId: number) =>
     api.get<{ url: string; name: string }>(`/tickets/${id}/attachments/${attachmentId}/`).then((r) => r.data),
   stats: () => api.get<QueueStats>('/tickets/stats/').then((r) => r.data),
+  notifications: () => api.get<NotificationFeed>('/tickets/notifications/').then((r) => r.data),
+  markAllNotificationsRead: () => api.post('/tickets/notifications/mark-all-read/'),
 }
 
 export const adminApi = {

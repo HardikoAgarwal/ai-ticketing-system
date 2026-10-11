@@ -89,6 +89,7 @@ function ResolutionPrompt({ ticket }: { ticket: AuthorTicketDetail }) {
     onSuccess: (data, resolved) => {
       queryClient.setQueryData(['ticket', ticket.id], data)
       queryClient.invalidateQueries({ queryKey: ['tickets'] })
+      queryClient.invalidateQueries({ queryKey: ['notifications'] })
       toast.success(resolved ? 'Thanks! Ticket closed.' : "Got it. We've reopened your ticket and will follow up.")
     },
     onError: (err) => toast.error(errorMessage(err)),
@@ -194,6 +195,7 @@ export function TicketDetailPage() {
     onSuccess: (data) => {
       queryClient.setQueryData(['ticket', id], data)
       queryClient.invalidateQueries({ queryKey: ['tickets'] })
+      queryClient.invalidateQueries({ queryKey: ['notifications'] })
       toast.success('Ticket marked as resolved. Thanks for letting us know!')
     },
     onError: (err) => toast.error(errorMessage(err)),
@@ -212,6 +214,7 @@ export function TicketDetailPage() {
     ticketsApi.markSeen(id).then(() => {
       queryClient.invalidateQueries({ queryKey: ['summary'] })
       queryClient.invalidateQueries({ queryKey: ['tickets'] })
+      queryClient.invalidateQueries({ queryKey: ['notifications'] })
     })
     // Re-mark whenever a new admin reply arrives while the page is open.
     // eslint-disable-next-line react-hooks/exhaustive-deps

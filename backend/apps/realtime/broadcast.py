@@ -43,7 +43,15 @@ def ticket_event(ticket, event: str, *, notify_author: bool = True, actor_id: in
     """event: ticket.created | ticket.updated | message.created | note.created"""
 
     def send():
-        _send(ADMINS_GROUP, {"event": event, "ticket": _admin_summary(ticket), "actor_id": actor_id})
+        _send(
+            ADMINS_GROUP,
+            {
+                "event": event,
+                "ticket": _admin_summary(ticket),
+                "actor_id": actor_id,
+                "by_author": actor_id is not None and actor_id == ticket.author.user_id,
+            },
+        )
         if notify_author:
             _send(
                 author_group(ticket.author.user_id),

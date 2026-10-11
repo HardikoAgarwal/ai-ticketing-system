@@ -667,6 +667,34 @@ paths:
               schema:
                 $ref: '#/components/schemas/AdminTicket'
           description: ''
+  /api/v1/tickets/notifications/:
+    get:
+      operationId: v1_tickets_notifications_retrieve
+      summary: 'Notification feed: new replies and resolutions (authors); new tickets
+        and author replies on your or unassigned tickets (admins)'
+      tags:
+      - Tickets
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationFeed'
+          description: ''
+  /api/v1/tickets/notifications/mark-all-read/:
+    post:
+      operationId: v1_tickets_notifications_mark_all_read_create
+      summary: Mark every notification as read (resolved tickets stay until the author
+        confirms)
+      tags:
+      - Tickets
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
   /api/v1/tickets/stats/:
     get:
       operationId: v1_tickets_stats_retrieve
@@ -1493,6 +1521,56 @@ components:
         * `REPLY` - Reply
         * `NOTE` - Internal note
         * `SYSTEM` - System
+    Notification:
+      type: object
+      properties:
+        id:
+          type: string
+        kind:
+          type: string
+          description: 'Authors: admin_reply | resolved. Admins: new_ticket | author_reply'
+        ticket_id:
+          type: integer
+        reference:
+          type: string
+        subject:
+          type: string
+        preview:
+          type: string
+        actor_name:
+          type: string
+        at:
+          type: string
+          format: date-time
+          nullable: true
+        priority:
+          type: string
+          description: Admins only
+        owner:
+          type: string
+          description: 'Admins only: you | unassigned'
+      required:
+      - actor_name
+      - at
+      - id
+      - kind
+      - preview
+      - reference
+      - subject
+      - ticket_id
+    NotificationFeed:
+      type: object
+      properties:
+        count:
+          type: integer
+          description: Total items needing attention (the list is capped at 20)
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Notification'
+      required:
+      - count
+      - items
     PaginatedAuthorTicketList:
       type: object
       required:

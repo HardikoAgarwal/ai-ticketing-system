@@ -261,3 +261,21 @@ class DraftSerializer(serializers.Serializer):
     status = serializers.CharField(help_text="ready | generating | failed | disabled")
     draft = serializers.DictField(allow_null=True)
     error = serializers.CharField(allow_blank=True)
+
+
+class NotificationSerializer(serializers.Serializer):
+    id = serializers.CharField()
+    kind = serializers.CharField(help_text="Authors: admin_reply | resolved. Admins: new_ticket | author_reply")
+    ticket_id = serializers.IntegerField()
+    reference = serializers.CharField()
+    subject = serializers.CharField()
+    preview = serializers.CharField()
+    actor_name = serializers.CharField()
+    at = serializers.DateTimeField(allow_null=True)
+    priority = serializers.CharField(required=False, help_text="Admins only")
+    owner = serializers.CharField(required=False, help_text="Admins only: you | unassigned")
+
+
+class NotificationFeedSerializer(serializers.Serializer):
+    count = serializers.IntegerField(help_text="Total items needing attention (the list is capped at 20)")
+    items = NotificationSerializer(many=True)

@@ -247,10 +247,31 @@ export interface Analytics {
   drafts: { total: number; ai_as_is: number; ai_edited: number }
 }
 
+export type NotificationKind = 'admin_reply' | 'resolved' | 'new_ticket' | 'author_reply'
+
+export interface AppNotification {
+  id: string
+  kind: NotificationKind
+  ticket_id: number
+  reference: string
+  subject: string
+  preview: string
+  actor_name: string
+  at: string | null
+  priority?: TicketPriority
+  owner?: 'you' | 'unassigned'
+}
+
+export interface NotificationFeed {
+  count: number
+  items: AppNotification[]
+}
+
 export interface RealtimeEvent {
   event: 'connected' | 'pong' | 'ticket.created' | 'ticket.updated' | 'message.created' | 'note.created'
   role?: Role
   actor_id?: number | null
+  by_author?: boolean
   ticket?: {
     id: number
     reference: string

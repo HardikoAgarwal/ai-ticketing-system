@@ -1,0 +1,189 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import {
+  Bell,
+  BellOff,
+  CheckCheck,
+  CheckCircle2,
+  Inbox,
+  MessageCircle,
+  MessageSquareReply,
+  MonitorSmartphone,
+  type LucideIcon,
+} from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { toast } from 'sonner'
+
+import { useAuth } from '@/auth/AuthContext'
+import { RelativeTime } from '@/components/common'
+import { Button } from '@/components/ui/button'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { errorMessage } from '@/lib/api'
+import { ticketsApi } from '@/lib/endpoints'
+import type { AppNotification, NotificationKind } from '@/lib/types'
+import { cn } from '@/lib/utils'
+import { desktopAlertState, disableDesktopAlerts, enableDesktopAlerts, type DesktopAlertState } from '@/realtime/desktopAlerts'
+import { useFallbackInterval } from '@/realtime/RealtimeProvider'
+
+const baseTitle = () => document.title.replace(/^\(\d+\+?\)\s*/, '')
+
+const KIND_META: Record<NotificationKind, { icon: LucideIcon; tint: string; title: (n: AppNotification) => string }> = {
+  admin_reply: { icon: MessageCircle, tint: 'bg-primary/10 text-primary', title: () => 'BookLeaf replied' },
+  resolved: { icon: CheckCircle2, tint: 'bg-emerald-100 text-emerald-700', title: () => 'Marked as resolved. Please confirm' },
+  new_ticket: { icon: Inbox, tint: 'bg-sky-100 text-sky-700', title: (n) => `New ticket from ${n.actor_name}` },
+  author_reply: { icon: MessageSquareReply, tint: 'bg-violet-100 text-violet-700', title: (n) => `${n.actor_name} replied` },
+}
+
+const URGENT = new Set(['CRITICAL', 'HIGH'])
+
+function NotificationItem({ item, onOpen }: { item: AppNotification; onOpen: () => void }) {
+  const meta = KIND_META[item.kind]
+  const urgent = item.kind === 'new_ticket' && item.priority && URGENT.has(item.priority)
+  return (
+    <button onClick={onOpen} className="flex w-full gap-3 px-4 py-3.5 text-left transition-colors hover:bg-muted/60 focus-visible:bg-muted/60 focus-visible:outline-none">
+      <span className={cn('flex size-9 shrink-0 items-center justify-center rounded-full', urgent ? 'bg-red-100 text-red-700' : meta.tint)}>
+        <meta.icon className="size-4" />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="flex items-baseline justify-between gap-3">
+          <span className="truncate text-sm font-semibold">{meta.title(item)}</span>
+          <RelativeTime value={item.at} className="shrink-0 text-[11px] text-muted-foreground" />
+        </span>
+        <span className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
+          <span className="shrink-0 font-mono whitespace-nowrap">{item.reference}</span>
+          <span aria-hidden>·</span>
+          <span className="truncate">{item.subject}</span>
+        </span>
+        {item.preview && <span className="mt-1.5 line-clamp-2 text-xs text-foreground/70">{item.preview}</span>}
+        {(urgent || item.owner === 'unassigned') && (
+          <span className="mt-2 flex gap-1.5">
+            {urgent && (
+              <span className="rounded-full bg-red-50 px-2 py-0.5 text-[10px] font-semibold text-red-700 ring-1 ring-red-200 ring-inset">
+                {item.priority === 'CRITICAL' ? 'Critical' : 'High'} priority
+              </span>
+            )}
+            {item.owner === 'unassigned' && (
+              <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground ring-1 ring-border ring-inset">Unassigned</span>
+            )}
+          </span>
+        )}
+      </span>
+    </button>
+  )
+}
+
+function DesktopAlertsRow() {
+  const [state, setState] = useState<DesktopAlertState>(desktopAlertState)
+  if (state === 'unsupported') return null
+  return (
+    <div className="flex items-center gap-3 border-t bg-muted/30 px-4 py-3">
+      <MonitorSmartphone className="size-4 shrink-0 text-muted-foreground" />
+      <div className="min-w-0 flex-1">
+        <p className="text-xs font-medium">Desktop alerts</p>
+        <p className="text-[11px] text-muted-foreground">
+          {state === 'on'
+            ? 'On. We alert you when this tab is in the background.'
+            : state === 'blocked'
+              ? 'Blocked. Allow notifications in your browser settings.'
+              : 'Get alerted even when this tab is in the background.'}
+        </p>
+      </div>
+      {state === 'on' ? (
+        <Button variant="ghost" size="sm" onClick={() => (disableDesktopAlerts(), setState(desktopAlertState()))}>
+          Turn off
+        </Button>
+      ) : state === 'off' ? (
+        <Button variant="outline" size="sm" onClick={async () => setState(await enableDesktopAlerts())}>
+          Turn on
+        </Button>
+      ) : null}
+    </div>
+  )
+}
+
+export function NotificationBell() {
+  const { user } = useAuth()
+  const navigate = useNavigate()
+  const queryClient = useQueryClient()
+  const [open, setOpen] = useState(false)
+  const refetchInterval = useFallbackInterval(30_000)
+  const { data } = useQuery({ queryKey: ['notifications'], queryFn: ticketsApi.notifications, refetchInterval, enabled: !!user })
+  const count = data?.count ?? 0
+  const items = data?.items ?? []
+  const hasReadable = items.some((i) => i.kind !== 'resolved')
+
+  useEffect(() => {
+    const base = baseTitle()
+    document.title = count > 0 ? `(${count}) ${base}` : base
+    return () => {
+      document.title = baseTitle()
+    }
+  }, [count])
+
+  const markAll = useMutation({
+    mutationFn: ticketsApi.markAllNotificationsRead,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notifications'] })
+      queryClient.invalidateQueries({ queryKey: ['tickets'] })
+      queryClient.invalidateQueries({ queryKey: ['summary'] })
+    },
+    onError: (err) => toast.error(errorMessage(err)),
+  })
+
+  const openTicket = (item: AppNotification) => {
+    setOpen(false)
+    navigate(user?.role === 'ADMIN' ? `/admin/tickets/${item.ticket_id}` : `/author/tickets/${item.ticket_id}`)
+  }
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button variant="ghost" size="icon" className="relative" aria-label={count ? `Notifications, ${count} new` : 'Notifications'}>
+          <Bell className="size-5" />
+          {count > 0 && (
+            <span className="absolute -top-0.5 -right-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-semibold text-white ring-2 ring-background">
+              {count > 9 ? '9+' : count}
+            </span>
+          )}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent
+        align="end"
+        sideOffset={8}
+        onOpenAutoFocus={(e) => e.preventDefault()}
+        className="w-[400px] max-w-[calc(100vw-1.5rem)] gap-0 overflow-hidden rounded-xl p-0">
+        <div className="flex items-center justify-between gap-3 border-b px-4 py-3">
+          <p className="flex items-center gap-2 text-sm font-semibold">
+            Notifications
+            {count > 0 && <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">{count} new</span>}
+          </p>
+          {hasReadable && (
+            <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => markAll.mutate()} disabled={markAll.isPending}>
+              <CheckCheck className="size-3.5" /> Mark all as read
+            </Button>
+          )}
+        </div>
+
+        {items.length === 0 ? (
+          <div className="flex flex-col items-center px-6 py-10 text-center">
+            <span className="flex size-11 items-center justify-center rounded-full bg-muted text-muted-foreground">
+              <BellOff className="size-5" />
+            </span>
+            <p className="mt-3 text-sm font-semibold">You're all caught up</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {user?.role === 'ADMIN' ? 'New tickets and author replies will show up here.' : 'Replies from our team will show up here.'}
+            </p>
+          </div>
+        ) : (
+          <div className="max-h-[min(440px,60vh)] divide-y overflow-y-auto">
+            {items.map((item) => (
+              <NotificationItem key={item.id} item={item} onOpen={() => openTicket(item)} />
+            ))}
+          </div>
+        )}
+
+        <DesktopAlertsRow />
+      </PopoverContent>
+    </Popover>
+  )
+}

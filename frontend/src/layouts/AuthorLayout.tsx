@@ -3,6 +3,7 @@ import { LifeBuoy } from 'lucide-react'
 import { Link, NavLink, Outlet } from 'react-router-dom'
 
 import { Logo } from '@/components/common'
+import { NotificationBell } from '@/components/NotificationBell'
 import { Button } from '@/components/ui/button'
 import { booksApi } from '@/lib/endpoints'
 import { cn } from '@/lib/utils'
@@ -48,6 +49,7 @@ export function AuthorLayout() {
             ))}
           </nav>
           <div className="ml-auto flex items-center gap-3">
+            <NotificationBell />
             <Button asChild size="sm">
               <Link to="/author/tickets/new">
                 <LifeBuoy /> Get help

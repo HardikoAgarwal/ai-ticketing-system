@@ -39,6 +39,11 @@ The login page has one-click buttons that fill these in. Good edge-case authors 
   - The draft is protected against accidental navigation.
 - **My Tickets**: Active / Resolved / All tabs, an unread badge, and a status timeline. Authors can reply, confirm a resolution, or reopen a ticket.
 - **Real-time updates**: new replies and status changes arrive over WebSockets with a toast. If the socket drops, the page falls back to polling.
+- **Notifications** (authors and admins):
+  - A header bell lists unread replies with a preview. Authors also see "resolved, please confirm" items; admins see new tickets and author replies on tickets that are theirs or unassigned, with priority chips.
+  - Opening a ticket clears its item, and "Mark all as read" clears the rest. The feed comes from the existing read receipts, so there's no separate notifications table to keep in sync.
+  - The tab title shows the unread count, e.g. `(3) BookLeaf…`.
+  - Optional desktop alerts can be switched on from the bell; they only fire while the tab is in the background.
 
 ### Admin portal
 - **Queue**:
@@ -150,6 +155,7 @@ flowchart LR
 | `PATCH /tickets/{id}/` · `POST assign-to-me/` | admin | Status, category, priority, assignee overrides |
 | `GET/POST /tickets/{id}/messages/` | both (notes: admin only) | Replies and internal notes |
 | `POST /tickets/{id}/confirm-resolution/` · `mark-seen/` | author / both | Close the loop, read receipts |
+| `GET /tickets/notifications/` · `POST notifications/mark-all-read/` | both (scoped to the caller) | Notification bell feed |
 | `GET /tickets/{id}/draft/` · `POST draft/regenerate/` · `POST reclassify/` | admin | AI draft and classification |
 | `GET /tickets/{id}/attachments/{aid}/` | ticket participants | Authorised download link (5-minute signed URL) |
 | `GET /tickets/stats/` · `/admin/analytics/summary/` · `/admin/agents/` | admin | Queue counts, analytics, assignee list |

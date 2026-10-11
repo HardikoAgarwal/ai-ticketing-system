@@ -7,6 +7,8 @@ import { useAuth } from '@/auth/AuthContext'
 import { ensureFreshAccessToken, tokenStore, WS_URL } from '@/lib/api'
 import type { RealtimeEvent } from '@/lib/types'
 
+import { showDesktopAlert } from './desktopAlerts'
+
 export type ConnectionState = 'connecting' | 'live' | 'offline'
 
 const RealtimeContext = createContext<ConnectionState>('offline')
@@ -36,37 +38,48 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
     let retryTimer: ReturnType<typeof setTimeout> | undefined
     let pingTimer: ReturnType<typeof setInterval> | undefined
 
+    const resolvedAlerted = new Set<number>()
+
     const handleEvent = (msg: RealtimeEvent) => {
       if (msg.event === 'connected' || msg.event === 'pong' || !msg.ticket) return
-      const ticketId = msg.ticket.id
+      const ticket = msg.ticket
+      const ticketId = ticket.id
       queryClient.invalidateQueries({ queryKey: ['tickets'] })
       queryClient.invalidateQueries({ queryKey: ['ticket', ticketId] })
       queryClient.invalidateQueries({ queryKey: ['stats'] })
       queryClient.invalidateQueries({ queryKey: ['summary'] })
+      queryClient.invalidateQueries({ queryKey: ['notifications'] })
       if (msg.event === 'ticket.updated') queryClient.invalidateQueries({ queryKey: ['draft', ticketId] })
+      if (ticket.status !== 'RESOLVED') resolvedAlerted.delete(ticketId)
 
-      const fromSomeoneElse = msg.actor_id !== user.id
+      if (msg.actor_id === user.id) return
       const viewingTicket = pathRef.current.endsWith(`/tickets/${ticketId}`)
-      if (!fromSomeoneElse) return
+      const url = `/${user.role === 'ADMIN' ? 'admin' : 'author'}/tickets/${ticketId}`
+      const notify = (title: string, description: string, opts: { urgent?: boolean; label?: string } = {}) => {
+        showDesktopAlert(title, description, `${msg.event}:${ticketId}`, () => navigate(url))
+        if (viewingTicket) return
+        ;(opts.urgent ? toast.warning : toast.info)(title, {
+          description,
+          action: { label: opts.label ?? 'Open', onClick: () => navigate(url) },
+        })
+      }
 
-      if (user.role === 'AUTHOR' && msg.event === 'message.created' && !viewingTicket) {
-        toast.info(`BookLeaf replied to ${msg.ticket.reference}`, {
-          description: msg.ticket.subject,
-          action: { label: 'View', onClick: () => navigate(`/author/tickets/${ticketId}`) },
-        })
+      if (user.role === 'AUTHOR') {
+        if (msg.event === 'message.created') notify(`BookLeaf replied to ${ticket.reference}`, ticket.subject, { label: 'View' })
+        if (msg.event === 'ticket.updated' && ticket.status === 'RESOLVED' && !resolvedAlerted.has(ticketId)) {
+          resolvedAlerted.add(ticketId)
+          notify(`${ticket.reference} was marked as resolved`, 'Please confirm whether your issue is sorted.', { label: 'Confirm' })
+        }
+        return
       }
-      if (user.role === 'ADMIN' && msg.event === 'ticket.created') {
-        const urgent = msg.ticket.priority === 'CRITICAL' || msg.ticket.priority === 'HIGH'
-        const notify = urgent ? toast.warning : toast.info
-        notify(`New ${urgent ? msg.ticket.priority!.toLowerCase() + ' ' : ''}ticket from ${msg.ticket.author_name}`, {
-          description: msg.ticket.subject,
-          action: { label: 'Open', onClick: () => navigate(`/admin/tickets/${ticketId}`) },
-        })
+
+      const relevant = ticket.assigned_to === user.id || ticket.assigned_to == null
+      if (msg.event === 'ticket.created') {
+        const urgent = ticket.priority === 'CRITICAL' || ticket.priority === 'HIGH'
+        notify(`New ${urgent ? ticket.priority!.toLowerCase() + ' ' : ''}ticket from ${ticket.author_name}`, ticket.subject, { urgent })
       }
-      if (user.role === 'ADMIN' && msg.event === 'message.created' && !viewingTicket && msg.ticket.assigned_to === user.id) {
-        toast.info(`${msg.ticket.author_name} replied on ${msg.ticket.reference}`, {
-          action: { label: 'Open', onClick: () => navigate(`/admin/tickets/${ticketId}`) },
-        })
+      if (msg.event === 'message.created' && msg.by_author && relevant) {
+        notify(`${ticket.author_name} replied on ${ticket.reference}`, ticket.subject)
       }
     }
 

@@ -4,6 +4,7 @@ import { Suspense } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
 
 import { ConnectionIndicator, Logo } from '@/components/common'
+import { NotificationBell } from '@/components/NotificationBell'
 import { ListSkeleton } from '@/components/states'
 import { ticketsApi } from '@/lib/endpoints'
 import { cn } from '@/lib/utils'
@@ -68,6 +69,7 @@ export function AdminLayout() {
             <div className="md:hidden">
               <ConnectionIndicator />
             </div>
+            <NotificationBell />
             <UserMenu />
           </div>
         </header>
