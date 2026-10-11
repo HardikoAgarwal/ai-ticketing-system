@@ -244,7 +244,9 @@ The client speaks the OpenAI Chat Completions API, so any compatible provider wo
 | Provider | `OPENAI_API_KEY` | `AI_BASE_URL` | `AI_MODEL` | `AI_REASONING_EFFORT` |
 |---|---|---|---|---|
 | OpenAI (default) | OpenAI key | *(empty)* | `gpt-4o-mini` | *(empty)* |
-| Google Gemini (free tier) | key from [AI Studio](https://aistudio.google.com/apikey) | `https://generativelanguage.googleapis.com/v1beta/openai/` | `gemini-3.8-flash` | `none` |
+| Google Gemini (free tier) | key from [AI Studio](https://aistudio.google.com/apikey) | `https://generativelanguage.googleapis.com/v1beta/openai/` | `gemini-3.1-flash-lite` | `none` |
+
+Use a Flash-Lite model on the free tier: it allows about 500 requests a day, while the full Flash models allow only about 20 (each ticket uses two: classify and draft). After enabling AI on an existing database, run `python manage.py ai_backfill` to classify and draft tickets created while it was off.
 
 Gemini models think before answering; `AI_REASONING_EFFORT=none` keeps that hidden reasoning from using up the 150/450 token caps. On the free tier, set `AI_PRICE_INPUT_PER_M=0` and `AI_PRICE_OUTPUT_PER_M=0` so the analytics cost reads $0.
 

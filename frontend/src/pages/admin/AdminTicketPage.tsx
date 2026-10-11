@@ -294,7 +294,7 @@ function AiInsight({ ticket }: { ticket: AdminTicketDetail }) {
       <div className="flex items-center gap-3 border-t px-7 py-3.5 text-sm text-muted-foreground">
         <AlertTriangle className="size-4 shrink-0 text-amber-600" />
         <span className="flex-1">
-          {ticket.ai_status === 'DISABLED' ? 'AI is off on this server.' : 'AI was unavailable.'} Category and priority are a keyword-based
+          {ticket.ai_status === 'DISABLED' ? 'AI was off when this ticket arrived.' : 'AI was unavailable.'} Category and priority are a keyword-based
           estimate; please confirm them.
         </span>
         {rerun}

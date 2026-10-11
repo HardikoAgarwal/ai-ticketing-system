@@ -30,7 +30,7 @@ services:
       - key: AI_BASE_URL
         sync: false # empty for OpenAI; https://generativelanguage.googleapis.com/v1beta/openai/ for Gemini
       - key: AI_MODEL
-        sync: false # gpt-4o-mini (OpenAI) or gemini-3.8-flash (Gemini)
+        sync: false # gpt-4o-mini (OpenAI) or gemini-3.1-flash-lite (Gemini free tier)
       - key: AI_REASONING_EFFORT
         sync: false # empty for OpenAI; "none" for Gemini
       - key: AI_PRICE_INPUT_PER_M
