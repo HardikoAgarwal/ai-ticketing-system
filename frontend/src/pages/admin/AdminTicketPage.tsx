@@ -272,11 +272,11 @@ function AiInsight({ ticket }: { ticket: AdminTicketDetail }) {
 
   const rerun = ticket.ai_status !== 'DISABLED' && (
     <Button
-      variant="ghost"
+      variant="outline"
       size="sm"
       onClick={() => reclassify.mutate()}
       disabled={reclassify.isPending || ticket.ai_status === 'PENDING'}
-      className="shrink-0"
+      className="shrink-0 bg-card/80 backdrop-blur"
     >
       <RefreshCw className={cn(reclassify.isPending && 'animate-spin')} /> Re-run AI
     </Button>
@@ -284,46 +284,99 @@ function AiInsight({ ticket }: { ticket: AdminTicketDetail }) {
 
   if (ticket.ai_status === 'PENDING') {
     return (
-      <div className="flex items-center gap-2 border-t px-7 py-3.5 text-sm text-muted-foreground">
-        <Loader2 className="size-4 animate-spin text-violet-600" /> AI is classifying this ticket…
-      </div>
+      <AiStrip icon={<Sparkles className="size-4.5 animate-pulse" />} title="AI triage" chip={<AiChip loading>Classifying…</AiChip>}>
+        <div className="mt-2.5 space-y-2">
+          <div className="ai-shimmer h-2.5 w-4/5 rounded-full" />
+          <div className="ai-shimmer h-2.5 w-1/2 rounded-full" />
+        </div>
+      </AiStrip>
     )
   }
+
   if (ticket.ai_status === 'FAILED' || ticket.ai_status === 'DISABLED') {
     return (
-      <div className="flex items-center gap-3 border-t px-7 py-3.5 text-sm text-muted-foreground">
-        <AlertTriangle className="size-4 shrink-0 text-amber-600" />
-        <span className="flex-1">
-          {ticket.ai_status === 'DISABLED' ? 'AI was off when this ticket arrived.' : 'AI was unavailable.'} Category and priority are a keyword-based
-          estimate; please confirm them.
+      <div className="flex items-start gap-4 border-t bg-amber-50/50 px-7 py-4">
+        <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-700 ring-1 ring-amber-600/15 ring-inset">
+          <AlertTriangle className="size-4.5" />
         </span>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-semibold text-amber-900">Keyword estimate</p>
+          <p className="mt-0.5 text-[13px] leading-relaxed text-amber-900/75">
+            {ticket.ai_status === 'DISABLED' ? 'AI was off when this ticket arrived.' : 'AI was unavailable for this ticket.'} Category and
+            priority were set by keyword rules; please confirm them.
+          </p>
+        </div>
         {rerun}
       </div>
     )
   }
   if (!ticket.ai_category) return null
 
-  const overridden = ticket.category_source === 'ADMIN' || ticket.priority_source === 'ADMIN'
+  const confidence = ticket.ai_confidence !== null ? Math.round(ticket.ai_confidence * 100) : null
+  const changed = [
+    ticket.category_source === 'ADMIN' && ticket.category !== ticket.ai_category && 'category',
+    ticket.priority_source === 'ADMIN' && ticket.priority !== ticket.ai_priority && 'priority',
+  ].filter(Boolean)
+
   return (
-    <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-t px-7 py-3.5 text-sm">
-      <span className="flex items-center gap-1.5 font-medium">
-        <Sparkles className="size-4 text-violet-600" /> AI suggested
-      </span>
-      <CategoryBadge category={ticket.ai_category} size="sm" short />
-      {ticket.ai_priority && <PriorityBadge priority={ticket.ai_priority} size="sm" />}
-      {ticket.ai_confidence !== null && (
-        <span className="text-xs text-muted-foreground">
-          {Math.round(ticket.ai_confidence * 100)}% confident
-        </span>
+    <AiStrip icon={<Sparkles className="size-4.5" />} title="AI triage" action={rerun}>
+      <div className="mt-2 flex flex-wrap items-center gap-2">
+        <CategoryBadge category={ticket.ai_category} size="sm" short />
+        {ticket.ai_priority && <PriorityBadge priority={ticket.ai_priority} size="sm" />}
+        {confidence !== null && (
+          <span className="ml-1 flex items-center gap-2 text-xs text-muted-foreground">
+            <span className="h-1.5 w-16 overflow-hidden rounded-full bg-violet-100">
+              <span className="block h-full rounded-full bg-linear-to-r from-violet-500 to-fuchsia-500" style={{ width: `${confidence}%` }} />
+            </span>
+            <span className="font-medium text-foreground/80 tabular-nums">{confidence}%</span> confidence
+          </span>
+        )}
+        {changed.length > 0 && (
+          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700 ring-1 ring-emerald-600/20 ring-inset">
+            <UserCheck className="size-3" /> Team changed {changed.join(' & ')}
+          </span>
+        )}
+      </div>
+      {ticket.ai_reasoning && (
+        <p className="mt-2.5 border-l-2 border-violet-200 pl-3 text-[13px] leading-relaxed text-foreground/75">{ticket.ai_reasoning}</p>
       )}
-      {overridden && (
-        <span className="flex items-center gap-1 text-xs font-medium text-emerald-700">
-          <UserCheck className="size-3.5" /> Overridden by team
+    </AiStrip>
+  )
+}
+
+function AiStrip({ icon, title, chip, action, children }: {
+  icon: ReactNode
+  title: string
+  chip?: ReactNode
+  action?: ReactNode
+  children: ReactNode
+}) {
+  return (
+    <div className="relative border-t bg-linear-to-r from-violet-50/80 via-fuchsia-50/40 to-sky-50/70 px-7 py-4">
+      <span aria-hidden className="absolute inset-x-0 top-0 h-px bg-linear-to-r from-violet-400/60 via-fuchsia-400/50 to-sky-400/60" />
+      <div className="flex items-start gap-4">
+        <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-linear-to-br from-violet-500 via-fuchsia-500 to-sky-400 text-white shadow-sm">
+          {icon}
         </span>
-      )}
-      {ticket.ai_reasoning && <span className="min-w-0 flex-1 basis-64 text-xs text-muted-foreground">{ticket.ai_reasoning}</span>}
-      {rerun}
+        <div className="min-w-0 flex-1">
+          <p className="flex items-center gap-2 text-sm font-semibold">
+            <span className="bg-linear-to-r from-violet-600 to-fuchsia-600 bg-clip-text text-transparent">{title}</span>
+            {chip}
+          </p>
+          {children}
+        </div>
+        {action}
+      </div>
     </div>
+  )
+}
+
+function AiChip({ loading, children }: { loading?: boolean; children: ReactNode }) {
+  return (
+    <span className="inline-flex items-center gap-1 rounded-full bg-violet-50 px-2 py-0.5 text-[11px] font-medium text-violet-700 ring-1 ring-violet-600/20 ring-inset">
+      {loading && <Loader2 className="size-3 animate-spin" />}
+      {children}
+    </span>
   )
 }
 
