@@ -8,6 +8,8 @@ import {
   CalendarDays,
   CheckCheck,
   CircleDot,
+  Coins,
+  Factory,
   History,
   Loader2,
   Lock,
@@ -16,22 +18,26 @@ import {
   MessageCircle,
   MessagesSquare,
   Phone,
+  Printer,
   RefreshCw,
   RotateCcw,
+  ScanBarcode,
   Send,
   Sparkles,
   Tag,
+  TrendingUp,
   UserCheck,
   UserRound,
+  Wallet,
   type LucideIcon,
 } from 'lucide-react'
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 
 import { Composer } from '@/components/admin/Composer'
 import { InternalNotes } from '@/components/admin/InternalNotes'
-import { BookCover, IsbnChip, PlatformChips, RoyaltyBreakdown, StageProgress } from '@/components/author/BookCard'
+import { BookCover, IsbnChip, PlatformChips, RoyaltyNote, StageProgress } from '@/components/author/BookCard'
 import { BookStatusBadge, CategoryBadge, PriorityBadge, SlaBadge, StatusBadge } from '@/components/badges'
 import { RelativeTime } from '@/components/common'
 import { ConfirmDialog, type ConfirmOptions } from '@/components/ConfirmDialog'
@@ -67,9 +73,9 @@ function Card({ title, icon: Icon, action, children, className, bodyClassName }:
   bodyClassName?: string
 }) {
   return (
-    <section className={cn('overflow-hidden rounded-2xl border bg-card shadow-xs', className)}>
+    <section className={cn('flex flex-col overflow-hidden rounded-2xl border bg-card shadow-xs', className)}>
       {title && (
-        <header className="flex items-center justify-between gap-2 border-b px-4 py-3">
+        <header className="flex shrink-0 items-center justify-between gap-2 border-b px-5 py-3.5">
           <h3 className="flex items-center gap-2 text-sm font-semibold">
             {Icon && <Icon className="size-4 text-primary" />}
             {title}
@@ -77,7 +83,7 @@ function Card({ title, icon: Icon, action, children, className, bodyClassName }:
           {action}
         </header>
       )}
-      <div className={cn('p-4', bodyClassName)}>{children}</div>
+      <div className={cn('flex-1 p-5', bodyClassName)}>{children}</div>
     </section>
   )
 }
@@ -127,7 +133,7 @@ function TicketHeader({ ticket, update, pending }: { ticket: AdminTicketDetail; 
 
   return (
     <section className="overflow-hidden rounded-2xl border bg-card shadow-xs">
-      <div className="bg-gradient-to-br from-primary/[0.08] via-card to-card px-6 pt-5 pb-5">
+      <div className="bg-gradient-to-br from-primary/[0.08] via-card to-card px-7 py-6">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-xs text-muted-foreground">
           <span className="rounded-md bg-card px-2 py-1 font-mono font-semibold text-foreground ring-1 ring-border">{ticket.reference}</span>
           <span>
@@ -138,8 +144,8 @@ function TicketHeader({ ticket, update, pending }: { ticket: AdminTicketDetail; 
             <SlaBadge state={ticket.sla_state} dueAt={ticket.sla_due_at} />
           </span>
         </div>
-        <h1 className="mt-3 text-2xl font-semibold tracking-tight">{ticket.subject}</h1>
-        <div className="mt-3 flex flex-wrap items-center gap-2">
+        <h1 className="mt-4 text-2xl font-semibold tracking-tight">{ticket.subject}</h1>
+        <div className="mt-4 flex flex-wrap items-center gap-2.5">
           <StatusBadge status={ticket.status} size="lg" />
           <PriorityBadge priority={ticket.priority} source={ticket.priority_source} size="lg" />
           <CategoryBadge category={ticket.category} source={ticket.category_source} size="lg" />
@@ -151,7 +157,7 @@ function TicketHeader({ ticket, update, pending }: { ticket: AdminTicketDetail; 
         </div>
       </div>
 
-      <div className="grid gap-4 border-t bg-muted/20 px-6 py-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-5 border-t bg-muted/20 px-7 py-5 sm:grid-cols-2 xl:grid-cols-4">
         <div>
           <FieldLabel>Status</FieldLabel>
           <MetaSelect
@@ -243,14 +249,14 @@ function AiInsight({ ticket }: { ticket: AdminTicketDetail }) {
 
   if (ticket.ai_status === 'PENDING') {
     return (
-      <div className="flex items-center gap-2 border-t bg-violet-50/70 px-6 py-3 text-sm text-violet-900">
+      <div className="flex items-center gap-2 border-t bg-violet-50/70 px-7 py-3.5 text-sm text-violet-900">
         <Loader2 className="size-4 animate-spin" /> AI is classifying this ticket…
       </div>
     )
   }
   if (ticket.ai_status === 'FAILED' || ticket.ai_status === 'DISABLED') {
     return (
-      <div className="flex items-center gap-3 border-t bg-amber-50/70 px-6 py-3 text-sm text-amber-900">
+      <div className="flex items-center gap-3 border-t bg-amber-50/70 px-7 py-3.5 text-sm text-amber-900">
         <AlertTriangle className="size-4 shrink-0" />
         <span className="flex-1">
           {ticket.ai_status === 'DISABLED' ? 'AI is off on this server.' : 'AI was unavailable.'} Category and priority are a keyword-based
@@ -264,7 +270,7 @@ function AiInsight({ ticket }: { ticket: AdminTicketDetail }) {
 
   const overridden = ticket.category_source === 'ADMIN' || ticket.priority_source === 'ADMIN'
   return (
-    <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-t bg-gradient-to-r from-violet-50/80 to-fuchsia-50/50 px-6 py-3 text-sm">
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-t bg-gradient-to-r from-violet-50/80 to-fuchsia-50/50 px-7 py-3.5 text-sm">
       <span className="flex items-center gap-1.5 font-semibold text-violet-900">
         <Sparkles className="size-4" /> AI suggested
       </span>
@@ -292,7 +298,7 @@ function AiInsight({ ticket }: { ticket: AdminTicketDetail }) {
 
 function InfoRow({ icon: Icon, children }: { icon: LucideIcon; children: ReactNode }) {
   return (
-    <div className="flex items-center gap-2.5 text-sm">
+    <div className="flex items-center gap-3 text-sm">
       <Icon className="size-4 shrink-0 text-muted-foreground" />
       <span className="min-w-0 truncate">{children}</span>
     </div>
@@ -312,7 +318,7 @@ function AuthorCard({ ticket }: { ticket: AdminTicketDetail }) {
           <span className="rounded-md bg-muted px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground">{a.author_code}</span>
         </div>
       </div>
-      <div className="mt-4 space-y-2">
+      <div className="mt-5 space-y-3">
         <InfoRow icon={Mail}>
           <a href={`mailto:${a.email}`} className="hover:text-primary hover:underline">
             {a.email}
@@ -322,7 +328,7 @@ function AuthorCard({ ticket }: { ticket: AdminTicketDetail }) {
         {a.city && <InfoRow icon={MapPin}>{a.city}</InfoRow>}
         <InfoRow icon={CalendarDays}>Author since {formatDate(a.joined_date)}</InfoRow>
       </div>
-      <div className="mt-4 grid grid-cols-2 gap-2">
+      <div className="mt-5 grid grid-cols-2 gap-3">
         <div className="rounded-xl bg-muted/60 p-3 text-center">
           <p className="text-xl font-semibold">{a.books_count}</p>
           <p className="text-[11px] text-muted-foreground">Books</p>
@@ -340,9 +346,9 @@ function BookContextCard({ ticket }: { ticket: AdminTicketDetail }) {
   const b = ticket.book_detail
   if (!b) {
     return (
-      <Card title="Book" icon={BookOpen} bodyClassName="flex h-full items-center">
-        <div className="flex items-center gap-3 text-sm text-muted-foreground">
-          <span className="flex size-12 items-center justify-center rounded-xl bg-muted">
+      <Card title="Book" icon={BookOpen} bodyClassName="flex items-center">
+        <div className="flex items-center gap-4 text-sm text-muted-foreground">
+          <span className="flex size-14 items-center justify-center rounded-xl bg-muted">
             <BookOpen className="size-5" />
           </span>
           General / account-level request. No specific book selected.
@@ -350,52 +356,94 @@ function BookContextCard({ ticket }: { ticket: AdminTicketDetail }) {
       </Card>
     )
   }
+  const earned = Number(b.total_royalty_earned)
+  const paidPct = earned ? (Number(b.royalty_paid) / earned) * 100 : 0
   return (
-    <Card title="Book" icon={BookOpen} action={<BookStatusBadge status={b.status} published={b.is_published} size="sm" />} bodyClassName="@container">
-      <div className="grid gap-5 @3xl:grid-cols-[minmax(0,1fr)_320px]">
-        <div className="min-w-0 space-y-4">
-          <div className="flex items-start gap-4">
-            <BookCover book={b} className="w-16" compact />
-            <div className="min-w-0 flex-1">
-              <p className="text-base leading-snug font-semibold">{b.title}</p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                {b.genre} · <span className="font-mono">{b.book_code}</span>
-              </p>
-              <div className="mt-2.5">
-                <PlatformChips platforms={b.available_on} />
-              </div>
-            </div>
-          </div>
-          <dl className="grid grid-cols-2 gap-2 @md:grid-cols-3">
-            <BookFact label="ISBN" className="col-span-2 @md:col-span-1">
+    <Card title="Book" icon={BookOpen} action={<BookStatusBadge status={b.status} published={b.is_published} />} bodyClassName="@container space-y-5">
+      <div className="flex items-start gap-5">
+        <BookCover book={b} className="w-20 @xl:w-24" />
+        <div className="min-w-0 flex-1 pt-0.5">
+          <p className="text-lg leading-snug font-semibold tracking-tight">{b.title}</p>
+          <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
+            <span>{b.genre}</span>
+            <span aria-hidden>·</span>
+            <span className="font-mono text-xs">{b.book_code}</span>
+            <span aria-hidden>·</span>
+            <span className="flex items-center gap-1">
+              <CalendarDays className="size-3.5" />
+              {b.publication_date ? `Published ${formatDate(b.publication_date)}` : 'Not yet published'}
+            </span>
+          </p>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-xs">
+              <ScanBarcode className="size-3.5 text-muted-foreground" />
               <IsbnChip isbn={b.isbn} />
-            </BookFact>
-            <BookFact label="Published">{formatDate(b.publication_date, 'Not yet')}</BookFact>
-            {b.is_published && <BookFact label="Copies sold">{formatNumber(b.total_copies_sold)}</BookFact>}
-            {Number(b.mrp) > 0 && <BookFact label="MRP">{formatINR(b.mrp)}</BookFact>}
-            {Number(b.author_royalty_per_copy) > 0 && <BookFact label="Royalty / copy">{formatINR(b.author_royalty_per_copy)}</BookFact>}
-            {b.print_partner && <BookFact label="Print partner">{b.print_partner}</BookFact>}
-          </dl>
-        </div>
-        <div className="min-w-0">
-          {b.is_published ? (
-            <RoyaltyBreakdown book={b} />
-          ) : (
-            <div className="rounded-xl bg-amber-50/50 p-4 ring-1 ring-amber-600/15 ring-inset">
-              <StageProgress book={b} compact />
-            </div>
-          )}
+            </span>
+            {b.print_partner && (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-xs">
+                <Printer className="size-3.5 text-muted-foreground" /> {b.print_partner}
+              </span>
+            )}
+            <PlatformChips platforms={b.available_on} />
+          </div>
         </div>
       </div>
+
+      {b.is_published ? (
+        <>
+          <div className="grid grid-cols-2 gap-3 @2xl:grid-cols-4">
+            <BookMetric icon={TrendingUp} label="Copies sold" value={formatNumber(b.total_copies_sold)} tone="bg-sky-100 text-sky-700" />
+            <BookMetric icon={Tag} label="MRP" value={formatINR(b.mrp)} tone="bg-slate-100 text-slate-700" />
+            <BookMetric icon={Coins} label="Royalty / copy" value={formatINR(b.author_royalty_per_copy)} tone="bg-violet-100 text-violet-700" />
+            <BookMetric icon={Wallet} label="Total earned" value={formatINR(b.total_royalty_earned)} tone="bg-emerald-100 text-emerald-700" />
+          </div>
+          <div className="rounded-xl border bg-muted/30 p-4">
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
+              <span className="flex items-center gap-2">
+                <span className="size-2.5 rounded-full bg-emerald-500" />
+                <span className="text-muted-foreground">Paid</span>
+                <span className="font-semibold text-emerald-700">{formatINR(b.royalty_paid)}</span>
+              </span>
+              <span className="flex items-center gap-2">
+                <span className="size-2.5 rounded-full bg-amber-400" />
+                <span className="text-muted-foreground">Pending</span>
+                <span className="font-semibold text-amber-700">{formatINR(b.royalty_pending)}</span>
+              </span>
+              <span className="ml-auto text-xs text-muted-foreground">
+                Last payout <span className="font-medium text-foreground">{formatDate(b.last_royalty_payout_date, 'none yet')}</span>
+              </span>
+            </div>
+            <div className="mt-3 flex h-2.5 overflow-hidden rounded-full bg-muted" aria-hidden>
+              <div className="h-full bg-emerald-500" style={{ width: `${paidPct}%` }} />
+              <div className="h-full bg-amber-400" style={{ width: `${earned ? 100 - paidPct : 0}%` }} />
+            </div>
+            <div className="mt-3 empty:hidden">
+              <RoyaltyNote book={b} />
+            </div>
+          </div>
+        </>
+      ) : (
+        <div className="rounded-xl bg-amber-50/60 p-5 ring-1 ring-amber-600/15 ring-inset">
+          <p className="mb-3 flex items-center gap-2 text-xs font-semibold tracking-wide text-amber-900 uppercase">
+            <Factory className="size-3.5" /> Production progress
+          </p>
+          <StageProgress book={b} />
+        </div>
+      )}
     </Card>
   )
 }
 
-function BookFact({ label, className, children }: { label: string; className?: string; children: ReactNode }) {
+function BookMetric({ icon: Icon, label, value, tone }: { icon: LucideIcon; label: string; value: string; tone: string }) {
   return (
-    <div className={cn('min-w-0 rounded-lg bg-muted/50 px-3 py-2', className)}>
-      <dt className="text-[10px] font-semibold tracking-wide text-muted-foreground uppercase">{label}</dt>
-      <dd className="mt-0.5 truncate text-sm font-medium">{children}</dd>
+    <div className="flex min-w-0 items-center gap-3 rounded-xl border bg-card px-4 py-3">
+      <span className={cn('flex size-10 shrink-0 items-center justify-center rounded-lg', tone)}>
+        <Icon className="size-[18px]" />
+      </span>
+      <div className="min-w-0">
+        <p className="text-xs text-muted-foreground">{label}</p>
+        <p className="truncate text-base font-semibold tracking-tight">{value}</p>
+      </div>
     </div>
   )
 }
@@ -404,18 +452,24 @@ function BookFact({ label, className, children }: { label: string; className?: s
 /* Conversation + activity                                                                          */
 /* ----------------------------------------------------------------------------------------------- */
 
-function Conversation({ ticket }: { ticket: AdminTicketDetail }) {
+function Conversation({ ticket, className }: { ticket: AdminTicketDetail; className?: string }) {
   const replies = ticket.messages.filter((m) => !m.is_internal)
+  const scrollRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    const el = scrollRef.current
+    if (el) el.scrollTop = el.scrollHeight
+  }, [replies.length])
+
   return (
-    <section className="flex flex-col overflow-hidden rounded-2xl border bg-card shadow-xs">
-      <header className="flex items-center justify-between gap-2 border-b px-5 py-3">
+    <section className={cn('flex min-h-0 flex-col overflow-hidden rounded-2xl border bg-card shadow-xs', className)}>
+      <header className="flex shrink-0 items-center justify-between gap-2 border-b px-6 py-3.5">
         <h3 className="flex items-center gap-2 text-sm font-semibold">
           <MessagesSquare className="size-4 text-primary" /> Conversation with {ticket.author.name.split(' ')[0]}
           <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">{replies.length + 1}</span>
         </h3>
         <span className="text-xs text-muted-foreground">The author sees everything in this thread</span>
       </header>
-      <div className="space-y-5 bg-gradient-to-b from-muted/40 to-muted/10 px-5 py-6">
+      <div ref={scrollRef} className="min-h-0 flex-1 space-y-6 overflow-y-auto bg-gradient-to-b from-muted/40 to-muted/10 px-6 py-7">
         <ChatBubble
           side="left"
           variant="author"
@@ -490,11 +544,17 @@ function ActivityItem({ a, last }: { a: Activity; last: boolean }) {
   )
 }
 
-function ActivityPanel({ ticket }: { ticket: AdminTicketDetail }) {
+function ActivityPanel({ ticket, className }: { ticket: AdminTicketDetail; className?: string }) {
   const items = [...ticket.activities].reverse()
   return (
-    <Card title="Activity" icon={History} action={<span className="text-[11px] text-muted-foreground">{items.length} events</span>}>
-      <ol className="max-h-96 overflow-y-auto pr-1">
+    <Card
+      title="Activity"
+      icon={History}
+      action={<span className="text-[11px] text-muted-foreground">{items.length} events</span>}
+      className={cn('min-h-0', className)}
+      bodyClassName="min-h-0 overflow-y-auto"
+    >
+      <ol>
         {items.map((a, i) => (
           <ActivityItem key={a.id} a={a} last={i === items.length - 1} />
         ))}
@@ -568,7 +628,7 @@ export function AdminTicketPage() {
   if (!ticket) return null
 
   return (
-    <div className="mx-auto max-w-[1400px] space-y-5">
+    <div className="mx-auto max-w-[1440px] space-y-6 pb-6">
       <Button asChild variant="ghost" size="sm" className="-ml-2">
         <Link to="/admin">
           <ArrowLeft /> Back to queue
@@ -577,16 +637,16 @@ export function AdminTicketPage() {
 
       <TicketHeader ticket={ticket} update={update} pending={mutation.isPending} />
 
-      <div className="grid gap-5 xl:grid-cols-[340px_minmax(0,1fr)]">
+      <div className="grid gap-6 xl:grid-cols-[360px_minmax(0,1fr)]">
         <AuthorCard ticket={ticket} />
         <BookContextCard ticket={ticket} />
       </div>
 
-      <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_400px]">
-        <Conversation ticket={ticket} />
-        <aside className="space-y-5 xl:sticky xl:top-20">
-          <InternalNotes ticket={ticket} />
-          <ActivityPanel ticket={ticket} />
+      <div className="grid gap-6 xl:h-[clamp(640px,calc(100vh-7rem),900px)] xl:grid-cols-[minmax(0,1fr)_420px]">
+        <Conversation ticket={ticket} className="max-h-[820px] xl:max-h-none" />
+        <aside className="flex min-h-0 flex-col gap-6">
+          <InternalNotes ticket={ticket} className="max-h-[520px] xl:max-h-none xl:min-h-0 xl:flex-[1.15]" />
+          <ActivityPanel ticket={ticket} className="max-h-[480px] xl:max-h-none xl:flex-1" />
         </aside>
       </div>
     </div>

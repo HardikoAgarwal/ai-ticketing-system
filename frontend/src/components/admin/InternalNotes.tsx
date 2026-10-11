@@ -10,8 +10,9 @@ import { errorMessage } from '@/lib/api'
 import { ticketsApi } from '@/lib/endpoints'
 import { initials } from '@/lib/format'
 import type { AdminTicketDetail } from '@/lib/types'
+import { cn } from '@/lib/utils'
 
-export function InternalNotes({ ticket }: { ticket: AdminTicketDetail }) {
+export function InternalNotes({ ticket, className }: { ticket: AdminTicketDetail; className?: string }) {
   const queryClient = useQueryClient()
   const [note, setNote] = usePersistentText(`bookleaf.note.${ticket.id}`)
   const notes = ticket.messages.filter((m) => m.is_internal)
@@ -27,8 +28,8 @@ export function InternalNotes({ ticket }: { ticket: AdminTicketDetail }) {
   })
 
   return (
-    <section className="overflow-hidden rounded-2xl border border-amber-200 bg-amber-50/40 shadow-xs">
-      <header className="flex items-center justify-between border-b border-amber-200 bg-amber-100/60 px-4 py-3">
+    <section className={cn('flex flex-col overflow-hidden rounded-2xl border border-amber-200 bg-amber-50/40 shadow-xs', className)}>
+      <header className="flex shrink-0 items-center justify-between border-b border-amber-200 bg-amber-100/60 px-5 py-3.5">
         <h3 className="flex items-center gap-2 text-sm font-semibold text-amber-900">
           <StickyNote className="size-4" /> Internal notes
           <span className="rounded-full bg-amber-200/70 px-2 py-0.5 text-[11px] font-medium">{notes.length}</span>
@@ -38,7 +39,7 @@ export function InternalNotes({ ticket }: { ticket: AdminTicketDetail }) {
         </span>
       </header>
 
-      <div className="max-h-72 space-y-2.5 overflow-y-auto p-3">
+      <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4">
         {notes.length === 0 ? (
           <p className="px-1 py-2 text-xs text-amber-900/70">
             No notes yet. Use notes for context the author shouldn't see, e.g. "Checked with finance, payout batch delayed".
@@ -59,15 +60,15 @@ export function InternalNotes({ ticket }: { ticket: AdminTicketDetail }) {
         )}
       </div>
 
-      <div className="border-t border-amber-200 p-3">
+      <div className="shrink-0 border-t border-amber-200 p-4">
         <Textarea
           value={note}
           onChange={(e) => setNote(e.target.value)}
-          rows={3}
+          rows={2}
           placeholder="Add a note for the team…"
-          className="min-h-20 border-amber-200 bg-white text-sm focus-visible:border-amber-400 focus-visible:ring-amber-200"
+          className="max-h-40 min-h-16 border-amber-200 bg-white text-sm focus-visible:border-amber-400 focus-visible:ring-amber-200"
         />
-        <div className="mt-2 flex justify-end">
+        <div className="mt-3 flex justify-end">
           <Button
             size="sm"
             onClick={() => add.mutate()}

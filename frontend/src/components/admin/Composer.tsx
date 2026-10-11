@@ -122,14 +122,14 @@ export function Composer({ ticket }: { ticket: AdminTicketDetail }) {
 
   if (closed) {
     return (
-      <div className="border-t bg-muted/40 px-5 py-4 text-sm text-muted-foreground">
+      <div className="shrink-0 border-t bg-muted/40 px-6 py-5 text-sm text-muted-foreground">
         This ticket is closed. Change the status to <span className="font-medium text-foreground">In Progress</span> to reply.
       </div>
     )
   }
 
   return (
-    <div className="border-t bg-card p-4">
+    <div className="shrink-0 border-t bg-card px-6 py-5">
       <div className="mb-3 flex items-center justify-between gap-2">
         <p className="flex items-center gap-2 text-sm font-semibold">
           <PenLine className="size-4 text-primary" /> Reply to {firstName}
@@ -182,9 +182,9 @@ export function Composer({ ticket }: { ticket: AdminTicketDetail }) {
         <Textarea
           value={reply}
           onChange={(e) => setReply(e.target.value)}
-          rows={9}
+          rows={4}
           placeholder={`Write your reply to ${firstName}…`}
-          className={cn('min-h-48 text-sm', usingDraft && !editedFromDraft && 'border-violet-200 bg-violet-50/20')}
+          className={cn('max-h-64 min-h-28 text-sm', usingDraft && !editedFromDraft && 'border-violet-200 bg-violet-50/20')}
         />
       )}
 
