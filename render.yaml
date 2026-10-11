@@ -40,7 +40,9 @@ services:
       - key: AWS_S3_ENDPOINT_URL
         sync: false
       - key: AWS_S3_REGION_NAME
-        value: auto
+        sync: false
+      - key: AWS_S3_ADDRESSING_STYLE
+        value: path
 
   - type: keyvalue
     name: bookleaf-redis

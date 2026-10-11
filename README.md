@@ -85,7 +85,7 @@ flowchart LR
   end
   PG[(Postgres)]
   R[(Redis<br/>broker · channel layer · cache)]
-  S3[(S3 / R2<br/>attachments)]
+  S3[(Supabase Storage<br/>S3 API · attachments)]
   OAI[[OpenAI<br/>gpt-4o-mini]]
 
   SPA -- REST + JWT --> API
@@ -150,7 +150,7 @@ flowchart LR
 | `GET/POST /tickets/{id}/messages/` | both (notes: admin only) | Replies and internal notes |
 | `POST /tickets/{id}/confirm-resolution/` · `mark-seen/` | author / both | Close the loop, read receipts |
 | `GET /tickets/{id}/draft/` · `POST draft/regenerate/` · `POST reclassify/` | admin | AI draft and classification |
-| `GET /tickets/{id}/attachments/{aid}/` | ticket participants | Authorised download link (5-minute signed URL on S3) |
+| `GET /tickets/{id}/attachments/{aid}/` | ticket participants | Authorised download link (5-minute signed URL) |
 | `GET /tickets/stats/` · `/admin/analytics/summary/` · `/admin/agents/` | admin | Queue counts, analytics, assignee list |
 | `ws(s)://…/ws/events/?token=<access>` | both | Real-time events |
 
@@ -261,12 +261,25 @@ The tests cover:
 - Set these secrets in the dashboard:
   - `OPENAI_API_KEY`
   - `CORS_ALLOWED_ORIGINS` (the Vercel URL)
-  - optionally the `AWS_*` variables for S3 or Cloudflare R2 attachments
+  - the `AWS_*` variables for attachment storage (see below)
 - `SEED_ON_START=true` seeds the demo data idempotently.
 
 **Frontend on Vercel**: set the root directory to `frontend`, the framework to Vite, and the env var `VITE_API_URL=https://<api>.onrender.com`. `vercel.json` handles SPA routing.
 
-**Attachments**: when `AWS_STORAGE_BUCKET_NAME` is set, files go to S3/R2 as private objects. Downloads go through an authorised endpoint that checks the user can see the ticket, then returns a signed URL that expires after 5 minutes. Otherwise they are stored on local disk, which is ephemeral on Render.
+**Attachments**: the demo uses **Supabase Storage** (free tier, no card) through its S3-compatible API, via `django-storages`. Any S3-compatible store (AWS S3, Cloudflare R2, Backblaze B2) works by changing only the env vars.
+- Files are private objects in a private bucket.
+- Downloads go through an authorised endpoint that checks the user can see the ticket, then returns a signed URL that expires after 5 minutes.
+- Without `AWS_STORAGE_BUCKET_NAME`, files go to local disk, which is fine locally but wiped on every Render restart.
+
+Supabase setup:
+1. Create a project, then a **private** bucket named `attachments`.
+2. Go to *Project Settings → Storage → S3 Connection*, enable it, and create an access key.
+3. Set these variables:
+   - `AWS_STORAGE_BUCKET_NAME=attachments`
+   - `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`
+   - `AWS_S3_ENDPOINT_URL=https://<ref>.supabase.co/storage/v1/s3`
+   - `AWS_S3_REGION_NAME=<project region>`
+   - `AWS_S3_ADDRESSING_STYLE=path`
 
 ---
 

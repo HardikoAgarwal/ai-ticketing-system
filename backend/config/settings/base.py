@@ -103,7 +103,7 @@ MEDIA_ROOT = BASE_DIR / "media"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-# --- Storage: local filesystem in dev, S3-compatible (AWS S3 / Cloudflare R2) when configured ---
+# --- Storage: local filesystem in dev, S3-compatible (Supabase Storage / AWS S3 / R2 / B2) when configured ---
 USE_S3 = bool(os.environ.get("AWS_STORAGE_BUCKET_NAME"))
 if USE_S3:
     AWS_STORAGE_BUCKET_NAME = os.environ["AWS_STORAGE_BUCKET_NAME"]
@@ -111,6 +111,9 @@ if USE_S3:
     AWS_SECRET_ACCESS_KEY = os.environ.get("AWS_SECRET_ACCESS_KEY")
     AWS_S3_ENDPOINT_URL = os.environ.get("AWS_S3_ENDPOINT_URL") or None
     AWS_S3_REGION_NAME = os.environ.get("AWS_S3_REGION_NAME", "auto")
+    # Supabase requires path-style URLs (endpoint/bucket/key) rather than bucket subdomains.
+    AWS_S3_ADDRESSING_STYLE = os.environ.get("AWS_S3_ADDRESSING_STYLE", "auto")
+    AWS_S3_SIGNATURE_VERSION = "s3v4"
     AWS_DEFAULT_ACL = None
     AWS_QUERYSTRING_AUTH = True
     AWS_QUERYSTRING_EXPIRE = 300
