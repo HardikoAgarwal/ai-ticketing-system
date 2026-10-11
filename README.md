@@ -231,12 +231,22 @@ createdb bookleaf
 cd backend
 uv venv --python 3.12 .venv && uv pip install --python .venv/bin/python -r requirements.txt
 # or: python3.12 -m venv .venv && .venv/bin/pip install -r requirements.txt
-cp .env.example .env                    # add OPENAI_API_KEY to enable AI
+cp .env.example .env                    # add an AI key to enable AI (see "AI provider" below)
 .venv/bin/python manage.py migrate
 .venv/bin/python manage.py seed_bookleaf --with-sample-tickets
 .venv/bin/daphne -b 127.0.0.1 -p 8000 config.asgi:application        # API + WebSockets
 .venv/bin/celery -A config worker --loglevel=info                    # second terminal: AI pipeline
 ```
+
+### AI provider
+The client speaks the OpenAI Chat Completions API, so any compatible provider works by changing env vars only:
+
+| Provider | `OPENAI_API_KEY` | `AI_BASE_URL` | `AI_MODEL` |
+|---|---|---|---|
+| OpenAI (default) | OpenAI key | *(empty)* | `gpt-4o-mini` |
+| Google Gemini (free tier) | key from [AI Studio](https://aistudio.google.com/apikey) | `https://generativelanguage.googleapis.com/v1beta/openai/` | `gemini-2.5-flash` |
+
+Without a key, the app runs on the keyword fallback and shows that AI is off.
 
 ### Frontend
 ```bash
@@ -248,7 +258,7 @@ npm run dev        # http://localhost:5173
 
 ### Tests
 ```bash
-cd backend && .venv/bin/pytest      # 48 tests
+cd backend && .venv/bin/pytest      # 56 tests
 ```
 The tests cover:
 - Authentication and RBAC scoping, including 404 for other users' data.
@@ -266,7 +276,7 @@ The tests cover:
 - `backend/start.sh` runs migrations, optionally seeds, starts the Celery worker in the background (thread pool, low memory), and then runs Daphne in the foreground.
 - Running the worker in the same container avoids needing a paid background-worker plan.
 - Set these secrets in the dashboard:
-  - `OPENAI_API_KEY`
+  - `OPENAI_API_KEY`, plus `AI_BASE_URL` and `AI_MODEL` (see "AI provider")
   - `CORS_ALLOWED_ORIGINS` (the Vercel URL)
   - the `AWS_*` variables for attachment storage (see below)
 - `SEED_ON_START=true` seeds the demo data idempotently.

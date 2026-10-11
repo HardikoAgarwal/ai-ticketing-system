@@ -215,6 +215,8 @@ CACHES = {
 # --- AI ---
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
 AI_ENABLED = env_bool("AI_ENABLED", True) and bool(OPENAI_API_KEY)
+# Any OpenAI-compatible endpoint (e.g. Gemini, Groq); empty means api.openai.com.
+AI_BASE_URL = os.environ.get("AI_BASE_URL") or None
 AI_MODEL = os.environ.get("AI_MODEL", "gpt-4o-mini")
 AI_TIMEOUT_SECONDS = float(os.environ.get("AI_TIMEOUT_SECONDS", "20"))
 AI_CIRCUIT_FAILURE_THRESHOLD = int(os.environ.get("AI_CIRCUIT_FAILURE_THRESHOLD", "5"))

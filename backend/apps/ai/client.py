@@ -45,7 +45,12 @@ class LLMResult:
 @lru_cache(maxsize=1)
 def _client() -> openai.OpenAI:
     # SDK-level retries are disabled; Celery owns retry/backoff so failures stay visible and logged.
-    return openai.OpenAI(api_key=settings.OPENAI_API_KEY, timeout=settings.AI_TIMEOUT_SECONDS, max_retries=0)
+    return openai.OpenAI(
+        api_key=settings.OPENAI_API_KEY,
+        base_url=settings.AI_BASE_URL,
+        timeout=settings.AI_TIMEOUT_SECONDS,
+        max_retries=0,
+    )
 
 
 def _estimate_cost(prompt_tokens: int, completion_tokens: int) -> Decimal:
