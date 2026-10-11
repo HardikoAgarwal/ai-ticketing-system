@@ -1,4 +1,4 @@
-import { Check, Copy, Info, Leaf, LifeBuoy } from 'lucide-react'
+import { ArrowRight, Check, Copy, Info, Leaf, LifeBuoy } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -71,14 +71,22 @@ export function StageProgress({ book, compact }: { book: Book; compact?: boolean
           </div>
         ))}
       </div>
-      <div className={cn('flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1', compact ? 'mt-2' : 'mt-3')}>
+      <div className={cn('flex flex-wrap items-center justify-between gap-x-3 gap-y-2', compact ? 'mt-2' : 'mt-5')}>
         <p className="text-sm">
           <span className="text-muted-foreground">
             Stage {current + 1}/{book.stage_count}:
           </span>{' '}
           <span className="font-semibold text-amber-800">{PRODUCTION_STAGES[current]}</span>
         </p>
-        {next && <p className="text-xs text-muted-foreground">Next: {next}</p>}
+        {next &&
+          (compact ? (
+            <p className="text-xs text-muted-foreground">Next: {next}</p>
+          ) : (
+            <p className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1.5 text-[13px] font-medium text-primary ring-1 ring-primary/20 ring-inset">
+              <ArrowRight className="size-3.5" />
+              Next: <span className="font-semibold">{next}</span>
+            </p>
+          ))}
       </div>
     </div>
   )
@@ -224,7 +232,7 @@ export function BookCard({ book }: { book: Book }) {
           <Fact label="Royalty / copy">{formatINR(book.author_royalty_per_copy)}</Fact>
         </dl>
 
-        <div className="flex flex-1 flex-col rounded-xl bg-muted/40 p-5">
+        <div className="flex flex-1 flex-col rounded-xl bg-muted/40 p-6">
           {book.is_published ? (
             <>
               <div className="flex items-baseline justify-between">
@@ -235,19 +243,20 @@ export function BookCard({ book }: { book: Book }) {
                 <div className="h-full bg-emerald-500" style={{ width: `${paidPct}%` }} />
                 <div className="h-full bg-amber-400" style={{ width: `${earned ? 100 - paidPct : 0}%` }} />
               </div>
-              <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
-                <span className="flex items-center gap-2">
+              <div className="mt-4 grid grid-cols-2 divide-x divide-border text-sm">
+                <span className="flex items-center gap-2 pr-4">
                   <span className="size-2.5 rounded-full bg-emerald-500" />
                   <span className="text-muted-foreground">Paid</span>
                   <span className="ml-auto font-semibold text-emerald-700">{formatINR(book.royalty_paid)}</span>
                 </span>
-                <span className="flex items-center gap-2">
+                <span className="flex items-center gap-2 pl-4">
                   <span className="size-2.5 rounded-full bg-amber-400" />
                   <span className="text-muted-foreground">Pending</span>
                   <span className="ml-auto font-semibold text-amber-700">{formatINR(book.royalty_pending)}</span>
                 </span>
               </div>
-              <div className="mt-auto space-y-1.5 pt-4">
+              <div className="min-h-6 flex-1" />
+              <div className="space-y-1.5 border-t border-dashed pt-4">
                 <p className="text-xs text-muted-foreground">
                   Last payout <span className="font-medium text-foreground">{formatDate(book.last_royalty_payout_date, 'none yet')}</span>
                 </p>
@@ -256,9 +265,10 @@ export function BookCard({ book }: { book: Book }) {
             </>
           ) : (
             <>
-              <p className="mb-4 text-sm text-muted-foreground">Production progress</p>
+              <p className="mb-5 text-sm text-muted-foreground">Production progress</p>
               <StageProgress book={book} />
-              <p className="mt-auto flex items-start gap-1.5 pt-4 text-xs text-muted-foreground">
+              <div className="min-h-6 flex-1" />
+              <p className="flex items-start gap-1.5 border-t border-dashed pt-4 text-xs text-muted-foreground">
                 <Info className="mt-px size-3.5 shrink-0" />
                 Sales and royalties appear here once your book is live on stores.
               </p>
@@ -267,7 +277,7 @@ export function BookCard({ book }: { book: Book }) {
         </div>
       </div>
 
-      <footer className="space-y-5 border-t px-6 pt-5 pb-6">
+      <footer className="space-y-7 border-t px-6 pt-5 pb-6">
         <dl className="space-y-3 text-sm">
           <div className="flex items-center gap-4">
             <dt className="w-14 shrink-0 text-xs font-medium tracking-wide text-muted-foreground uppercase">ISBN</dt>
