@@ -1,36 +1,22 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import {
-  ArrowLeft,
-  BookOpen,
-  Camera,
-  Check,
-  Clock,
-  Eye,
-  IndianRupee,
-  Lightbulb,
-  LifeBuoy,
-  Loader2,
-  Send,
-  Store,
-  UserRound,
-} from 'lucide-react'
+import { ArrowLeft, BookOpen, Camera, Clock, Eye, IndianRupee, LifeBuoy, Loader2, Send, Store, UserRound } from 'lucide-react'
 import { useEffect, useState, type ReactNode } from 'react'
 import { Controller, useForm } from 'react-hook-form'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { z } from 'zod'
 
-import { BookCover, IsbnChip, PlatformChips, StageProgress } from '@/components/author/BookCard'
+import { BookCover } from '@/components/author/BookCard'
 import { FileDropzone } from '@/components/tickets/FileDropzone'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Progress } from '@/components/ui/progress'
-import { Skeleton } from '@/components/ui/skeleton'
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectSeparator, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { ApiError, errorMessage } from '@/lib/api'
-import { coverSolid } from '@/lib/constants'
+import { PRODUCTION_STAGES } from '@/lib/constants'
 import { booksApi, ticketsApi } from '@/lib/endpoints'
 import { formatDate, formatINR, formatNumber } from '@/lib/format'
 import type { Book } from '@/lib/types'
@@ -52,9 +38,9 @@ type FormValues = z.infer<typeof schema>
 const stageName = (book: Book) => book.status.replace('In Production - ', '')
 
 const TIPS = [
-  { icon: Camera, tint: 'bg-sky-100 text-sky-700', title: 'Print or quality issues', body: 'Attach photos of the affected pages or cover.' },
-  { icon: Store, tint: 'bg-violet-100 text-violet-700', title: 'Listing issues', body: 'Mention the platform and country, e.g. Amazon India.' },
-  { icon: IndianRupee, tint: 'bg-emerald-100 text-emerald-700', title: 'Royalty questions', body: 'Mention the quarter or period you are asking about.' },
+  { icon: Camera, text: 'Print issues: attach photos of the affected pages.' },
+  { icon: Store, text: 'Listing issues: mention the platform and country.' },
+  { icon: IndianRupee, text: 'Royalty questions: mention the period.' },
 ]
 
 function Step({ n, title, hint }: { n: number; title: string; hint: string }) {
@@ -73,231 +59,185 @@ function FieldError({ message }: { message?: string }) {
   return message ? <p className="text-xs text-red-600">{message}</p> : null
 }
 
-function PickerTile({
-  selected,
-  onSelect,
-  visual,
-  title,
-  subtitle,
-}: {
-  selected: boolean
-  onSelect: () => void
-  visual: ReactNode
-  title: string
-  subtitle: ReactNode
-}) {
+function StatusDot({ live }: { live: boolean }) {
+  return <span className={cn('size-1.5 shrink-0 rounded-full', live ? 'bg-emerald-500' : 'bg-amber-400')} />
+}
+
+function OptionRow({ visual, title, subtitle }: { visual: ReactNode; title: string; subtitle: ReactNode }) {
   return (
-    <button
-      type="button"
-      role="radio"
-      aria-checked={selected}
-      onClick={onSelect}
-      className={cn(
-        'flex w-full items-center gap-3.5 rounded-xl border-2 bg-card p-3 text-left transition-all outline-none focus-visible:ring-4 focus-visible:ring-primary/20',
-        selected ? 'border-primary bg-primary/5 ring-4 ring-primary/10' : 'border-border hover:border-primary/40 hover:bg-muted/40',
-      )}
-    >
+    <span className="flex min-w-0 items-center gap-3 text-left">
       {visual}
-      <span className="min-w-0 flex-1">
-        <span className="block truncate text-sm font-semibold">{title}</span>
-        <span className="mt-0.5 block truncate text-xs text-muted-foreground">{subtitle}</span>
+      <span className="min-w-0">
+        <span className="block truncate text-sm font-medium text-foreground">{title}</span>
+        <span className="mt-0.5 flex items-center gap-1.5 truncate text-xs text-muted-foreground">{subtitle}</span>
       </span>
-      <span
-        className={cn(
-          'flex size-5 shrink-0 items-center justify-center rounded-full transition-colors',
-          selected ? 'bg-primary text-primary-foreground' : 'border-2 border-border',
-        )}
-      >
-        {selected && <Check className="size-3" strokeWidth={3} />}
-      </span>
-    </button>
+    </span>
   )
 }
 
-function BookPicker({
-  books,
-  loading,
-  value,
-  onChange,
-}: {
+function BookOption({ book }: { book: Book }) {
+  return (
+    <OptionRow
+      visual={<BookCover book={book} compact hideTitle className="w-8 shadow-sm" />}
+      title={book.title}
+      subtitle={
+        <>
+          <StatusDot live={book.is_published} />
+          {book.is_published ? 'Live on stores' : `In production · ${stageName(book)}`}
+        </>
+      }
+    />
+  )
+}
+
+function GeneralOption() {
+  return (
+    <OptionRow
+      visual={
+        <span className="flex aspect-[3/4] w-8 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+          <UserRound className="size-4" />
+        </span>
+      }
+      title="General / Account level"
+      subtitle="Account, payouts, anything not tied to one book"
+    />
+  )
+}
+
+function BookSelect({ books, loading, value, onChange, invalid }: {
   books: Book[]
   loading: boolean
   value: string
   onChange: (v: string) => void
+  invalid: boolean
 }) {
-  if (loading) {
+  const live = books.filter((b) => b.is_published)
+  const production = books.filter((b) => !b.is_published)
+  return (
+    <Select value={value} onValueChange={onChange} disabled={loading}>
+      <SelectTrigger
+        id="book"
+        aria-invalid={invalid}
+        className="w-full rounded-xl px-3.5 py-2.5 data-[size=default]:h-auto data-[size=default]:min-h-14 *:data-[slot=select-value]:line-clamp-none"
+      >
+        <SelectValue placeholder={loading ? 'Loading your books…' : 'Select a book, or General / Account level'} />
+      </SelectTrigger>
+      <SelectContent position="popper" className="rounded-xl p-1.5">
+        {live.length > 0 && (
+          <SelectGroup>
+            <SelectLabel className="px-2.5 pt-1.5 pb-1 text-[11px] font-semibold tracking-wide uppercase">Live on stores</SelectLabel>
+            {live.map((b) => (
+              <SelectItem key={b.id} value={String(b.id)} className="rounded-lg py-2 pr-9">
+                <BookOption book={b} />
+              </SelectItem>
+            ))}
+          </SelectGroup>
+        )}
+        {production.length > 0 && (
+          <>
+            {live.length > 0 && <SelectSeparator />}
+            <SelectGroup>
+              <SelectLabel className="px-2.5 pt-1.5 pb-1 text-[11px] font-semibold tracking-wide uppercase">In production</SelectLabel>
+              {production.map((b) => (
+                <SelectItem key={b.id} value={String(b.id)} className="rounded-lg py-2 pr-9">
+                  <BookOption book={b} />
+                </SelectItem>
+              ))}
+            </SelectGroup>
+          </>
+        )}
+        <SelectSeparator />
+        <SelectGroup>
+          <SelectItem value={GENERAL} className="rounded-lg py-2 pr-9">
+            <GeneralOption />
+          </SelectItem>
+        </SelectGroup>
+      </SelectContent>
+    </Select>
+  )
+}
+
+function DetailRow({ label, value, className }: { label: string; value: ReactNode; className?: string }) {
+  return (
+    <div className="flex items-center justify-between gap-3 py-2.5">
+      <dt className="text-sm text-muted-foreground">{label}</dt>
+      <dd className={cn('text-right text-sm font-medium', className)}>{value}</dd>
+    </div>
+  )
+}
+
+function SelectionCard({ book, general }: { book?: Book; general: boolean }) {
+  if (!book && !general) {
     return (
-      <div className="grid gap-3 sm:grid-cols-2">
-        {[0, 1, 2, 3].map((i) => (
-          <Skeleton key={i} className="h-[74px] rounded-xl" />
-        ))}
+      <div className="flex items-center gap-3 rounded-2xl border border-dashed bg-card p-5 text-sm text-muted-foreground">
+        <BookOpen className="size-5 shrink-0" />
+        Select a book to see its key details here.
       </div>
     )
   }
-  const ordered = [...books.filter((b) => b.is_published), ...books.filter((b) => !b.is_published)]
-  return (
-    <div role="radiogroup" aria-label="What is this about?" className="grid gap-3 sm:grid-cols-2">
-      {ordered.map((b) => (
-        <PickerTile
-          key={b.id}
-          selected={value === String(b.id)}
-          onSelect={() => onChange(String(b.id))}
-          visual={<BookCover book={b} compact hideTitle className="w-10" />}
-          title={b.title}
-          subtitle={
-            b.is_published ? (
-              <span className="inline-flex items-center gap-1.5">
-                <span className="size-1.5 rounded-full bg-emerald-500" /> Live on stores
-              </span>
-            ) : (
-              <span className="inline-flex items-center gap-1.5">
-                <span className="size-1.5 rounded-full bg-amber-400" /> In production · {stageName(b)}
-              </span>
-            )
-          }
-        />
-      ))}
-      <PickerTile
-        selected={value === GENERAL}
-        onSelect={() => onChange(GENERAL)}
-        visual={
-          <span className="flex aspect-[3/4] w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-            <UserRound className="size-5" />
-          </span>
-        }
-        title="General / Account level"
-        subtitle="Account, payouts, anything else"
-      />
-    </div>
-  )
-}
-
-function MiniStat({ label, value, className }: { label: string; value: ReactNode; className?: string }) {
-  return (
-    <div className="rounded-lg bg-muted/50 px-3 py-2.5">
-      <p className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">{label}</p>
-      <p className={cn('mt-0.5 truncate text-sm font-semibold', className)}>{value}</p>
-    </div>
-  )
-}
-
-function SeenByTeam() {
-  return (
-    <p className="flex items-start gap-2 rounded-lg bg-primary/5 px-3 py-2.5 text-xs text-primary">
-      <Eye className="mt-px size-3.5 shrink-0" />
-      Our team sees these details alongside your request, so you don't need to repeat them.
-    </p>
-  )
-}
-
-function SelectedBookCard({ book }: { book: Book }) {
-  return (
-    <div className="overflow-hidden rounded-2xl border bg-card shadow-xs">
-      <div className={cn('relative flex items-center gap-4 overflow-hidden px-5 py-5 text-white', coverSolid(book.id))}>
-        <span className="absolute -top-16 -right-12 size-40 rounded-full bg-white/10" />
-        <BookCover book={book} compact className="relative w-16 shadow-xl ring-2 ring-white/25" />
-        <div className="relative min-w-0">
-          <p className="text-[11px] font-medium tracking-wide text-white/70 uppercase">Selected book</p>
-          <p className="mt-1 line-clamp-2 text-lg leading-snug font-semibold" title={book.title}>
-            {book.title}
-          </p>
-          <span className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-white/20 px-2.5 py-0.5 text-xs font-medium">
-            <span className={cn('size-1.5 rounded-full', book.is_published ? 'bg-emerald-300' : 'bg-amber-300')} />
-            {book.is_published ? 'Live on stores' : stageName(book)}
-          </span>
-        </div>
-      </div>
-
-      <div className="space-y-4 p-5">
-        {book.is_published ? (
-          <>
-            <div className="grid grid-cols-2 gap-2.5">
-              <MiniStat label="Copies sold" value={formatNumber(book.total_copies_sold)} />
-              <MiniStat label="Royalty pending" value={formatINR(book.royalty_pending)} className="text-amber-700" />
-              <MiniStat label="Royalty earned" value={formatINR(book.total_royalty_earned)} />
-              <MiniStat label="Last payout" value={formatDate(book.last_royalty_payout_date, 'None yet')} />
-            </div>
-            <dl className="space-y-2.5 text-sm">
-              <div className="flex items-center gap-3">
-                <dt className="w-14 shrink-0 text-[11px] font-medium tracking-wide text-muted-foreground uppercase">ISBN</dt>
-                <dd className="min-w-0">
-                  <IsbnChip isbn={book.isbn} />
-                </dd>
-              </div>
-              <div className="flex items-start gap-3">
-                <dt className="w-14 shrink-0 pt-0.5 text-[11px] font-medium tracking-wide text-muted-foreground uppercase">Stores</dt>
-                <dd className="min-w-0 flex-1">
-                  <PlatformChips platforms={book.available_on} />
-                </dd>
-              </div>
-            </dl>
-          </>
-        ) : (
-          <div className="rounded-lg bg-muted/50 p-4">
-            <p className="mb-4 text-xs font-medium tracking-wide text-muted-foreground uppercase">Production progress</p>
-            <StageProgress book={book} />
-          </div>
-        )}
-        <SeenByTeam />
-      </div>
-    </div>
-  )
-}
-
-function GeneralCard() {
-  return (
-    <div className="overflow-hidden rounded-2xl border bg-card shadow-xs">
-      <div className="relative flex items-center gap-4 overflow-hidden bg-primary px-5 py-5 text-primary-foreground">
-        <span className="absolute -top-16 -right-12 size-40 rounded-full bg-white/10" />
-        <span className="relative flex size-14 shrink-0 items-center justify-center rounded-xl bg-white/15">
-          <UserRound className="size-7" />
-        </span>
-        <div className="relative">
-          <p className="text-[11px] font-medium tracking-wide text-white/70 uppercase">Selected</p>
-          <p className="mt-1 text-lg font-semibold">General / Account level</p>
-        </div>
-      </div>
-      <div className="space-y-4 p-5">
-        <p className="text-sm text-muted-foreground">
-          Use this for questions about your account, publishing package, payouts across several books, or anything not tied to a single book.
-        </p>
-        <SeenByTeam />
-      </div>
-    </div>
-  )
-}
-
-function EmptySelection() {
-  return (
-    <div className="flex flex-col items-center rounded-2xl border-2 border-dashed bg-card px-6 py-10 text-center">
-      <span className="flex size-12 items-center justify-center rounded-xl bg-muted text-muted-foreground">
-        <BookOpen className="size-6" />
-      </span>
-      <p className="mt-3 text-sm font-semibold">No book selected yet</p>
-      <p className="mt-1 text-sm text-muted-foreground">Pick a book in step 1 and its details will show up here.</p>
-    </div>
-  )
-}
-
-function TipsCard() {
   return (
     <div className="rounded-2xl border bg-card p-5 shadow-xs">
-      <p className="flex items-center gap-2.5 text-sm font-semibold">
-        <span className="flex size-8 items-center justify-center rounded-lg bg-amber-100 text-amber-700">
-          <Lightbulb className="size-4" />
-        </span>
-        Tips for a faster answer
+      <p className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">About this request</p>
+      <div className="mt-3 flex items-center gap-3.5">
+        {book ? (
+          <BookCover book={book} compact hideTitle className="w-11 shadow-sm" />
+        ) : (
+          <span className="flex aspect-[3/4] w-11 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+            <UserRound className="size-5" />
+          </span>
+        )}
+        <div className="min-w-0">
+          <p className="truncate font-semibold">{book ? book.title : 'General / Account level'}</p>
+          <p className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
+            {book ? (
+              <>
+                <StatusDot live={book.is_published} />
+                {book.is_published ? 'Live on stores' : 'In production'}
+              </>
+            ) : (
+              'Not tied to a specific book'
+            )}
+          </p>
+        </div>
+      </div>
+
+      {book && (
+        <dl className="mt-4 divide-y border-t">
+          {book.is_published ? (
+            <>
+              <DetailRow label="Copies sold" value={formatNumber(book.total_copies_sold)} />
+              <DetailRow label="Royalty pending" value={formatINR(book.royalty_pending)} className="text-amber-700" />
+              <DetailRow label="Last payout" value={formatDate(book.last_royalty_payout_date, 'None yet')} />
+            </>
+          ) : (
+            <>
+              <DetailRow
+                label="Current stage"
+                value={`${stageName(book)} (${book.stage_index + 1}/${book.stage_count})`}
+                className="text-amber-800"
+              />
+              <DetailRow label="Next" value={PRODUCTION_STAGES[book.stage_index + 1] ?? '—'} className="text-primary" />
+            </>
+          )}
+        </dl>
+      )}
+
+      <p className="mt-3 flex items-center gap-1.5 text-xs text-muted-foreground">
+        <Eye className="size-3.5 shrink-0" /> Our team sees these details automatically.
       </p>
-      <ul className="mt-4 space-y-3">
-        {TIPS.map(({ icon: Icon, tint, title, body }) => (
-          <li key={title} className="flex items-start gap-3 rounded-xl border bg-muted/20 p-3">
-            <span className={cn('flex size-9 shrink-0 items-center justify-center rounded-lg', tint)}>
-              <Icon className="size-4" />
-            </span>
-            <div className="min-w-0">
-              <p className="text-sm font-medium">{title}</p>
-              <p className="mt-0.5 text-xs text-muted-foreground">{body}</p>
-            </div>
+    </div>
+  )
+}
+
+function Tips() {
+  return (
+    <div className="px-1">
+      <p className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">Tips for a faster answer</p>
+      <ul className="mt-3 space-y-2.5">
+        {TIPS.map(({ icon: Icon, text }) => (
+          <li key={text} className="flex items-start gap-2.5 text-sm text-muted-foreground">
+            <Icon className="mt-0.5 size-4 shrink-0 text-primary" />
+            {text}
           </li>
         ))}
       </ul>
@@ -390,7 +330,7 @@ export function NewTicketPage() {
         </span>
       </header>
 
-      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
         <form
           onSubmit={handleSubmit((v) => mutation.mutate(v))}
           className="overflow-hidden rounded-2xl border bg-card shadow-xs"
@@ -401,7 +341,9 @@ export function NewTicketPage() {
             <Controller
               control={control}
               name="book"
-              render={({ field }) => <BookPicker books={books ?? []} loading={booksLoading} value={field.value} onChange={field.onChange} />}
+              render={({ field }) => (
+                <BookSelect books={books ?? []} loading={booksLoading} value={field.value} onChange={field.onChange} invalid={!!errors.book} />
+              )}
             />
             <FieldError message={errors.book?.message} />
           </section>
@@ -460,8 +402,8 @@ export function NewTicketPage() {
         </form>
 
         <aside className="space-y-6 lg:sticky lg:top-6">
-          {bookValue === GENERAL ? <GeneralCard /> : selectedBook ? <SelectedBookCard book={selectedBook} /> : <EmptySelection />}
-          <TipsCard />
+          <SelectionCard book={bookValue === GENERAL ? undefined : selectedBook} general={bookValue === GENERAL} />
+          <Tips />
         </aside>
       </div>
     </div>
