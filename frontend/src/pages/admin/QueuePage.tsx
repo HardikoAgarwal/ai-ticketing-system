@@ -1,5 +1,5 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
-import { AlertOctagon, CalendarDays, ChevronLeft, ChevronRight, Clock, Inbox, Loader2, Search, SlidersHorizontal, Sparkles, UserX, X } from 'lucide-react'
+import { AlertOctagon, CalendarDays, ChevronLeft, ChevronRight, Clock, Inbox, Loader2, MessageCircleReply, Search, SlidersHorizontal, Sparkles, UserX, X } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 
@@ -89,8 +89,17 @@ function TicketTableRow({ ticket, selected, onOpen }: { ticket: AdminTicket; sel
       <td className="max-w-0 py-5 pr-6 pl-6 align-middle">
         <div className="flex min-w-0 items-center gap-2.5">
           <PriorityBadge priority={ticket.priority} source={ticket.priority_source} />
-          {ticket.has_unread && <span className="size-2 shrink-0 rounded-full bg-primary" aria-label="New author activity" />}
           <p className={cn('min-w-0 truncate text-[0.95rem]', ticket.has_unread ? 'font-semibold' : 'font-medium')}>{ticket.subject}</p>
+          {ticket.unread_kind === 'author_reply' && (
+            <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-primary px-2.5 py-0.5 text-xs font-semibold text-primary-foreground">
+              <MessageCircleReply className="size-3.5" /> New message
+            </span>
+          )}
+          {ticket.unread_kind === 'new_ticket' && (
+            <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary ring-1 ring-primary/25 ring-inset">
+              <Inbox className="size-3.5" /> New ticket
+            </span>
+          )}
         </div>
         <p className="mt-2 truncate text-[13px] text-muted-foreground">
           <span className="font-mono font-medium text-foreground/70">{ticket.reference}</span>
@@ -107,7 +116,7 @@ function TicketTableRow({ ticket, selected, onOpen }: { ticket: AdminTicket; sel
           </span>
         ) : (
           <div className="flex flex-col items-start gap-1.5">
-            <CategoryBadge category={ticket.category} source={ticket.category_source} short />
+            <CategoryBadge category={ticket.category} source={ticket.category_source} short subtle />
             {ticket.ai_status === 'FAILED' && ticket.category_source === 'FALLBACK' && (
               <span className="text-xs font-medium text-amber-700">Needs triage</span>
             )}

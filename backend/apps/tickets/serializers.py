@@ -119,6 +119,7 @@ class AdminTicketSerializer(serializers.ModelSerializer):
     assigned_to = UserBriefSerializer(read_only=True)
     sla_state = serializers.CharField(read_only=True)
     has_unread = serializers.SerializerMethodField()
+    unread_kind = serializers.SerializerMethodField()
     status_label = serializers.CharField(source="get_status_display", read_only=True)
     category_label = serializers.CharField(source="get_category_display", read_only=True)
     priority_label = serializers.CharField(source="get_priority_display", read_only=True)
@@ -149,6 +150,7 @@ class AdminTicketSerializer(serializers.ModelSerializer):
             "sla_due_at",
             "sla_state",
             "has_unread",
+            "unread_kind",
             "first_response_at",
             "resolved_at",
             "created_at",
@@ -168,6 +170,15 @@ class AdminTicketSerializer(serializers.ModelSerializer):
             obj.last_author_activity_at
             and (not obj.admin_last_seen_at or obj.admin_last_seen_at < obj.last_author_activity_at)
         )
+
+    @extend_schema_field(serializers.ChoiceField(choices=["new_ticket", "author_reply"], allow_null=True))
+    def get_unread_kind(self, obj) -> str | None:
+        if not self.get_has_unread(obj):
+            return None
+        replied = getattr(obj, "author_replied", None)
+        if replied is None:
+            replied = obj.messages.filter(kind=MessageKind.REPLY, sender__role=User.Role.AUTHOR).exists()
+        return "author_reply" if replied else "new_ticket"
 
 
 class AdminTicketDetailSerializer(AdminTicketSerializer):

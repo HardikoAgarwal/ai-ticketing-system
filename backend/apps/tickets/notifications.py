@@ -16,7 +16,7 @@ from django.utils import timezone
 from apps.accounts.models import User
 
 from .models import MessageKind, Ticket, TicketMessage, TicketStatus
-from .selectors import tickets_visible_to, unread_for_admin_q, unread_for_author_q
+from .selectors import author_replied_exists, tickets_visible_to, unread_for_admin_q, unread_for_author_q
 
 FEED_LIMIT = 20
 PREVIEW_CHARS = 140
@@ -55,10 +55,12 @@ def _admin_scope(user) -> Q:
 
 def _admin_feed(user) -> dict:
     unread = tickets_visible_to(user).filter(_admin_scope(user), unread_for_admin_q())
-    rows = unread.annotate(latest_author_reply=_latest_reply_body(User.Role.AUTHOR)).order_by("-last_author_activity_at")
+    rows = unread.annotate(
+        latest_author_reply=_latest_reply_body(User.Role.AUTHOR), author_replied=author_replied_exists()
+    ).order_by("-last_author_activity_at")
     items = []
     for t in rows[:FEED_LIMIT]:
-        is_new = t.latest_author_reply is None
+        is_new = not t.author_replied
         item = _item(
             t,
             "new_ticket" if is_new else "author_reply",

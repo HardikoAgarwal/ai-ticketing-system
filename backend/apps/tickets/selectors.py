@@ -1,6 +1,15 @@
-from django.db.models import F, Q, QuerySet
+from django.db.models import Exists, F, OuterRef, Q, QuerySet
 
-from .models import Ticket
+from apps.accounts.models import User
+
+from .models import MessageKind, Ticket, TicketMessage
+
+
+def author_replied_exists() -> Exists:
+    """True once the author has posted a follow-up beyond the original request."""
+    return Exists(
+        TicketMessage.objects.filter(ticket=OuterRef("pk"), kind=MessageKind.REPLY, sender__role=User.Role.AUTHOR)
+    )
 
 
 def unread_for_author_q() -> Q:

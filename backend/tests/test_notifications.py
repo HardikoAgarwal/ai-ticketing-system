@@ -39,6 +39,21 @@ def test_admin_sees_new_ticket_then_author_reply(admin_user, author, client_for,
     assert item["owner"] == "you"
 
 
+def test_admin_queue_labels_unread_rows(admin_user, author, client_for, settings):
+    ticket = new_ticket(author, settings)
+    admin = client_for(admin_user)
+
+    def unread_kind():
+        return next(t for t in admin.get("/api/v1/tickets/").data["results"] if t["id"] == ticket.id)["unread_kind"]
+
+    assert unread_kind() == "new_ticket"
+    reply(ticket, admin_user, "Looking into it.")
+    assert unread_kind() is None
+    services.post_author_message(ticket, author, body="Any update on this?")
+    assert unread_kind() == "author_reply"
+    assert admin.get(f"/api/v1/tickets/{ticket.id}/").data["unread_kind"] == "author_reply"
+
+
 def test_admin_feed_skips_tickets_owned_by_another_agent(admin_user, other_admin, author, client_for, settings):
     ticket = new_ticket(author, settings)
     services.update_ticket(ticket, other_admin, assigned_to=other_admin)

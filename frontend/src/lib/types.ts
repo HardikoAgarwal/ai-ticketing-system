@@ -164,6 +164,7 @@ export interface AdminTicket {
   sla_due_at: string | null
   sla_state: SlaState
   has_unread: boolean
+  unread_kind: 'new_ticket' | 'author_reply' | null
   first_response_at: string | null
   resolved_at: string | null
   created_at: string

@@ -17,7 +17,7 @@ from common.permissions import IsAdmin, IsAuthor
 from . import notifications, services
 from .filters import TicketFilter
 from .models import AIStatus, MessageKind, Ticket, TicketActivity, TicketMessage, TicketPriority
-from .selectors import tickets_visible_to
+from .selectors import author_replied_exists, tickets_visible_to
 from .serializers import (
     AdminMessageSerializer,
     AdminTicketDetailSerializer,
@@ -63,7 +63,9 @@ class TicketViewSet(
                 "attachments",
                 Prefetch("activities", queryset=TicketActivity.objects.select_related("actor")),
             )
-        elif self.action == "list" and not getattr(self.request.user, "is_admin", False):
+        elif self.action == "list" and getattr(self.request.user, "is_admin", False):
+            qs = qs.annotate(author_replied=author_replied_exists())
+        elif self.action == "list":
             qs = qs.order_by("-updated_at")
         return qs
 

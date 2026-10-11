@@ -53,15 +53,21 @@ export function PriorityBadge({ priority, source, size }: { priority: TicketPrio
   )
 }
 
-export function CategoryBadge({ category, source, short, size }: {
+export function CategoryBadge({ category, source, short, size, subtle }: {
   category: TicketCategory
   source?: ClassificationSource
   short?: boolean
   size?: Size
+  subtle?: boolean
 }) {
   const meta = CATEGORY_META[category]
   return (
-    <Pill tone={meta} size={size} label={short ? meta.short : meta.label}>
+    <Pill
+      tone={meta}
+      size={size}
+      label={short ? meta.short : meta.label}
+      className={subtle ? 'bg-transparent text-foreground/70 ring-border' : undefined}
+    >
       {source && <SourceMarker source={source} />}
     </Pill>
   )
