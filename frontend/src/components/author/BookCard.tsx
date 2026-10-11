@@ -14,10 +14,12 @@ export function BookCover({
   book,
   className,
   compact,
+  hideTitle,
 }: {
   book: Pick<Book, 'id' | 'title'>
   className?: string
   compact?: boolean
+  hideTitle?: boolean
 }) {
   return (
     <div
@@ -31,14 +33,18 @@ export function BookCover({
     >
       <span className="absolute inset-y-0 left-0 w-1.5 bg-black/15" />
       <span className="absolute -right-6 -bottom-6 size-20 rounded-full bg-white/10" />
-      <p
-        className={cn(
-          'relative pl-1 leading-tight font-semibold break-words hyphens-auto',
-          compact ? 'line-clamp-5 text-[9px]' : 'line-clamp-4 text-[11px]',
-        )}
-      >
-        {book.title}
-      </p>
+      {hideTitle ? (
+        <span />
+      ) : (
+        <p
+          className={cn(
+            'relative pl-1 leading-tight font-semibold break-words hyphens-auto',
+            compact ? 'line-clamp-5 text-[9px]' : 'line-clamp-4 text-[11px]',
+          )}
+        >
+          {book.title}
+        </p>
+      )}
       <Leaf className={cn('relative ml-1 opacity-80', compact ? 'size-3' : 'size-3.5')} />
     </div>
   )
