@@ -79,7 +79,7 @@ export function TicketsPage() {
           description={tab === 'active' ? 'All your requests have been resolved.' : undefined}
         />
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-4">
           {visible.map((t) => (
             <TicketRow key={t.id} ticket={t} />
           ))}

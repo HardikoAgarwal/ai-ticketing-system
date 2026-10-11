@@ -14,27 +14,27 @@ export function TicketRow({ ticket }: { ticket: AuthorTicket }) {
     <Link
       to={`/author/tickets/${ticket.id}`}
       className={cn(
-        'group relative flex items-center gap-4 overflow-hidden rounded-2xl border bg-card py-4 pr-4 pl-5 shadow-xs transition-all hover:-translate-y-px hover:shadow-md',
+        'group relative flex items-center gap-5 overflow-hidden rounded-2xl border bg-card py-5 pr-5 pl-6 shadow-xs transition-all hover:-translate-y-px hover:shadow-md',
         ticket.has_unread && 'border-primary/40 bg-primary/[0.03]',
       )}
     >
-      <span className={cn('absolute inset-y-0 left-0 w-1', meta.dot)} />
-      <span className={cn('hidden size-11 shrink-0 items-center justify-center rounded-xl sm:flex', meta.pill, 'ring-1 ring-inset')}>
-        <Icon className="size-5" />
+      <span className={cn('absolute inset-y-0 left-0 w-1.5', meta.dot)} />
+      <span className={cn('hidden size-12 shrink-0 items-center justify-center rounded-xl sm:flex', meta.pill, 'ring-1 ring-inset')}>
+        <Icon className="size-6" />
       </span>
       <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2">
-          <p className={cn('truncate text-[0.95rem]', ticket.has_unread ? 'font-semibold' : 'font-medium')}>{ticket.subject}</p>
+        <div className="flex items-center gap-2.5">
+          <p className={cn('truncate text-base', ticket.has_unread ? 'font-semibold' : 'font-medium')}>{ticket.subject}</p>
           {ticket.has_unread && (
-            <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-primary px-2 py-0.5 text-[11px] font-semibold text-primary-foreground">
-              <MessageCircleReply className="size-3" /> New reply
+            <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-primary px-2.5 py-1 text-xs font-semibold text-primary-foreground">
+              <MessageCircleReply className="size-3.5" /> New reply
             </span>
           )}
         </div>
-        <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-          <span className="font-mono">{ticket.reference}</span>
-          <span className="flex items-center gap-1">
-            {ticket.book ? <BookOpen className="size-3.5" /> : <UserRound className="size-3.5" />}
+        <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px] text-muted-foreground">
+          <span className="font-mono font-medium text-foreground/70">{ticket.reference}</span>
+          <span className="flex items-center gap-1.5">
+            {ticket.book ? <BookOpen className="size-4" /> : <UserRound className="size-4" />}
             {ticket.book ? ticket.book.title : 'General / Account'}
           </span>
           <span>
@@ -42,9 +42,9 @@ export function TicketRow({ ticket }: { ticket: AuthorTicket }) {
           </span>
         </div>
       </div>
-      <div className="hidden flex-col items-end gap-1 sm:flex">
-        <StatusBadge status={ticket.status} audience="author" />
-        <span className="text-[11px] text-muted-foreground">{meta.authorHint}</span>
+      <div className="hidden shrink-0 flex-col items-end gap-1.5 sm:flex">
+        <StatusBadge status={ticket.status} audience="author" size="lg" />
+        <span className="text-xs text-muted-foreground">{meta.authorHint}</span>
       </div>
       <ChevronRight className="size-5 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
     </Link>

@@ -12,7 +12,7 @@ type Size = 'sm' | 'md' | 'lg'
 
 const SIZES: Record<Size, { pill: string; icon: string }> = {
   sm: { pill: 'gap-1 px-2 py-0.5 text-[11px]', icon: 'size-3' },
-  md: { pill: 'gap-1.5 px-2.5 py-1 text-xs', icon: 'size-3.5' },
+  md: { pill: 'gap-1.5 px-3 py-1 text-[13px]', icon: 'size-3.5' },
   lg: { pill: 'gap-1.5 px-3 py-1.5 text-sm', icon: 'size-4' },
 }
 

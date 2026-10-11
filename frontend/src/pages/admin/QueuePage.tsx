@@ -11,7 +11,6 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { CATEGORIES, CATEGORY_META, PRIORITIES, PRIORITY_META, SLA_META, STATUSES, STATUS_META } from '@/lib/constants'
 import { ticketsApi, type TicketQuery } from '@/lib/endpoints'
 import { initials } from '@/lib/format'
@@ -87,53 +86,57 @@ function TicketTableRow({ ticket, selected, onOpen }: { ticket: AdminTicket; sel
         overdue && 'bg-red-50/40',
       )}
     >
-      <td className="max-w-0 py-3.5 pr-4 pl-5 align-top">
-        <div className="flex min-w-0 items-center gap-2">
-          <PriorityBadge priority={ticket.priority} source={ticket.priority_source} size="sm" />
-          {ticket.has_unread && <span className="size-1.5 shrink-0 rounded-full bg-primary" aria-label="New author activity" />}
-          <p className={cn('min-w-0 truncate text-sm', ticket.has_unread ? 'font-semibold' : 'font-medium')}>{ticket.subject}</p>
+      <td className="max-w-0 py-5 pr-6 pl-6 align-middle">
+        <div className="flex min-w-0 items-center gap-2.5">
+          <PriorityBadge priority={ticket.priority} source={ticket.priority_source} />
+          {ticket.has_unread && <span className="size-2 shrink-0 rounded-full bg-primary" aria-label="New author activity" />}
+          <p className={cn('min-w-0 truncate text-[0.95rem]', ticket.has_unread ? 'font-semibold' : 'font-medium')}>{ticket.subject}</p>
         </div>
-        <p className="mt-1 truncate text-xs text-muted-foreground">
-          <span className="font-mono">{ticket.reference}</span> · {ticket.author.name} · {ticket.book ? ticket.book.title : 'General'}
+        <p className="mt-2 truncate text-[13px] text-muted-foreground">
+          <span className="font-mono font-medium text-foreground/70">{ticket.reference}</span>
+          <span className="mx-1.5">·</span>
+          {ticket.author.name}
+          <span className="mx-1.5">·</span>
+          {ticket.book ? ticket.book.title : 'General'}
         </p>
       </td>
-      <td className="py-3.5 pr-4 align-top">
+      <td className="py-5 pr-6 align-middle">
         {ticket.ai_status === 'PENDING' && ticket.category_source !== 'ADMIN' ? (
-          <span className="inline-flex items-center gap-1 rounded-full bg-violet-50 px-2 py-0.5 text-[11px] font-medium text-violet-700 ring-1 ring-violet-600/20 ring-inset">
-            <Loader2 className="size-3 animate-spin" /> Classifying
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-violet-50 px-2.5 py-1 text-xs font-medium text-violet-700 ring-1 ring-violet-600/20 ring-inset">
+            <Loader2 className="size-3.5 animate-spin" /> Classifying
           </span>
         ) : (
-          <div className="flex flex-col items-start gap-1">
-            <CategoryBadge category={ticket.category} source={ticket.category_source} short size="sm" />
+          <div className="flex flex-col items-start gap-1.5">
+            <CategoryBadge category={ticket.category} source={ticket.category_source} short />
             {ticket.ai_status === 'FAILED' && ticket.category_source === 'FALLBACK' && (
-              <span className="text-[11px] font-medium text-amber-700">Needs triage</span>
+              <span className="text-xs font-medium text-amber-700">Needs triage</span>
             )}
           </div>
         )}
       </td>
-      <td className="py-3.5 pr-4 align-top">
-        <StatusBadge status={ticket.status} size="sm" />
+      <td className="py-5 pr-6 align-middle">
+        <StatusBadge status={ticket.status} />
       </td>
-      <td className="py-3.5 pr-4 align-top">
-        <SlaBadge state={ticket.sla_state} dueAt={ticket.sla_due_at} size="sm" />
+      <td className="py-5 pr-6 align-middle">
+        <SlaBadge state={ticket.sla_state} dueAt={ticket.sla_due_at} />
       </td>
-      <td className="py-3.5 pr-4 align-top text-xs whitespace-nowrap text-muted-foreground">
+      <td className="py-5 pr-6 align-middle text-sm whitespace-nowrap text-muted-foreground">
         <RelativeTime value={ticket.created_at} />
       </td>
-      <td className="py-3.5 pr-4 align-top">
+      <td className="py-5 pr-6 align-middle">
         {ticket.assigned_to ? (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Avatar className="size-7">
-                <AvatarFallback className="bg-accent text-[10px] font-medium text-accent-foreground">
-                  {initials(ticket.assigned_to.full_name)}
-                </AvatarFallback>
-              </Avatar>
-            </TooltipTrigger>
-            <TooltipContent>{ticket.assigned_to.full_name}</TooltipContent>
-          </Tooltip>
+          <div className="flex min-w-0 items-center gap-2">
+            <Avatar className="size-8">
+              <AvatarFallback className="bg-accent text-[11px] font-semibold text-accent-foreground">
+                {initials(ticket.assigned_to.full_name)}
+              </AvatarFallback>
+            </Avatar>
+            <span className="truncate text-sm">{ticket.assigned_to.full_name.split(' ')[0]}</span>
+          </div>
         ) : (
-          <span className="text-xs text-muted-foreground">Unassigned</span>
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-dashed px-2.5 py-1 text-xs text-muted-foreground">
+            <UserX className="size-3.5" /> Unassigned
+          </span>
         )}
       </td>
     </tr>
@@ -211,7 +214,7 @@ export function QueuePage() {
   const totalPages = list.data ? Math.max(1, Math.ceil(list.data.count / 25)) : 1
 
   return (
-    <div className="mx-auto max-w-7xl">
+    <div className="mx-auto max-w-[1440px]">
       <PageHeader
         title="Ticket queue"
         description="Most urgent first, then oldest. Press J / K to move, Enter to open."
@@ -278,23 +281,23 @@ export function QueuePage() {
           />
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[900px] table-fixed text-left">
+            <table className="w-full min-w-[1080px] table-fixed text-left">
               <colgroup>
                 <col />
-                <col className="w-44" />
+                <col className="w-52" />
+                <col className="w-40" />
+                <col className="w-40" />
                 <col className="w-32" />
-                <col className="w-36" />
-                <col className="w-32" />
-                <col className="w-28" />
+                <col className="w-40" />
               </colgroup>
               <thead>
-                <tr className="border-b bg-muted/30 text-[11px] tracking-wide text-muted-foreground uppercase">
-                  <th className="py-2.5 pr-4 pl-5 font-semibold">Ticket</th>
-                  <th className="py-2.5 pr-4 font-semibold">Category</th>
-                  <th className="py-2.5 pr-4 font-semibold">Status</th>
-                  <th className="py-2.5 pr-4 font-semibold">First reply SLA</th>
-                  <th className="py-2.5 pr-4 font-semibold">Age</th>
-                  <th className="py-2.5 pr-4 font-semibold">Owner</th>
+                <tr className="border-b bg-muted/30 text-xs tracking-wide text-muted-foreground uppercase">
+                  <th className="py-3.5 pr-6 pl-6 font-semibold">Ticket</th>
+                  <th className="py-3.5 pr-6 font-semibold">Category</th>
+                  <th className="py-3.5 pr-6 font-semibold">Status</th>
+                  <th className="py-3.5 pr-6 font-semibold">First reply SLA</th>
+                  <th className="py-3.5 pr-6 font-semibold">Age</th>
+                  <th className="py-3.5 pr-6 font-semibold">Owner</th>
                 </tr>
               </thead>
               <tbody>
