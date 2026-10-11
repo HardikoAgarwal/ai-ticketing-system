@@ -8,22 +8,24 @@ import {
   LifeBuoy,
   MessageCircleReply,
   MessageSquareText,
+  Plus,
   TrendingUp,
   Wallet,
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 import { BookCover, StageProgress } from '@/components/author/BookCard'
-import { TicketRow } from '@/components/author/TicketRow'
-import { BookStatusBadge } from '@/components/badges'
-import { Stat } from '@/components/common'
+import { BookStatusBadge, StatusBadge } from '@/components/badges'
+import { RelativeTime, Stat } from '@/components/common'
 import { ErrorState, ListSkeleton } from '@/components/states'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useAuth } from '@/auth/AuthContext'
 import { booksApi, ticketsApi } from '@/lib/endpoints'
+import { STATUS_META } from '@/lib/constants'
 import { firstName, formatDate, formatINR, formatNumber } from '@/lib/format'
-import type { AuthorSummary, Book } from '@/lib/types'
+import type { AuthorSummary, AuthorTicket, Book } from '@/lib/types'
+import { cn } from '@/lib/utils'
 import { useFallbackInterval } from '@/realtime/RealtimeProvider'
 
 function greeting() {
@@ -114,6 +116,49 @@ function BookTile({ book }: { book: Book }) {
         )}
       </div>
     </Link>
+  )
+}
+
+function RecentRequests({ tickets }: { tickets: AuthorTicket[] }) {
+  return (
+    <div className="overflow-hidden rounded-2xl border bg-card shadow-xs">
+      <ul className="divide-y">
+        {tickets.map((t) => {
+          const meta = STATUS_META[t.status]
+          const Icon = meta.icon
+          return (
+            <li key={t.id}>
+              <Link to={`/author/tickets/${t.id}`} className="group flex items-center gap-4 px-5 py-4 transition-colors hover:bg-muted/40">
+                <span className={cn('flex size-10 shrink-0 items-center justify-center rounded-full', meta.tint)}>
+                  <Icon className={cn('size-[18px]', meta.iconClass)} />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <p className={cn('truncate text-sm', t.has_unread ? 'font-semibold' : 'font-medium')}>{t.subject}</p>
+                    {t.has_unread && <span className="size-2 shrink-0 rounded-full bg-primary" aria-label="New reply" />}
+                  </div>
+                  <p className="mt-1 truncate text-xs text-muted-foreground">
+                    <span className="font-mono">{t.reference}</span>
+                    <span className="mx-1.5">·</span>
+                    {t.book ? t.book.title : 'General'}
+                    <span className="mx-1.5">·</span>
+                    <RelativeTime value={t.updated_at} />
+                  </p>
+                </div>
+                <StatusBadge status={t.status} audience="author" size="sm" />
+                <ChevronRight className="size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
+              </Link>
+            </li>
+          )
+        })}
+      </ul>
+      <Link
+        to="/author/tickets/new"
+        className="flex items-center justify-center gap-2 border-t bg-muted/20 px-5 py-3 text-sm font-medium text-primary transition-colors hover:bg-muted/40"
+      >
+        <Plus className="size-4" /> Raise a new request
+      </Link>
+    </div>
   )
 }
 
@@ -239,11 +284,7 @@ export function DashboardPage() {
               </Button>
             </div>
           ) : (
-            <div className="space-y-3">
-              {recent.map((t) => (
-                <TicketRow key={t.id} ticket={t} />
-              ))}
-            </div>
+            <RecentRequests tickets={recent} />
           )}
         </section>
       </div>
