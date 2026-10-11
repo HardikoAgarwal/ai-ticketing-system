@@ -415,8 +415,8 @@ paths:
   /api/v1/tickets/{id}/confirm-resolution/:
     post:
       operationId: v1_tickets_confirm_resolution_create
-      summary: Author confirms a resolved ticket (closes it) or says they still need
-        help (reopens it)
+      summary: Author marks their ticket resolved (closes it) or, on a resolved ticket,
+        says they still need help (reopens it)
       parameters:
       - in: path
         name: id

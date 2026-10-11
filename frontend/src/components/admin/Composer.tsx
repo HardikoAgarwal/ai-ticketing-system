@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { AlertTriangle, BookMarked, CheckCircle2, Eye, Loader2, PenLine, RefreshCw, Send, Sparkles, Trash2 } from 'lucide-react'
+import { AlertTriangle, BookMarked, Eye, Loader2, RefreshCw, Send, Sparkles, Trash2 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 
@@ -130,24 +130,17 @@ export function Composer({ ticket }: { ticket: AdminTicketDetail }) {
 
   return (
     <div className="shrink-0 border-t bg-card px-6 py-5">
-      <div className="mb-3 flex items-center justify-between gap-2">
-        <p className="flex items-center gap-2 text-sm font-semibold">
-          <PenLine className="size-4 text-primary" /> Reply to {firstName}
-        </p>
-        <p className="text-xs text-muted-foreground">{reply.trim() ? `${reply.trim().split(/\s+/).length} words` : ''}</p>
-      </div>
-
       {newActivity && (
-        <div className="mb-3 flex items-center justify-between gap-2 rounded-lg bg-sky-50 px-3 py-2 text-xs text-sky-800 ring-1 ring-sky-600/15 ring-inset">
+        <div className="mb-3 flex items-center justify-between gap-2 rounded-lg border px-3 py-2 text-xs text-muted-foreground">
           {firstName} sent a new message while you were writing. Your text is safe; read it before sending.
-          <button className="font-medium underline" onClick={() => setNewActivity(false)}>
+          <button className="font-medium text-foreground underline" onClick={() => setNewActivity(false)}>
             Dismiss
           </button>
         </div>
       )}
       {assignedElsewhere && (
-        <p className="mb-3 flex items-center gap-1.5 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800 ring-1 ring-amber-600/15 ring-inset">
-          <AlertTriangle className="size-3.5" /> Assigned to {ticket.assigned_to!.full_name}. You can still reply; assignment won't change.
+        <p className="mb-3 flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs text-muted-foreground">
+          <AlertTriangle className="size-3.5 text-amber-600" /> Assigned to {ticket.assigned_to!.full_name}. You can still reply; assignment won't change.
         </p>
       )}
 
@@ -166,36 +159,35 @@ export function Composer({ ticket }: { ticket: AdminTicketDetail }) {
       />
 
       {draft?.status === 'generating' && !reply && !manual ? (
-        <div className="space-y-2.5 rounded-xl border border-violet-200 bg-violet-50/40 p-4">
+        <div className="space-y-2.5 rounded-xl border p-4">
           <Skeleton className="h-3 w-1/3" />
           <Skeleton className="h-3 w-full" />
-          <Skeleton className="h-3 w-5/6" />
           <Skeleton className="h-3 w-2/3" />
           <div className="flex items-center justify-between pt-1">
-            <p className="text-xs text-violet-800">Drafting a reply from the knowledge base…</p>
+            <p className="text-xs text-muted-foreground">Drafting a reply from the knowledge base…</p>
             <Button variant="ghost" size="sm" onClick={() => setManual(true)}>
               Write manually instead
             </Button>
           </div>
         </div>
       ) : (
-        <Textarea
-          value={reply}
-          onChange={(e) => setReply(e.target.value)}
-          rows={4}
-          placeholder={`Write your reply to ${firstName}…`}
-          className={cn('max-h-64 min-h-28 text-sm', usingDraft && !editedFromDraft && 'border-violet-200 bg-violet-50/20')}
-        />
+        <div className="flex items-end gap-3">
+          <Textarea
+            value={reply}
+            onChange={(e) => setReply(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) requestSend(false)
+            }}
+            rows={2}
+            placeholder={`Reply to ${firstName}…`}
+            className="max-h-64 min-h-12 text-sm"
+          />
+          <Button size="lg" onClick={() => requestSend(false)} disabled={!reply.trim() || send.isPending} className="shrink-0">
+            {send.isPending ? <Loader2 className="animate-spin" /> : <Send />} Send
+          </Button>
+        </div>
       )}
-
-      <div className="mt-3 flex flex-wrap items-center justify-end gap-2">
-        <Button variant="outline" onClick={() => requestSend(true)} disabled={!reply.trim() || send.isPending}>
-          <CheckCircle2 className="text-emerald-600" /> Send & resolve
-        </Button>
-        <Button onClick={() => requestSend(false)} disabled={!reply.trim() || send.isPending}>
-          {send.isPending ? <Loader2 className="animate-spin" /> : <Send />} Send reply
-        </Button>
-      </div>
+      <p className="mt-2 text-[11px] text-muted-foreground">Ctrl/⌘ + Enter to send. The author sees replies instantly.</p>
 
       <Dialog open={!!preview} onOpenChange={(o) => !o && setPreview(null)}>
         <DialogContent className="sm:max-w-xl">
@@ -271,9 +263,9 @@ function DraftBanner({
   }
   if (status === 'failed') {
     return (
-      <div className="mb-3 flex items-center justify-between gap-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800 ring-1 ring-amber-600/15 ring-inset">
+      <div className="mb-3 flex items-center justify-between gap-2 rounded-lg border px-3 py-2 text-xs text-muted-foreground">
         <span className="flex items-center gap-1.5">
-          <AlertTriangle className="size-3.5" /> AI draft unavailable right now. Write your reply manually.
+          <AlertTriangle className="size-3.5 text-amber-600" /> AI draft unavailable right now. Write your reply manually.
         </span>
         <Button variant="ghost" size="sm" onClick={onRegenerate} disabled={regenerating}>
           <RefreshCw className={cn(regenerating && 'animate-spin')} /> Try again
@@ -283,35 +275,35 @@ function DraftBanner({
   }
   if (status === 'generating') {
     return (
-      <p className="mb-3 flex items-center gap-1.5 rounded-lg bg-violet-50 px-3 py-2 text-xs font-medium text-violet-800 ring-1 ring-violet-600/15 ring-inset">
-        <Loader2 className="size-3.5 animate-spin" /> AI is drafting a reply…
+      <p className="mb-3 flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs text-muted-foreground">
+        <Loader2 className="size-3.5 animate-spin text-violet-600" /> AI is drafting a reply…
       </p>
     )
   }
   if (status !== 'ready') return null
   return (
-    <div className="mb-3 rounded-lg bg-gradient-to-r from-violet-50 to-fuchsia-50 px-3 py-2 ring-1 ring-violet-600/15 ring-inset">
-      <div className="flex flex-wrap items-center gap-2 text-xs text-violet-900">
-        <span className="flex items-center gap-1.5 font-semibold">
-          <Sparkles className="size-3.5" />
+    <div className="mb-3 rounded-lg border px-3 py-2">
+      <div className="flex flex-wrap items-center gap-2 text-xs">
+        <span className="flex items-center gap-1.5 font-medium">
+          <Sparkles className="size-3.5 text-violet-600" />
           {usingDraft ? (edited ? 'AI draft, edited by you' : 'AI draft ready, review before sending') : 'AI draft available'}
         </span>
         <span className="ml-auto flex gap-1">
-          <Button variant="ghost" size="sm" onClick={onRegenerate} disabled={regenerating} className="text-violet-800 hover:bg-violet-100">
+          <Button variant="ghost" size="sm" onClick={onRegenerate} disabled={regenerating}>
             <RefreshCw className={cn(regenerating && 'animate-spin')} /> Regenerate
           </Button>
           {usingDraft && (
-            <Button variant="ghost" size="sm" onClick={onDiscard} className="text-violet-800 hover:bg-violet-100">
+            <Button variant="ghost" size="sm" onClick={onDiscard}>
               <Trash2 /> Clear
             </Button>
           )}
         </span>
       </div>
       {!!sources?.length && (
-        <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-[11px] text-violet-700">
+        <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
           Based on:
           {sources.map((s) => (
-            <span key={s.key} className="inline-flex items-center gap-1 rounded-full bg-white px-2 py-0.5 font-medium ring-1 ring-violet-600/15 ring-inset">
+            <span key={s.key} className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 font-medium">
               <BookMarked className="size-3" /> {s.title}
             </span>
           ))}

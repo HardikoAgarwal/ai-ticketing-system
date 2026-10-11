@@ -20,6 +20,7 @@ import { Link, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 
 import { StatusBadge } from '@/components/badges'
+import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { RelativeTime } from '@/components/common'
 import { EmptyState, ErrorState, ListSkeleton } from '@/components/states'
 import { AttachmentList, ChatBubble, MessageBubble, PersonAvatar } from '@/components/tickets/Thread'
@@ -94,14 +95,12 @@ function ResolutionPrompt({ ticket }: { ticket: AuthorTicketDetail }) {
   })
 
   return (
-    <div className="mx-5 mb-5 rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-card p-5">
+    <div className="border-t bg-card px-6 py-5">
       <div className="flex items-start gap-3">
-        <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700">
-          <CheckCircle2 className="size-5" />
-        </span>
+        <CheckCircle2 className="mt-0.5 size-5 shrink-0 text-emerald-600" />
         <div className="flex-1">
-          <p className="font-semibold text-emerald-950">We've marked this as resolved</p>
-          <p className="text-sm text-emerald-900/80">Did our reply solve your issue?</p>
+          <p className="font-semibold">We've marked this as resolved</p>
+          <p className="text-sm text-muted-foreground">Did our reply solve your issue?</p>
           {!needsHelp ? (
             <div className="mt-3 flex flex-wrap gap-2">
               <Button onClick={() => mutation.mutate(true)} disabled={mutation.isPending}>
@@ -151,21 +150,26 @@ function ReplyBox({ ticket }: { ticket: AuthorTicketDetail }) {
     onError: (err) => toast.error(errorMessage(err)),
   })
 
+  const submit = () => body.trim() && !mutation.isPending && mutation.mutate()
+
   return (
-    <div className="border-t bg-card p-4">
-      <Textarea
-        rows={3}
-        value={body}
-        onChange={(e) => setBody(e.target.value)}
-        placeholder={ticket.status === 'CLOSED' ? 'Need more help? Writing here reopens the ticket.' : 'Add more details or reply to BookLeaf…'}
-        className="min-h-24"
-      />
-      <div className="mt-3 flex items-center justify-between gap-2">
-        <p className="text-xs text-muted-foreground">BookLeaf is notified instantly.</p>
-        <Button onClick={() => mutation.mutate()} disabled={!body.trim() || mutation.isPending}>
-          {mutation.isPending ? <Loader2 className="animate-spin" /> : <Send />} Send message
+    <div className="border-t bg-card px-6 py-5">
+      <div className="flex items-end gap-3">
+        <Textarea
+          rows={2}
+          value={body}
+          onChange={(e) => setBody(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) submit()
+          }}
+          placeholder={ticket.status === 'CLOSED' ? 'Need more help? Writing here reopens the ticket.' : 'Reply to BookLeaf…'}
+          className="max-h-56 min-h-12"
+        />
+        <Button size="lg" onClick={submit} disabled={!body.trim() || mutation.isPending} className="shrink-0">
+          {mutation.isPending ? <Loader2 className="animate-spin" /> : <Send />} Send
         </Button>
       </div>
+      <p className="mt-2 text-[11px] text-muted-foreground">Ctrl/⌘ + Enter to send. BookLeaf is notified instantly.</p>
     </div>
   )
 }
@@ -174,6 +178,16 @@ export function TicketDetailPage() {
   const id = Number(useParams().id)
   const { user } = useAuth()
   const queryClient = useQueryClient()
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const markResolved = useMutation({
+    mutationFn: () => ticketsApi.confirmResolution(id, true, ''),
+    onSuccess: (data) => {
+      queryClient.setQueryData(['ticket', id], data)
+      queryClient.invalidateQueries({ queryKey: ['tickets'] })
+      toast.success('Ticket marked as resolved. Thanks for letting us know!')
+    },
+    onError: (err) => toast.error(errorMessage(err)),
+  })
   const refetchInterval = useFallbackInterval()
   const { data: ticket, isLoading, isError, error, refetch } = useQuery({
     queryKey: ['ticket', id],
@@ -224,7 +238,7 @@ export function TicketDetailPage() {
       </Button>
 
       <section className="overflow-hidden rounded-2xl border bg-card shadow-xs">
-        <div className="bg-gradient-to-br from-primary/[0.08] via-card to-card px-6 pt-5 pb-5">
+        <div className="px-6 py-6">
           <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-xs text-muted-foreground">
             <span className="rounded-md bg-card px-2 py-1 font-mono font-semibold text-foreground ring-1 ring-border">{ticket.reference}</span>
             <span className="flex items-center gap-1">
@@ -236,7 +250,14 @@ export function TicketDetailPage() {
               <StatusBadge status={ticket.status} audience="author" size="lg" />
             </span>
           </div>
-          <h1 className="mt-3 text-2xl font-semibold tracking-tight">{ticket.subject}</h1>
+          <div className="mt-4 flex flex-wrap items-start justify-between gap-4">
+            <h1 className="min-w-0 flex-1 text-2xl font-semibold tracking-tight">{ticket.subject}</h1>
+            {(ticket.status === 'OPEN' || ticket.status === 'IN_PROGRESS') && (
+              <Button size="lg" onClick={() => setConfirmOpen(true)} disabled={markResolved.isPending} className="px-6">
+                {markResolved.isPending ? <Loader2 className="animate-spin" /> : <CheckCircle2 />} Mark as resolved
+              </Button>
+            )}
+          </div>
         </div>
         <div className="border-t px-6 py-5">
           <StatusStepper ticket={ticket} />
@@ -250,7 +271,7 @@ export function TicketDetailPage() {
           </h2>
           <span className="text-xs text-muted-foreground">Updates appear here automatically</span>
         </header>
-        <div className="space-y-5 bg-gradient-to-b from-muted/40 to-muted/10 px-5 py-6">
+        <div className="space-y-6 bg-muted/20 px-6 py-7">
           <ChatBubble
             side="right"
             variant="author"
@@ -280,6 +301,20 @@ export function TicketDetailPage() {
         {ticket.status === 'RESOLVED' && <ResolutionPrompt ticket={ticket} />}
         <ReplyBox ticket={ticket} />
       </section>
+
+      <ConfirmDialog
+        options={
+          confirmOpen
+            ? {
+                title: 'Mark this ticket as resolved?',
+                description: "This closes the ticket and lets our team know your issue is sorted. If you need help again, just reply here and it reopens.",
+                confirmLabel: 'Yes, mark as resolved',
+                onConfirm: () => markResolved.mutate(),
+              }
+            : null
+        }
+        onClose={() => setConfirmOpen(false)}
+      />
     </div>
   )
 }

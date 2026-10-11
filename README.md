@@ -49,7 +49,8 @@ The login page has one-click buttons that fill these in. Good edge-case authors 
   - Keyboard navigation: `J`/`K` to move, `Enter` to open.
 - **Ticket workspace**:
   - **Triage card**: shows the AI category and priority with confidence and reasoning. Both can be overridden; an override is marked "Overridden by team" and the AI never overwrites it. A "Re-run AI" button is available.
-  - **Composer**: the AI draft is preloaded, editable, and shows which KB sections it used. Actions: regenerate, "Send reply" or "Send & resolve", and an amber **Internal note** tab that authors never see.
+  - **Composer**: the AI draft is preloaded, editable, and shows which KB sections it used. Inline reply box with Send (Ctrl/⌘ + Enter), regenerate, and a separate **Internal notes** panel that authors never see.
+  - **Mark as resolved**: a prominent header action with a confirmation dialog; the author is then asked to confirm or reopen. Authors can also mark their own open ticket resolved.
   - **Workflow**: status changes (closing asks for confirmation), assign to me or reassign (asks for confirmation if the ticket is someone else's), and the SLA state.
   - **Context**: author profile and full book and royalty facts, plus an activity timeline of every change and who made it.
   - **Collision and activity banners**: warn when another admin owns the ticket or the author replied while you were typing.

@@ -24,6 +24,7 @@ export function MetaSelect({
   size = 'default',
   className,
   prefix,
+  plain,
 }: {
   value: string | null
   onChange: (value: string | null) => void
@@ -35,6 +36,8 @@ export function MetaSelect({
   size?: 'sm' | 'default'
   className?: string
   prefix?: ReactNode
+  /** Keep the trigger neutral; only the option icon carries color. */
+  plain?: boolean
 }) {
   const ANY = '__any__'
   const selected = options.find((o) => o.value === value)
@@ -42,7 +45,7 @@ export function MetaSelect({
     <Select value={value ?? (anyLabel ? ANY : undefined)} onValueChange={(v) => onChange(v === ANY ? null : v)} disabled={disabled}>
       <SelectTrigger
         size={size}
-        className={cn('min-w-36 font-medium', selected?.tone ? selected.tone.tint : 'text-foreground', className)}
+        className={cn('min-w-36 font-medium', selected?.tone && !plain ? selected.tone.tint : 'text-foreground', className)}
       >
         {prefix && !selected && <span className="text-muted-foreground">{prefix}</span>}
         <SelectValue placeholder={placeholder} />

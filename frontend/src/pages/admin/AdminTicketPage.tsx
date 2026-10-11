@@ -7,6 +7,7 @@ import {
   Bot,
   CalendarDays,
   CheckCheck,
+  CheckCircle2,
   CircleDot,
   Coins,
   Factory,
@@ -116,6 +117,14 @@ function TicketHeader({ ticket, update, pending }: { ticket: AdminTicketDetail; 
     update({ status }, `Status changed to ${STATUS_META[status].label}`)
   }
 
+  const markResolved = () =>
+    setConfirm({
+      title: `Mark ${ticket.reference} as resolved?`,
+      description: `${ticket.author.name.split(' ')[0]} will be asked to confirm the issue is sorted. If they say it isn't, the ticket reopens automatically.`,
+      confirmLabel: 'Mark as resolved',
+      onConfirm: () => update({ status: 'RESOLVED' }, 'Ticket marked as resolved'),
+    })
+
   const changeAssignee = (value: string | null) => {
     const assigned_to = !value || value === 'none' ? null : Number(value)
     if (assigned_to === (ticket.assigned_to?.id ?? null)) return
@@ -133,7 +142,7 @@ function TicketHeader({ ticket, update, pending }: { ticket: AdminTicketDetail; 
 
   return (
     <section className="overflow-hidden rounded-2xl border bg-card shadow-xs">
-      <div className="bg-gradient-to-br from-primary/[0.08] via-card to-card px-7 py-6">
+      <div className="px-7 py-6">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-xs text-muted-foreground">
           <span className="rounded-md bg-card px-2 py-1 font-mono font-semibold text-foreground ring-1 ring-border">{ticket.reference}</span>
           <span>
@@ -144,7 +153,19 @@ function TicketHeader({ ticket, update, pending }: { ticket: AdminTicketDetail; 
             <SlaBadge state={ticket.sla_state} dueAt={ticket.sla_due_at} />
           </span>
         </div>
-        <h1 className="mt-4 text-2xl font-semibold tracking-tight">{ticket.subject}</h1>
+        <div className="mt-4 flex flex-wrap items-start justify-between gap-4">
+          <h1 className="min-w-0 flex-1 text-2xl font-semibold tracking-tight">{ticket.subject}</h1>
+          {(ticket.status === 'OPEN' || ticket.status === 'IN_PROGRESS') && (
+            <Button size="lg" onClick={markResolved} disabled={pending} className="px-6">
+              <CheckCircle2 /> Mark as resolved
+            </Button>
+          )}
+          {ticket.status === 'RESOLVED' && (
+            <span className="inline-flex items-center gap-2 rounded-lg border px-4 py-2.5 text-sm text-muted-foreground">
+              <CheckCircle2 className="size-4 text-emerald-600" /> Resolved, waiting for the author to confirm
+            </span>
+          )}
+        </div>
         <div className="mt-4 flex flex-wrap items-center gap-2.5">
           <StatusBadge status={ticket.status} size="lg" />
           <PriorityBadge priority={ticket.priority} source={ticket.priority_source} size="lg" />
@@ -165,6 +186,7 @@ function TicketHeader({ ticket, update, pending }: { ticket: AdminTicketDetail; 
             onChange={(v) => v && changeStatus(v as TicketStatus)}
             disabled={pending}
             className="w-full"
+            plain
             options={[ticket.status, ...STATUS_TRANSITIONS[ticket.status]].map((s) => ({ value: s, label: STATUS_META[s].label, tone: STATUS_META[s] }))}
           />
         </div>
@@ -175,6 +197,7 @@ function TicketHeader({ ticket, update, pending }: { ticket: AdminTicketDetail; 
             onChange={(v) => v && v !== ticket.priority && update({ priority: v as TicketPriority }, 'Priority updated. SLA recalculated.')}
             disabled={pending}
             className="w-full"
+            plain
             options={PRIORITIES.map((p) => ({ value: p, label: PRIORITY_META[p].label, tone: PRIORITY_META[p] }))}
           />
         </div>
@@ -185,6 +208,7 @@ function TicketHeader({ ticket, update, pending }: { ticket: AdminTicketDetail; 
             onChange={(v) => v && v !== ticket.category && update({ category: v as TicketCategory }, 'Category updated. The AI draft will refresh.')}
             disabled={pending}
             className="w-full"
+            plain
             options={CATEGORIES.map((c) => ({ value: c, label: CATEGORY_META[c].label, tone: CATEGORY_META[c] }))}
           />
         </div>
@@ -205,7 +229,8 @@ function TicketHeader({ ticket, update, pending }: { ticket: AdminTicketDetail; 
             value={ticket.assigned_to ? String(ticket.assigned_to.id) : 'none'}
             onChange={changeAssignee}
             disabled={pending || agents.isLoading}
-            className={cn('w-full', mine && 'border-primary/30 bg-primary/[0.06] text-primary')}
+            className="w-full"
+            plain
             options={[
               { value: 'none', label: 'Unassigned', icon: UserRound },
               ...(agents.data ?? []).map((a) => ({
@@ -241,7 +266,7 @@ function AiInsight({ ticket }: { ticket: AdminTicketDetail }) {
       size="sm"
       onClick={() => reclassify.mutate()}
       disabled={reclassify.isPending || ticket.ai_status === 'PENDING'}
-      className="shrink-0 text-violet-800 hover:bg-violet-100"
+      className="shrink-0"
     >
       <RefreshCw className={cn(reclassify.isPending && 'animate-spin')} /> Re-run AI
     </Button>
@@ -249,15 +274,15 @@ function AiInsight({ ticket }: { ticket: AdminTicketDetail }) {
 
   if (ticket.ai_status === 'PENDING') {
     return (
-      <div className="flex items-center gap-2 border-t bg-violet-50/70 px-7 py-3.5 text-sm text-violet-900">
-        <Loader2 className="size-4 animate-spin" /> AI is classifying this ticket…
+      <div className="flex items-center gap-2 border-t px-7 py-3.5 text-sm text-muted-foreground">
+        <Loader2 className="size-4 animate-spin text-violet-600" /> AI is classifying this ticket…
       </div>
     )
   }
   if (ticket.ai_status === 'FAILED' || ticket.ai_status === 'DISABLED') {
     return (
-      <div className="flex items-center gap-3 border-t bg-amber-50/70 px-7 py-3.5 text-sm text-amber-900">
-        <AlertTriangle className="size-4 shrink-0" />
+      <div className="flex items-center gap-3 border-t px-7 py-3.5 text-sm text-muted-foreground">
+        <AlertTriangle className="size-4 shrink-0 text-amber-600" />
         <span className="flex-1">
           {ticket.ai_status === 'DISABLED' ? 'AI is off on this server.' : 'AI was unavailable.'} Category and priority are a keyword-based
           estimate; please confirm them.
@@ -270,14 +295,14 @@ function AiInsight({ ticket }: { ticket: AdminTicketDetail }) {
 
   const overridden = ticket.category_source === 'ADMIN' || ticket.priority_source === 'ADMIN'
   return (
-    <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-t bg-gradient-to-r from-violet-50/80 to-fuchsia-50/50 px-7 py-3.5 text-sm">
-      <span className="flex items-center gap-1.5 font-semibold text-violet-900">
-        <Sparkles className="size-4" /> AI suggested
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-t px-7 py-3.5 text-sm">
+      <span className="flex items-center gap-1.5 font-medium">
+        <Sparkles className="size-4 text-violet-600" /> AI suggested
       </span>
       <CategoryBadge category={ticket.ai_category} size="sm" short />
       {ticket.ai_priority && <PriorityBadge priority={ticket.ai_priority} size="sm" />}
       {ticket.ai_confidence !== null && (
-        <span className="rounded-full bg-white px-2 py-0.5 text-[11px] font-semibold text-violet-700 ring-1 ring-violet-600/20 ring-inset">
+        <span className="text-xs text-muted-foreground">
           {Math.round(ticket.ai_confidence * 100)}% confident
         </span>
       )}
@@ -286,7 +311,7 @@ function AiInsight({ ticket }: { ticket: AdminTicketDetail }) {
           <UserCheck className="size-3.5" /> Overridden by team
         </span>
       )}
-      {ticket.ai_reasoning && <span className="min-w-0 flex-1 basis-64 text-xs text-violet-900/80">{ticket.ai_reasoning}</span>}
+      {ticket.ai_reasoning && <span className="min-w-0 flex-1 basis-64 text-xs text-muted-foreground">{ticket.ai_reasoning}</span>}
       {rerun}
     </div>
   )
@@ -310,7 +335,7 @@ function AuthorCard({ ticket }: { ticket: AdminTicketDetail }) {
   return (
     <Card title="Author" icon={UserRound}>
       <div className="flex items-center gap-3">
-        <span className="flex size-12 items-center justify-center rounded-full bg-gradient-to-br from-sky-100 to-indigo-200 text-base font-semibold text-indigo-800">
+        <span className="flex size-12 items-center justify-center rounded-full bg-muted text-base font-semibold text-foreground/80">
           {initials(a.name)}
         </span>
         <div className="min-w-0">
@@ -469,14 +494,14 @@ function Conversation({ ticket, className }: { ticket: AdminTicketDetail; classN
         </h3>
         <span className="text-xs text-muted-foreground">The author sees everything in this thread</span>
       </header>
-      <div ref={scrollRef} className="min-h-0 flex-1 space-y-6 overflow-y-auto bg-gradient-to-b from-muted/40 to-muted/10 px-6 py-7">
+      <div ref={scrollRef} className="min-h-0 flex-1 space-y-6 overflow-y-auto bg-muted/20 px-6 py-7">
         <ChatBubble
           side="left"
           variant="author"
           name={ticket.author.name}
           time={ticket.created_at}
           avatar={<PersonAvatar name={ticket.author.name} variant="author" />}
-          meta={<span className="rounded-full bg-sky-50 px-2 py-0.5 text-[11px] font-medium text-sky-700 ring-1 ring-sky-600/20 ring-inset">Original request</span>}
+          meta={<span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">Original request</span>}
         >
           <p className="font-semibold">{ticket.subject}</p>
           <p className="mt-1.5 whitespace-pre-wrap">{ticket.description}</p>

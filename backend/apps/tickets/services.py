@@ -284,15 +284,17 @@ def post_author_message(ticket: Ticket, author_user, *, body: str) -> TicketMess
 @transaction.atomic
 def confirm_resolution(ticket: Ticket, author_user, *, resolved: bool, message: str = "") -> Ticket:
     ticket = Ticket.objects.select_for_update().select_related("author__user").get(pk=ticket.pk)
-    if ticket.status != TicketStatus.RESOLVED:
-        raise DomainError("Only resolved tickets can be confirmed or reopened.", code="invalid_transition")
     if resolved:
+        if ticket.status == TicketStatus.CLOSED:
+            raise DomainError("This ticket is already closed.", code="invalid_transition")
         _log(ticket, ActivityAction.AUTHOR_CONFIRMED, author_user)
         _transition(ticket, TicketStatus.CLOSED, author_user)
         ticket.save()
         ticket_event(ticket, "ticket.updated", actor_id=author_user.id)
         return ticket
 
+    if ticket.status != TicketStatus.RESOLVED:
+        raise DomainError("Only resolved tickets can be reopened.", code="invalid_transition")
     _log(ticket, ActivityAction.AUTHOR_REOPENED, author_user)
     ticket.save()
     body = message.strip() or "I still need help with this issue."

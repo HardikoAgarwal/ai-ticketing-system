@@ -144,3 +144,20 @@ def test_analytics_summary(admin_user, client_for):
     assert res.status_code == 200
     assert res.data["range_days"] == 7
     assert len(res.data["volume"]) == 8
+
+
+def test_author_can_mark_open_ticket_resolved_but_not_reopen_it(author, client_for, settings):
+    settings.AI_ENABLED = False
+    client = client_for(author)
+    ticket_id = create(client).data["id"]
+
+    reopen = client.post(f"/api/v1/tickets/{ticket_id}/confirm-resolution/", {"resolved": False}, format="json")
+    assert reopen.status_code == 409
+    assert reopen.data["error"]["code"] == "invalid_transition"
+
+    close = client.post(f"/api/v1/tickets/{ticket_id}/confirm-resolution/", {"resolved": True}, format="json")
+    assert close.status_code == 200, close.data
+    assert close.data["status"] == TicketStatus.CLOSED
+
+    again = client.post(f"/api/v1/tickets/{ticket_id}/confirm-resolution/", {"resolved": True}, format="json")
+    assert again.status_code == 409

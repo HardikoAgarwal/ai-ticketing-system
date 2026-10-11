@@ -58,7 +58,7 @@ export function PersonAvatar({ name, variant }: { name: string; variant: 'team' 
     <span
       className={cn(
         'flex size-9 items-center justify-center rounded-full text-xs font-semibold ring-2 ring-background',
-        variant === 'team' ? 'bg-primary text-primary-foreground' : 'bg-gradient-to-br from-sky-100 to-indigo-100 text-indigo-800',
+        variant === 'team' ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground/80',
       )}
     >
       {variant === 'team' && name === 'BookLeaf Support' ? <Leaf className="size-4" /> : initials(name)}

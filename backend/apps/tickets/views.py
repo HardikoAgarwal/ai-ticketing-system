@@ -193,7 +193,7 @@ class TicketViewSet(
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     @extend_schema(
-        summary="Author confirms a resolved ticket (closes it) or says they still need help (reopens it)",
+        summary="Author marks their ticket resolved (closes it) or, on a resolved ticket, says they still need help (reopens it)",
         request=ConfirmResolutionSerializer,
         responses=AuthorTicketDetailSerializer,
     )
