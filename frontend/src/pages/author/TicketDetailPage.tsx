@@ -1,5 +1,20 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, Check, CheckCircle2, Loader2, MessageCircle, RotateCcw, Send } from 'lucide-react'
+import {
+  ArrowLeft,
+  BookOpen,
+  Check,
+  CheckCircle2,
+  CircleDot,
+  Hourglass,
+  Loader2,
+  MessageCircle,
+  MessagesSquare,
+  RotateCcw,
+  Send,
+  Timer,
+  UserRound,
+  type LucideIcon,
+} from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -7,9 +22,10 @@ import { toast } from 'sonner'
 import { StatusBadge } from '@/components/badges'
 import { RelativeTime } from '@/components/common'
 import { EmptyState, ErrorState, ListSkeleton } from '@/components/states'
-import { AttachmentList, MessageBubble } from '@/components/tickets/Thread'
+import { AttachmentList, ChatBubble, MessageBubble, PersonAvatar } from '@/components/tickets/Thread'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
+import { useAuth } from '@/auth/AuthContext'
 import { ApiError, errorMessage } from '@/lib/api'
 import { ticketsApi } from '@/lib/endpoints'
 import { formatDateTime } from '@/lib/format'
@@ -17,30 +33,48 @@ import type { AuthorTicketDetail, TicketStatus } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import { useFallbackInterval } from '@/realtime/RealtimeProvider'
 
-const STEPS: { key: TicketStatus; label: string }[] = [
-  { key: 'OPEN', label: 'Submitted' },
-  { key: 'IN_PROGRESS', label: 'In progress' },
-  { key: 'RESOLVED', label: 'Resolved' },
+const STEPS: { key: TicketStatus; label: string; icon: LucideIcon; hint: string }[] = [
+  { key: 'OPEN', label: 'Submitted', icon: CircleDot, hint: 'We have your request' },
+  { key: 'IN_PROGRESS', label: 'In progress', icon: Timer, hint: 'Our team is on it' },
+  { key: 'RESOLVED', label: 'Resolved', icon: CheckCircle2, hint: 'Issue sorted' },
 ]
 
-function StatusTimeline({ status }: { status: TicketStatus }) {
+function StatusStepper({ ticket }: { ticket: AuthorTicketDetail }) {
+  const status = ticket.status
   const index = status === 'CLOSED' ? 2 : STEPS.findIndex((s) => s.key === status)
+  const times: Record<string, string | null> = {
+    OPEN: ticket.created_at,
+    IN_PROGRESS: ticket.first_response_at,
+    RESOLVED: ticket.resolved_at,
+  }
   return (
-    <ol className="flex items-center gap-2 text-xs">
-      {STEPS.map((step, i) => (
-        <li key={step.key} className="flex items-center gap-2">
-          <span
-            className={cn(
-              'flex size-5 items-center justify-center rounded-full border text-[10px]',
-              i <= index ? 'border-primary bg-primary text-primary-foreground' : 'bg-card text-muted-foreground',
+    <ol className="grid grid-cols-3 gap-2">
+      {STEPS.map((step, i) => {
+        const done = i < index || (i === index && (status === 'RESOLVED' || status === 'CLOSED'))
+        const current = i === index && !done
+        const Icon = done ? Check : step.icon
+        return (
+          <li key={step.key} className="relative flex flex-col items-center text-center">
+            {i < STEPS.length - 1 && (
+              <span className={cn('absolute top-5 left-[calc(50%+24px)] h-0.5 w-[calc(100%-48px)]', i < index ? 'bg-primary' : 'bg-border')} />
             )}
-          >
-            {i < index || status === 'CLOSED' || (i === index && status === 'RESOLVED') ? <Check className="size-3" /> : i + 1}
-          </span>
-          <span className={i <= index ? 'font-medium' : 'text-muted-foreground'}>{step.label}</span>
-          {i < STEPS.length - 1 && <span className={cn('h-px w-6 sm:w-10', i < index ? 'bg-primary' : 'bg-border')} />}
-        </li>
-      ))}
+            <span
+              className={cn(
+                'relative flex size-10 items-center justify-center rounded-full',
+                done && 'bg-primary text-primary-foreground',
+                current && 'bg-primary/10 text-primary ring-4 ring-primary/15',
+                !done && !current && 'border-2 border-border bg-card text-muted-foreground',
+              )}
+            >
+              <Icon className="size-5" strokeWidth={done ? 3 : 2} />
+            </span>
+            <p className={cn('mt-2 text-sm', done || current ? 'font-semibold' : 'text-muted-foreground')}>{step.label}</p>
+            <p className="text-[11px] text-muted-foreground">
+              {times[step.key] && i <= index ? <RelativeTime value={times[step.key]} /> : step.hint}
+            </p>
+          </li>
+        )
+      })}
     </ol>
   )
 }
@@ -60,38 +94,38 @@ function ResolutionPrompt({ ticket }: { ticket: AuthorTicketDetail }) {
   })
 
   return (
-    <div className="rounded-xl border border-emerald-200 bg-emerald-50/60 p-4">
-      <p className="flex items-center gap-2 text-sm font-medium text-emerald-900">
-        <CheckCircle2 className="size-4" /> We've marked this as resolved. Did this solve your issue?
-      </p>
-      {!needsHelp ? (
-        <div className="mt-3 flex flex-wrap gap-2">
-          <Button size="sm" onClick={() => mutation.mutate(true)} disabled={mutation.isPending}>
-            {mutation.isPending && mutation.variables === true ? <Loader2 className="animate-spin" /> : <Check />} Yes, close ticket
-          </Button>
-          <Button size="sm" variant="outline" onClick={() => setNeedsHelp(true)} disabled={mutation.isPending}>
-            <RotateCcw /> No, I still need help
-          </Button>
+    <div className="mx-5 mb-5 rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-card p-5">
+      <div className="flex items-start gap-3">
+        <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700">
+          <CheckCircle2 className="size-5" />
+        </span>
+        <div className="flex-1">
+          <p className="font-semibold text-emerald-950">We've marked this as resolved</p>
+          <p className="text-sm text-emerald-900/80">Did our reply solve your issue?</p>
+          {!needsHelp ? (
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Button onClick={() => mutation.mutate(true)} disabled={mutation.isPending}>
+                {mutation.isPending && mutation.variables === true ? <Loader2 className="animate-spin" /> : <Check />} Yes, close ticket
+              </Button>
+              <Button variant="outline" onClick={() => setNeedsHelp(true)} disabled={mutation.isPending}>
+                <RotateCcw /> No, I still need help
+              </Button>
+            </div>
+          ) : (
+            <div className="mt-3 space-y-2">
+              <Textarea rows={3} value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Tell us what's still not working (optional)" autoFocus />
+              <div className="flex gap-2">
+                <Button onClick={() => mutation.mutate(false)} disabled={mutation.isPending}>
+                  {mutation.isPending && <Loader2 className="animate-spin" />} Reopen ticket
+                </Button>
+                <Button variant="ghost" onClick={() => setNeedsHelp(false)} disabled={mutation.isPending}>
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
-      ) : (
-        <div className="mt-3 space-y-2">
-          <Textarea
-            rows={3}
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            placeholder="Tell us what's still not working (optional)"
-            autoFocus
-          />
-          <div className="flex gap-2">
-            <Button size="sm" onClick={() => mutation.mutate(false)} disabled={mutation.isPending}>
-              {mutation.isPending && <Loader2 className="animate-spin" />} Reopen ticket
-            </Button>
-            <Button size="sm" variant="ghost" onClick={() => setNeedsHelp(false)} disabled={mutation.isPending}>
-              Cancel
-            </Button>
-          </div>
-        </div>
-      )}
+      </div>
     </div>
   )
 }
@@ -118,18 +152,18 @@ function ReplyBox({ ticket }: { ticket: AuthorTicketDetail }) {
   })
 
   return (
-    <div className="rounded-xl border bg-card p-3">
+    <div className="border-t bg-card p-4">
       <Textarea
         rows={3}
         value={body}
         onChange={(e) => setBody(e.target.value)}
         placeholder={ticket.status === 'CLOSED' ? 'Need more help? Writing here reopens the ticket.' : 'Add more details or reply to BookLeaf…'}
-        className="border-0 shadow-none focus-visible:ring-0"
+        className="min-h-24"
       />
-      <div className="flex items-center justify-between px-1 pt-2">
+      <div className="mt-3 flex items-center justify-between gap-2">
         <p className="text-xs text-muted-foreground">BookLeaf is notified instantly.</p>
-        <Button size="sm" onClick={() => mutation.mutate()} disabled={!body.trim() || mutation.isPending}>
-          {mutation.isPending ? <Loader2 className="animate-spin" /> : <Send />} Send
+        <Button onClick={() => mutation.mutate()} disabled={!body.trim() || mutation.isPending}>
+          {mutation.isPending ? <Loader2 className="animate-spin" /> : <Send />} Send message
         </Button>
       </div>
     </div>
@@ -138,6 +172,7 @@ function ReplyBox({ ticket }: { ticket: AuthorTicketDetail }) {
 
 export function TicketDetailPage() {
   const id = Number(useParams().id)
+  const { user } = useAuth()
   const queryClient = useQueryClient()
   const refetchInterval = useFallbackInterval()
   const { data: ticket, isLoading, isError, error, refetch } = useQuery({
@@ -178,60 +213,73 @@ export function TicketDetailPage() {
   }
   if (!ticket) return null
 
+  const awaitingFirstReply = !ticket.messages.some((m) => m.sender_role === 'ADMIN') && ticket.status === 'OPEN'
+
   return (
-    <div className="mx-auto max-w-3xl">
-      <Button asChild variant="ghost" size="sm" className="mb-3 -ml-2">
+    <div className="mx-auto max-w-4xl space-y-5">
+      <Button asChild variant="ghost" size="sm" className="-ml-2">
         <Link to="/author/tickets">
           <ArrowLeft /> My Tickets
         </Link>
       </Button>
 
-      <div className="rounded-xl border bg-card p-5">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="min-w-0">
-            <p className="text-xs text-muted-foreground">
-              {ticket.reference} · {ticket.book ? ticket.book.title : 'General / Account Level'}
-            </p>
-            <h1 className="mt-1 text-lg font-semibold">{ticket.subject}</h1>
-            <p className="mt-1 text-xs text-muted-foreground">Submitted {formatDateTime(ticket.created_at)}</p>
+      <section className="overflow-hidden rounded-2xl border bg-card shadow-xs">
+        <div className="bg-gradient-to-br from-primary/[0.08] via-card to-card px-6 pt-5 pb-5">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-xs text-muted-foreground">
+            <span className="rounded-md bg-card px-2 py-1 font-mono font-semibold text-foreground ring-1 ring-border">{ticket.reference}</span>
+            <span className="flex items-center gap-1">
+              {ticket.book ? <BookOpen className="size-3.5" /> : <UserRound className="size-3.5" />}
+              {ticket.book ? ticket.book.title : 'General / Account Level'}
+            </span>
+            <span>Submitted {formatDateTime(ticket.created_at)}</span>
+            <span className="ml-auto">
+              <StatusBadge status={ticket.status} audience="author" size="lg" />
+            </span>
           </div>
-          <StatusBadge status={ticket.status} audience="author" />
+          <h1 className="mt-3 text-2xl font-semibold tracking-tight">{ticket.subject}</h1>
         </div>
-        <div className="mt-4 border-t pt-4">
-          <StatusTimeline status={ticket.status} />
+        <div className="border-t px-6 py-5">
+          <StatusStepper ticket={ticket} />
         </div>
-      </div>
+      </section>
 
-      <div className="mt-6 space-y-4">
-        <div className="flex gap-3">
-          <div className="w-8 shrink-0" />
-          <div className="min-w-0 flex-1 rounded-xl border bg-card px-4 py-3">
-            <div className="flex items-center justify-between text-xs">
-              <span className="font-medium">Your request</span>
-              <RelativeTime value={ticket.created_at} className="text-muted-foreground" />
-            </div>
-            <p className="mt-2 text-sm leading-relaxed whitespace-pre-wrap">{ticket.description}</p>
+      <section className="overflow-hidden rounded-2xl border bg-card shadow-xs">
+        <header className="flex items-center justify-between border-b px-5 py-3">
+          <h2 className="flex items-center gap-2 text-sm font-semibold">
+            <MessagesSquare className="size-4 text-primary" /> Conversation with BookLeaf
+          </h2>
+          <span className="text-xs text-muted-foreground">Updates appear here automatically</span>
+        </header>
+        <div className="space-y-5 bg-gradient-to-b from-muted/40 to-muted/10 px-5 py-6">
+          <ChatBubble
+            side="right"
+            variant="author"
+            name="You"
+            time={ticket.created_at}
+            avatar={<PersonAvatar name={user?.full_name ?? 'You'} variant="author" />}
+          >
+            <p className="whitespace-pre-wrap">{ticket.description}</p>
             {ticket.attachments.length > 0 && (
               <div className="mt-3">
                 <AttachmentList ticketId={ticket.id} attachments={ticket.attachments} />
               </div>
             )}
-          </div>
+          </ChatBubble>
+
+          {ticket.messages.map((m) => (
+            <MessageBubble key={m.id} message={m} viewer="author" />
+          ))}
+
+          {awaitingFirstReply && (
+            <div className="flex items-center gap-3 rounded-2xl border border-dashed border-primary/30 bg-card px-4 py-3 text-sm text-muted-foreground">
+              <Hourglass className="size-4 shrink-0 text-primary" />
+              Our team has your request and will reply here, typically within 24 hours.
+            </div>
+          )}
         </div>
-
-        {ticket.messages.map((m) => (
-          <MessageBubble key={m.id} message={m} viewer="author" />
-        ))}
-
-        {!ticket.messages.some((m) => m.sender_role === 'ADMIN') && ticket.status === 'OPEN' && (
-          <div className="rounded-xl border border-dashed bg-card px-4 py-3 text-sm text-muted-foreground">
-            Our team has received your request and will reply here, typically within 24 hours. This page updates automatically.
-          </div>
-        )}
-
         {ticket.status === 'RESOLVED' && <ResolutionPrompt ticket={ticket} />}
         <ReplyBox ticket={ticket} />
-      </div>
+      </section>
     </div>
   )
 }

@@ -66,27 +66,33 @@ export function ConnectionIndicator() {
   )
 }
 
-export function Stat({ label, value, hint, icon, tone = 'default' }: {
+const STAT_ACCENTS = {
+  default: { tile: 'bg-muted text-muted-foreground', value: '' },
+  green: { tile: 'bg-emerald-100 text-emerald-700', value: '' },
+  blue: { tile: 'bg-sky-100 text-sky-700', value: '' },
+  violet: { tile: 'bg-violet-100 text-violet-700', value: '' },
+  amber: { tile: 'bg-amber-100 text-amber-700', value: 'text-amber-700' },
+  red: { tile: 'bg-red-100 text-red-700', value: 'text-red-700' },
+} as const
+
+export function Stat({ label, value, hint, icon, tone, accent = 'default' }: {
   label: string
   value: ReactNode
   hint?: ReactNode
   icon?: ReactNode
   tone?: 'default' | 'warning' | 'danger' | 'success'
+  accent?: keyof typeof STAT_ACCENTS
 }) {
-  const toneClass = {
-    default: '',
-    warning: 'text-amber-700',
-    danger: 'text-red-700',
-    success: 'text-emerald-700',
-  }[tone]
+  const resolved = tone === 'warning' ? 'amber' : tone === 'danger' ? 'red' : tone === 'success' ? 'green' : accent
+  const a = STAT_ACCENTS[resolved]
   return (
-    <div className="rounded-xl border bg-card p-4">
-      <div className="flex items-center justify-between text-xs font-medium text-muted-foreground">
-        {label}
-        {icon}
+    <div className="rounded-2xl border bg-card p-5 shadow-xs">
+      <div className="flex items-start justify-between gap-3">
+        <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">{label}</p>
+        {icon && <span className={cn('flex size-9 items-center justify-center rounded-xl', a.tile)}>{icon}</span>}
       </div>
-      <p className={cn('mt-2 text-2xl font-semibold tracking-tight', toneClass)}>{value}</p>
-      {hint && <p className="mt-1 text-xs text-muted-foreground">{hint}</p>}
+      <p className={cn('mt-1 text-2xl font-semibold tracking-tight', a.value)}>{value}</p>
+      {hint && <p className="mt-1.5 text-xs text-muted-foreground">{hint}</p>}
     </div>
   )
 }

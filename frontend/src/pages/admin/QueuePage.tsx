@@ -1,18 +1,18 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
-import { AlertOctagon, ChevronLeft, ChevronRight, Clock, Inbox, Loader2, Search, Sparkles, UserX, X } from 'lucide-react'
+import { AlertOctagon, CalendarDays, ChevronLeft, ChevronRight, Clock, Inbox, Loader2, Search, SlidersHorizontal, Sparkles, UserX, X } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 
 import { CategoryBadge, PriorityBadge, SlaBadge, StatusBadge } from '@/components/badges'
 import { PageHeader, RelativeTime } from '@/components/common'
+import { MetaSelect, type MetaOption } from '@/components/MetaSelect'
 import { EmptyState, ErrorState, ListSkeleton } from '@/components/states'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import { CATEGORIES, CATEGORY_META, PRIORITIES, PRIORITY_META, STATUSES, STATUS_META } from '@/lib/constants'
+import { CATEGORIES, CATEGORY_META, PRIORITIES, PRIORITY_META, SLA_META, STATUSES, STATUS_META } from '@/lib/constants'
 import { ticketsApi, type TicketQuery } from '@/lib/endpoints'
 import { initials } from '@/lib/format'
 import type { AdminTicket } from '@/lib/types'
@@ -33,42 +33,18 @@ const DATE_RANGES: Record<string, { label: string; days: number }> = {
   '30': { label: 'Last 30 days', days: 30 },
 }
 
-const ANY = 'any'
 const FILTER_KEYS = ['status', 'category', 'priority', 'sla', 'range', 'q'] as const
 
-function FilterSelect({
-  value,
-  onChange,
-  placeholder,
-  options,
-}: {
-  value: string | null
-  onChange: (v: string | null) => void
-  placeholder: string
-  options: { value: string; label: string }[]
-}) {
-  return (
-    <Select value={value ?? ANY} onValueChange={(v) => onChange(v === ANY ? null : v)}>
-      <SelectTrigger size="sm" className={cn('w-auto min-w-32', value && 'border-primary/50 bg-accent/40')}>
-        <SelectValue placeholder={placeholder} />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem value={ANY}>{placeholder}: any</SelectItem>
-        {options.map((o) => (
-          <SelectItem key={o.value} value={o.value}>
-            {o.label}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
-  )
-}
+const SLA_FILTER_OPTIONS: MetaOption[] = [
+  { value: 'overdue', label: 'Overdue', tone: SLA_META.overdue },
+  { value: 'at_risk', label: 'Due soon', tone: SLA_META.at_risk },
+]
 
 function KpiCard({ label, value, icon: Icon, tone, onClick, active }: {
   label: string
   value: number | undefined
   icon: typeof Inbox
-  tone: string
+  tone: { tile: string; ring: string; bar: string }
   onClick: () => void
   active: boolean
 }) {
@@ -76,19 +52,27 @@ function KpiCard({ label, value, icon: Icon, tone, onClick, active }: {
     <button
       onClick={onClick}
       className={cn(
-        'flex items-center gap-3 rounded-xl border bg-card p-3.5 text-left transition-colors hover:border-primary/40',
-        active && 'border-primary ring-1 ring-primary/30',
+        'group relative flex items-center gap-4 overflow-hidden rounded-2xl border bg-card p-4 text-left shadow-xs transition-all hover:-translate-y-px hover:shadow-md',
+        active && cn('ring-2', tone.ring),
       )}
     >
-      <div className={cn('flex size-9 items-center justify-center rounded-lg', tone)}>
-        <Icon className="size-4" />
+      <span className={cn('absolute inset-x-0 top-0 h-1', tone.bar)} />
+      <div className={cn('flex size-11 items-center justify-center rounded-xl', tone.tile)}>
+        <Icon className="size-5" />
       </div>
       <div>
-        <p className="text-xl font-semibold leading-none">{value ?? '–'}</p>
-        <p className="mt-1 text-xs text-muted-foreground">{label}</p>
+        <p className="text-2xl leading-none font-semibold tracking-tight">{value ?? '–'}</p>
+        <p className="mt-1.5 text-xs font-medium text-muted-foreground">{label}</p>
       </div>
     </button>
   )
+}
+
+const PRIORITY_EDGE: Record<string, string> = {
+  CRITICAL: 'shadow-[inset_4px_0_0_0_var(--color-red-500)]',
+  HIGH: 'shadow-[inset_4px_0_0_0_var(--color-orange-500)]',
+  MEDIUM: 'shadow-[inset_4px_0_0_0_var(--color-amber-400)]',
+  LOW: 'shadow-[inset_4px_0_0_0_var(--color-slate-300)]',
 }
 
 function TicketTableRow({ ticket, selected, onOpen }: { ticket: AdminTicket; selected: boolean; onOpen: () => void }) {
@@ -98,14 +82,15 @@ function TicketTableRow({ ticket, selected, onOpen }: { ticket: AdminTicket; sel
       onClick={onOpen}
       className={cn(
         'cursor-pointer border-b transition-colors last:border-0 hover:bg-muted/50',
-        selected && 'bg-accent/40',
-        overdue && 'shadow-[inset_3px_0_0_0_var(--color-red-500)]',
+        PRIORITY_EDGE[ticket.priority],
+        selected && 'bg-primary/[0.05]',
+        overdue && 'bg-red-50/40',
       )}
     >
-      <td className="py-3 pr-2 pl-4 align-top">
+      <td className="py-3.5 pr-2 pl-5 align-top">
         <PriorityBadge priority={ticket.priority} source={ticket.priority_source} />
       </td>
-      <td className="max-w-0 py-3 pr-4 align-top">
+      <td className="max-w-0 py-3.5 pr-4 align-top">
         <div className="flex items-center gap-1.5">
           {ticket.has_unread && <span className="size-1.5 shrink-0 rounded-full bg-primary" aria-label="New author activity" />}
           <p className={cn('truncate text-sm', ticket.has_unread ? 'font-semibold' : 'font-medium')}>{ticket.subject}</p>
@@ -114,30 +99,30 @@ function TicketTableRow({ ticket, selected, onOpen }: { ticket: AdminTicket; sel
           {ticket.reference} · {ticket.author.name} · {ticket.book ? ticket.book.title : 'General'}
         </p>
       </td>
-      <td className="py-3 pr-4 align-top">
+      <td className="py-3.5 pr-4 align-top">
         {ticket.ai_status === 'PENDING' && ticket.category_source !== 'ADMIN' ? (
-          <span className="inline-flex items-center gap-1 rounded-md border border-violet-200 bg-violet-50 px-2 py-0.5 text-xs text-violet-700">
+          <span className="inline-flex items-center gap-1 rounded-full bg-violet-50 px-2.5 py-1 text-xs font-medium text-violet-700 ring-1 ring-violet-600/20 ring-inset">
             <Loader2 className="size-3 animate-spin" /> Classifying
           </span>
         ) : (
           <div className="flex flex-col items-start gap-1">
             <CategoryBadge category={ticket.category} source={ticket.category_source} short />
             {ticket.ai_status === 'FAILED' && ticket.category_source === 'FALLBACK' && (
-              <span className="text-[11px] text-amber-700">Needs triage</span>
+              <span className="text-[11px] font-medium text-amber-700">Needs triage</span>
             )}
           </div>
         )}
       </td>
-      <td className="py-3 pr-4 align-top">
+      <td className="py-3.5 pr-4 align-top">
         <StatusBadge status={ticket.status} />
       </td>
-      <td className="py-3 pr-4 align-top">
+      <td className="py-3.5 pr-4 align-top">
         <SlaBadge state={ticket.sla_state} dueAt={ticket.sla_due_at} />
       </td>
-      <td className="py-3 pr-4 align-top text-xs text-muted-foreground">
+      <td className="py-3.5 pr-4 align-top text-xs text-muted-foreground">
         <RelativeTime value={ticket.created_at} />
       </td>
-      <td className="py-3 pr-4 align-top">
+      <td className="py-3.5 pr-4 align-top">
         {ticket.assigned_to ? (
           <Tooltip>
             <TooltipTrigger asChild>
@@ -234,15 +219,15 @@ export function QueuePage() {
         description="Most urgent first, then oldest. Press J / K to move, Enter to open."
       />
 
-      <div className="mb-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <KpiCard label="Open tickets" value={stats.data ? stats.data.open + stats.data.in_progress : undefined} icon={Inbox} tone="bg-sky-50 text-sky-700" onClick={() => applyKpi({})} active={view === 'attention' && !activeFilters.length} />
-        <KpiCard label="Unassigned" value={stats.data?.unassigned} icon={UserX} tone="bg-zinc-100 text-zinc-700" onClick={() => applyKpi({ view: 'unassigned' })} active={view === 'unassigned'} />
-        <KpiCard label="Overdue first reply" value={stats.data?.overdue} icon={Clock} tone="bg-red-50 text-red-700" onClick={() => applyKpi({ sla: 'overdue' })} active={params.get('sla') === 'overdue'} />
-        <KpiCard label="Critical open" value={stats.data?.critical} icon={AlertOctagon} tone="bg-orange-50 text-orange-700" onClick={() => applyKpi({ priority: 'CRITICAL' })} active={params.get('priority') === 'CRITICAL'} />
+      <div className="mb-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <KpiCard label="Open tickets" value={stats.data ? stats.data.open + stats.data.in_progress : undefined} icon={Inbox} tone={{ tile: 'bg-sky-100 text-sky-700', ring: 'ring-sky-300', bar: 'bg-sky-500' }} onClick={() => applyKpi({})} active={view === 'attention' && !activeFilters.length} />
+        <KpiCard label="Unassigned" value={stats.data?.unassigned} icon={UserX} tone={{ tile: 'bg-violet-100 text-violet-700', ring: 'ring-violet-300', bar: 'bg-violet-500' }} onClick={() => applyKpi({ view: 'unassigned' })} active={view === 'unassigned'} />
+        <KpiCard label="Overdue first reply" value={stats.data?.overdue} icon={Clock} tone={{ tile: 'bg-red-100 text-red-700', ring: 'ring-red-300', bar: 'bg-red-500' }} onClick={() => applyKpi({ sla: 'overdue' })} active={params.get('sla') === 'overdue'} />
+        <KpiCard label="Critical open" value={stats.data?.critical} icon={AlertOctagon} tone={{ tile: 'bg-orange-100 text-orange-700', ring: 'ring-orange-300', bar: 'bg-orange-500' }} onClick={() => applyKpi({ priority: 'CRITICAL' })} active={params.get('priority') === 'CRITICAL'} />
       </div>
 
-      <div className="rounded-xl border bg-card">
-        <div className="flex flex-col gap-3 border-b p-3 lg:flex-row lg:items-center">
+      <div className="overflow-hidden rounded-2xl border bg-card shadow-xs">
+        <div className="flex flex-col gap-3 border-b p-4 lg:flex-row lg:items-center">
           <Tabs value={view} onValueChange={(v) => applyKpi(v === 'attention' ? {} : { view: v })}>
             <TabsList>
               {Object.entries(VIEWS).map(([key, v]) => (
@@ -252,23 +237,26 @@ export function QueuePage() {
               ))}
             </TabsList>
           </Tabs>
-          <div className="relative lg:ml-auto lg:w-72">
-            <Search className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+          <div className="relative lg:ml-auto lg:w-80">
+            <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search subject, author, book, TKT-0001"
-              className="h-8 pl-8"
+              className="pl-9"
             />
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 border-b px-3 py-2.5">
-          <FilterSelect value={params.get('status')} onChange={(v) => setParam('status', v)} placeholder="Status" options={STATUSES.map((s) => ({ value: s, label: STATUS_META[s].label }))} />
-          <FilterSelect value={params.get('priority')} onChange={(v) => setParam('priority', v)} placeholder="Priority" options={PRIORITIES.map((p) => ({ value: p, label: PRIORITY_META[p].label }))} />
-          <FilterSelect value={params.get('category')} onChange={(v) => setParam('category', v)} placeholder="Category" options={CATEGORIES.map((c) => ({ value: c, label: CATEGORY_META[c].label }))} />
-          <FilterSelect value={params.get('sla')} onChange={(v) => setParam('sla', v)} placeholder="SLA" options={[{ value: 'overdue', label: 'Overdue' }, { value: 'at_risk', label: 'Due soon' }]} />
-          <FilterSelect value={params.get('range')} onChange={(v) => setParam('range', v)} placeholder="Created" options={Object.entries(DATE_RANGES).map(([value, r]) => ({ value, label: r.label }))} />
+        <div className="flex flex-wrap items-center gap-2.5 border-b bg-muted/20 px-4 py-3">
+          <span className="mr-1 flex items-center gap-1.5 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+            <SlidersHorizontal className="size-3.5" /> Filter
+          </span>
+          <MetaSelect size="sm" value={params.get('status')} onChange={(v) => setParam('status', v)} placeholder="Status" anyLabel="Any status" options={STATUSES.map((s) => ({ value: s, label: STATUS_META[s].label, tone: STATUS_META[s] }))} />
+          <MetaSelect size="sm" value={params.get('priority')} onChange={(v) => setParam('priority', v)} placeholder="Priority" anyLabel="Any priority" options={PRIORITIES.map((p) => ({ value: p, label: PRIORITY_META[p].label, tone: PRIORITY_META[p] }))} />
+          <MetaSelect size="sm" value={params.get('category')} onChange={(v) => setParam('category', v)} placeholder="Category" anyLabel="Any category" className="min-w-44" options={CATEGORIES.map((c) => ({ value: c, label: CATEGORY_META[c].label, tone: CATEGORY_META[c] }))} />
+          <MetaSelect size="sm" value={params.get('sla')} onChange={(v) => setParam('sla', v)} placeholder="SLA" anyLabel="Any SLA" options={SLA_FILTER_OPTIONS} />
+          <MetaSelect size="sm" value={params.get('range')} onChange={(v) => setParam('range', v)} placeholder="Created" anyLabel="Any time" options={Object.entries(DATE_RANGES).map(([value, r]) => ({ value, label: r.label, icon: CalendarDays }))} />
           {activeFilters.length > 0 && (
             <Button variant="ghost" size="sm" onClick={() => applyKpi(view === 'attention' ? {} : { view })}>
               <X /> Clear filters
@@ -303,14 +291,14 @@ export function QueuePage() {
                 <col className="w-24" />
               </colgroup>
               <thead>
-                <tr className="border-b text-xs text-muted-foreground">
-                  <th className="py-2 pr-2 pl-4 font-medium">Priority</th>
-                  <th className="py-2 pr-4 font-medium">Ticket</th>
-                  <th className="py-2 pr-4 font-medium">Category</th>
-                  <th className="py-2 pr-4 font-medium">Status</th>
-                  <th className="py-2 pr-4 font-medium">First reply SLA</th>
-                  <th className="py-2 pr-4 font-medium">Age</th>
-                  <th className="py-2 pr-4 font-medium">Owner</th>
+                <tr className="border-b bg-muted/30 text-[11px] tracking-wide text-muted-foreground uppercase">
+                  <th className="py-2.5 pr-2 pl-5 font-semibold">Priority</th>
+                  <th className="py-2.5 pr-4 font-semibold">Ticket</th>
+                  <th className="py-2.5 pr-4 font-semibold">Category</th>
+                  <th className="py-2.5 pr-4 font-semibold">Status</th>
+                  <th className="py-2.5 pr-4 font-semibold">First reply SLA</th>
+                  <th className="py-2.5 pr-4 font-semibold">Age</th>
+                  <th className="py-2.5 pr-4 font-semibold">Owner</th>
                 </tr>
               </thead>
               <tbody>

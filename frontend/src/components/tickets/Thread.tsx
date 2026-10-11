@@ -1,49 +1,105 @@
-import { Download, FileText, ImageIcon, Lock } from 'lucide-react'
+import { Download, FileText, ImageIcon, Leaf, Sparkles } from 'lucide-react'
+import type { ReactNode } from 'react'
 import { toast } from 'sonner'
 
 import { RelativeTime } from '@/components/common'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { errorMessage } from '@/lib/api'
 import { ticketsApi } from '@/lib/endpoints'
 import { formatBytes, initials } from '@/lib/format'
 import type { Attachment, Message } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
-export function MessageBubble({ message, viewer }: { message: Message; viewer: 'author' | 'admin' }) {
-  const fromTeam = message.sender_role === 'ADMIN'
-  const note = message.is_internal
-  const label = note ? 'Internal note' : fromTeam ? (viewer === 'author' ? 'BookLeaf Support' : 'Reply to author') : 'Author'
+type Viewer = 'author' | 'admin'
 
+export function ChatBubble({
+  side,
+  name,
+  meta,
+  time,
+  variant,
+  avatar,
+  children,
+}: {
+  side: 'left' | 'right'
+  name: string
+  meta?: ReactNode
+  time: string
+  variant: 'team' | 'author'
+  avatar: ReactNode
+  children: ReactNode
+}) {
   return (
-    <div className="flex gap-3">
-      <Avatar className="mt-0.5 size-8 shrink-0">
-        <AvatarFallback
+    <div className={cn('flex items-end gap-2.5', side === 'right' && 'flex-row-reverse')}>
+      <div className="shrink-0">{avatar}</div>
+      <div className={cn('flex max-w-[85%] min-w-0 flex-col', side === 'right' ? 'items-end' : 'items-start')}>
+        <div className={cn('mb-1 flex items-center gap-2 px-1 text-xs', side === 'right' && 'flex-row-reverse')}>
+          <span className="font-semibold text-foreground">{name}</span>
+          {meta}
+          <RelativeTime value={time} className="text-muted-foreground" />
+        </div>
+        <div
           className={cn(
-            'text-xs font-medium',
-            note ? 'bg-amber-100 text-amber-800' : fromTeam ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground',
+            'rounded-2xl px-4 py-3 text-sm leading-relaxed shadow-xs',
+            variant === 'team'
+              ? 'border border-primary/15 bg-primary/[0.07] text-foreground'
+              : 'border bg-card text-foreground',
+            side === 'right' ? 'rounded-br-md' : 'rounded-bl-md',
           )}
         >
-          {note ? <Lock className="size-3.5" /> : initials(message.sender_name)}
-        </AvatarFallback>
-      </Avatar>
-      <div
-        className={cn(
-          'min-w-0 flex-1 rounded-xl border px-4 py-3',
-          note ? 'border-amber-200 bg-amber-50' : fromTeam ? 'border-primary/20 bg-accent/30' : 'bg-card',
-        )}
-      >
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs">
-          <span className="font-medium text-foreground">{message.sender_name}</span>
-          <span className={cn('text-muted-foreground', note && 'font-medium text-amber-800')}>{label}</span>
-          {viewer === 'admin' && message.ai_draft_id && (
-            <span className="text-muted-foreground">· {message.ai_draft_edited ? 'AI draft, edited' : 'AI draft'}</span>
-          )}
-          <span className="ml-auto text-muted-foreground">
-            <RelativeTime value={message.created_at} />
-          </span>
+          {children}
         </div>
-        <p className="mt-2 text-sm leading-relaxed whitespace-pre-wrap">{message.body}</p>
       </div>
+    </div>
+  )
+}
+
+export function PersonAvatar({ name, variant }: { name: string; variant: 'team' | 'author' }) {
+  return (
+    <span
+      className={cn(
+        'flex size-9 items-center justify-center rounded-full text-xs font-semibold ring-2 ring-background',
+        variant === 'team' ? 'bg-primary text-primary-foreground' : 'bg-gradient-to-br from-sky-100 to-indigo-100 text-indigo-800',
+      )}
+    >
+      {variant === 'team' && name === 'BookLeaf Support' ? <Leaf className="size-4" /> : initials(name)}
+    </span>
+  )
+}
+
+export function MessageBubble({ message, viewer }: { message: Message; viewer: Viewer }) {
+  const fromTeam = message.sender_role === 'ADMIN'
+  const variant = fromTeam ? 'team' : 'author'
+  const side = (viewer === 'admin') === fromTeam ? 'right' : 'left'
+  const avatarName = viewer === 'author' && fromTeam ? 'BookLeaf Support' : message.sender_name
+  const name = viewer === 'author' && !fromTeam ? 'You' : avatarName
+  return (
+    <ChatBubble
+      side={side}
+      name={name}
+      variant={variant}
+      time={message.created_at}
+      avatar={<PersonAvatar name={avatarName} variant={variant} />}
+      meta={
+        viewer === 'admin' && message.ai_draft_id ? (
+          <span className="inline-flex items-center gap-1 rounded-full bg-violet-50 px-2 py-0.5 text-[11px] font-medium text-violet-700 ring-1 ring-violet-600/20 ring-inset">
+            <Sparkles className="size-3" /> {message.ai_draft_edited ? 'AI draft, edited' : 'AI draft'}
+          </span>
+        ) : viewer === 'author' && fromTeam && message.sender_name ? (
+          <span className="text-muted-foreground">{message.sender_name.split(' ')[0]}</span>
+        ) : null
+      }
+    >
+      <p className="whitespace-pre-wrap">{message.body}</p>
+    </ChatBubble>
+  )
+}
+
+export function DayDivider({ label }: { label: string }) {
+  return (
+    <div className="flex items-center gap-3 py-1 text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
+      <span className="h-px flex-1 bg-border" />
+      {label}
+      <span className="h-px flex-1 bg-border" />
     </div>
   )
 }
@@ -60,19 +116,26 @@ export function AttachmentList({ ticketId, attachments }: { ticketId: number; at
   }
   return (
     <div className="flex flex-wrap gap-2">
-      {attachments.map((a) => (
-        <button
-          key={a.id}
-          type="button"
-          onClick={() => open(a)}
-          className="group inline-flex items-center gap-2 rounded-lg border bg-card px-3 py-1.5 text-xs hover:border-primary/40"
-        >
-          {a.content_type.startsWith('image/') ? <ImageIcon className="size-3.5" /> : <FileText className="size-3.5" />}
-          <span className="max-w-48 truncate">{a.original_name}</span>
-          <span className="text-muted-foreground">{formatBytes(a.size)}</span>
-          <Download className="size-3.5 text-muted-foreground group-hover:text-foreground" />
-        </button>
-      ))}
+      {attachments.map((a) => {
+        const image = a.content_type.startsWith('image/')
+        return (
+          <button
+            key={a.id}
+            type="button"
+            onClick={() => open(a)}
+            className="group inline-flex items-center gap-2.5 rounded-xl border bg-card py-2 pr-3 pl-2 text-left text-xs shadow-xs transition-colors hover:border-primary/40"
+          >
+            <span className={cn('flex size-8 items-center justify-center rounded-lg', image ? 'bg-sky-50 text-sky-600' : 'bg-rose-50 text-rose-600')}>
+              {image ? <ImageIcon className="size-4" /> : <FileText className="size-4" />}
+            </span>
+            <span className="min-w-0">
+              <span className="block max-w-44 truncate font-medium">{a.original_name}</span>
+              <span className="text-muted-foreground">{formatBytes(a.size)}</span>
+            </span>
+            <Download className="size-4 text-muted-foreground group-hover:text-primary" />
+          </button>
+        )
+      })}
     </div>
   )
 }

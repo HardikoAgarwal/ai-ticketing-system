@@ -1,34 +1,52 @@
-import { ChevronRight } from 'lucide-react'
+import { BookOpen, ChevronRight, MessageCircleReply, UserRound } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 import { StatusBadge } from '@/components/badges'
 import { RelativeTime } from '@/components/common'
+import { STATUS_META } from '@/lib/constants'
 import type { AuthorTicket } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
 export function TicketRow({ ticket }: { ticket: AuthorTicket }) {
+  const meta = STATUS_META[ticket.status]
+  const Icon = meta.icon
   return (
     <Link
       to={`/author/tickets/${ticket.id}`}
       className={cn(
-        'group flex items-center gap-4 rounded-xl border bg-card px-4 py-3 transition-colors hover:border-primary/40 hover:bg-accent/30',
-        ticket.has_unread && 'border-primary/40',
+        'group relative flex items-center gap-4 overflow-hidden rounded-2xl border bg-card py-4 pr-4 pl-5 shadow-xs transition-all hover:-translate-y-px hover:shadow-md',
+        ticket.has_unread && 'border-primary/40 bg-primary/[0.03]',
       )}
     >
+      <span className={cn('absolute inset-y-0 left-0 w-1', meta.dot)} />
+      <span className={cn('hidden size-11 shrink-0 items-center justify-center rounded-xl sm:flex', meta.pill, 'ring-1 ring-inset')}>
+        <Icon className="size-5" />
+      </span>
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
-          {ticket.has_unread && <span className="size-2 shrink-0 rounded-full bg-primary" aria-label="New reply" />}
-          <p className={cn('truncate text-sm', ticket.has_unread ? 'font-semibold' : 'font-medium')}>{ticket.subject}</p>
+          <p className={cn('truncate text-[0.95rem]', ticket.has_unread ? 'font-semibold' : 'font-medium')}>{ticket.subject}</p>
+          {ticket.has_unread && (
+            <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-primary px-2 py-0.5 text-[11px] font-semibold text-primary-foreground">
+              <MessageCircleReply className="size-3" /> New reply
+            </span>
+          )}
         </div>
-        <p className="mt-0.5 truncate text-xs text-muted-foreground">
-          {ticket.reference} · {ticket.book ? ticket.book.title : 'General / Account'} · updated <RelativeTime value={ticket.updated_at} />
-        </p>
+        <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+          <span className="font-mono">{ticket.reference}</span>
+          <span className="flex items-center gap-1">
+            {ticket.book ? <BookOpen className="size-3.5" /> : <UserRound className="size-3.5" />}
+            {ticket.book ? ticket.book.title : 'General / Account'}
+          </span>
+          <span>
+            Updated <RelativeTime value={ticket.updated_at} />
+          </span>
+        </div>
       </div>
-      {ticket.has_unread && (
-        <span className="hidden rounded-md bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary sm:inline">New reply</span>
-      )}
-      <StatusBadge status={ticket.status} audience="author" />
-      <ChevronRight className="size-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
+      <div className="hidden flex-col items-end gap-1 sm:flex">
+        <StatusBadge status={ticket.status} audience="author" />
+        <span className="text-[11px] text-muted-foreground">{meta.authorHint}</span>
+      </div>
+      <ChevronRight className="size-5 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
     </Link>
   )
 }

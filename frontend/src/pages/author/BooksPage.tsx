@@ -24,8 +24,11 @@ export function BooksPage() {
         <div className="space-y-8">
           {live.length > 0 && (
             <section>
-              <h2 className="mb-3 text-sm font-medium text-muted-foreground">Live ({live.length})</h2>
-              <div className="grid gap-4 md:grid-cols-2">
+              <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold">
+                <span className="size-2 rounded-full bg-emerald-500" /> Live on stores
+                <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] text-emerald-700 ring-1 ring-emerald-600/20 ring-inset">{live.length}</span>
+              </h2>
+              <div className="grid gap-5 lg:grid-cols-2">
                 {live.map((b) => (
                   <BookCard key={b.id} book={b} />
                 ))}
@@ -34,8 +37,11 @@ export function BooksPage() {
           )}
           {production.length > 0 && (
             <section>
-              <h2 className="mb-3 text-sm font-medium text-muted-foreground">In production ({production.length})</h2>
-              <div className="grid gap-4 md:grid-cols-2">
+              <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold">
+                <span className="size-2 rounded-full bg-amber-500" /> In production
+                <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] text-amber-800 ring-1 ring-amber-600/20 ring-inset">{production.length}</span>
+              </h2>
+              <div className="grid gap-5 lg:grid-cols-2">
                 {production.map((b) => (
                   <BookCard key={b.id} book={b} />
                 ))}

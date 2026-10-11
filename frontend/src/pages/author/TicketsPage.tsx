@@ -49,7 +49,9 @@ export function TicketsPage() {
           {Object.entries(TABS).map(([key, t]) => (
             <TabsTrigger key={key} value={key}>
               {t.label}
-              {data && <span className="ml-1.5 text-xs text-muted-foreground">{counts[key]}</span>}
+              {data && (
+                <span className="ml-1 rounded-full bg-primary/10 px-1.5 py-0.5 text-[11px] font-semibold text-primary">{counts[key]}</span>
+              )}
             </TabsTrigger>
           ))}
         </TabsList>
@@ -77,7 +79,7 @@ export function TicketsPage() {
           description={tab === 'active' ? 'All your requests have been resolved.' : undefined}
         />
       ) : (
-        <div className="space-y-2">
+        <div className="space-y-3">
           {visible.map((t) => (
             <TicketRow key={t.id} ticket={t} />
           ))}
