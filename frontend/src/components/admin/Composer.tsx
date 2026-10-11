@@ -1,13 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { AlertTriangle, BookMarked, Eye, Loader2, RefreshCw, Send, Sparkles, Trash2 } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { AlertTriangle, BookMarked, Eye, Loader2, PenLine, RefreshCw, Send, Sparkles, Trash2 } from 'lucide-react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { toast } from 'sonner'
 
 import { ConfirmDialog, type ConfirmOptions } from '@/components/ConfirmDialog'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { Skeleton } from '@/components/ui/skeleton'
 import { Textarea } from '@/components/ui/textarea'
 import { useAuth } from '@/auth/AuthContext'
 import { errorMessage } from '@/lib/api'
@@ -52,7 +51,7 @@ export function Composer({ ticket }: { ticket: AdminTicketDetail }) {
   useEffect(() => {
     if (draft?.status !== 'ready' || !draft.draft) return
     if (loadedDraft?.id === draft.draft.id) return
-    if (!reply.trim() || reply === loadedDraft?.content) {
+    if (!reply.trim() || reply === loadedDraft?.content || reply.trim() === draft.draft.content.trim()) {
       setReply(draft.draft.content)
       setLoadedDraft({ id: draft.draft.id, content: draft.draft.content })
     }
@@ -117,8 +116,16 @@ export function Composer({ ticket }: { ticket: AdminTicketDetail }) {
     else setPreview({ resolve })
   }
 
+  const insertDraft = () => {
+    if (!draft?.draft) return
+    setReply(draft.draft.content)
+    setLoadedDraft({ id: draft.draft.id, content: draft.draft.content })
+  }
+
   const assignedElsewhere = ticket.assigned_to && ticket.assigned_to.id !== user?.id
   const firstName = ticket.author.name.split(' ')[0]
+  const drafting = draft?.status === 'generating' && !reply && !manual
+  const aiMode = drafting || usingDraft
 
   if (closed) {
     return (
@@ -144,50 +151,67 @@ export function Composer({ ticket }: { ticket: AdminTicketDetail }) {
         </p>
       )}
 
-      <DraftBanner
-        status={draft?.status}
-        loading={draftQuery.isLoading}
-        sources={draft?.draft?.kb_sections}
-        usingDraft={usingDraft}
-        edited={editedFromDraft}
-        onRegenerate={askRegenerate}
-        regenerating={regenerate.isPending}
-        onDiscard={() => {
-          setReply('')
-          setLoadedDraft(null)
-        }}
-      />
+      <div
+        className={cn(
+          'rounded-2xl',
+          aiMode
+            ? cn('ai-ring', !drafting && editedFromDraft && 'ai-ring-still')
+            : 'border shadow-xs transition-shadow focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/30',
+        )}
+      >
+        <div className="overflow-hidden rounded-[calc(var(--radius-2xl)-2px)] bg-card">
+          <ComposerHeader
+            mode={drafting ? 'drafting' : usingDraft ? (editedFromDraft ? 'edited' : 'ready') : 'manual'}
+            status={draft?.status}
+            loading={draftQuery.isLoading}
+            sources={draft?.draft?.kb_sections}
+            firstName={firstName}
+            regenerating={regenerate.isPending}
+            onRegenerate={askRegenerate}
+            onInsert={insertDraft}
+            onClear={() => {
+              setReply('')
+              setLoadedDraft(null)
+            }}
+          />
 
-      {draft?.status === 'generating' && !reply && !manual ? (
-        <div className="space-y-2.5 rounded-xl border p-4">
-          <Skeleton className="h-3 w-1/3" />
-          <Skeleton className="h-3 w-full" />
-          <Skeleton className="h-3 w-2/3" />
-          <div className="flex items-center justify-between pt-1">
-            <p className="text-xs text-muted-foreground">Drafting a reply from the knowledge base…</p>
-            <Button variant="ghost" size="sm" onClick={() => setManual(true)}>
-              Write manually instead
+          {drafting ? (
+            <div className="space-y-3 px-5 py-5">
+              <div className="ai-shimmer h-3 w-1/4 rounded-full" />
+              <div className="ai-shimmer h-3 w-full rounded-full" />
+              <div className="ai-shimmer h-3 w-11/12 rounded-full" />
+              <div className="ai-shimmer h-3 w-2/3 rounded-full" />
+            </div>
+          ) : (
+            <Textarea
+              value={reply}
+              onChange={(e) => setReply(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) requestSend(false)
+              }}
+              placeholder={`Write your reply to ${firstName}…`}
+              className="max-h-72 min-h-28 resize-none rounded-none border-0 bg-transparent px-5 py-4 text-sm leading-relaxed shadow-none focus-visible:ring-0 dark:bg-transparent"
+            />
+          )}
+
+          <div className="flex items-center justify-between gap-3 border-t bg-muted/30 px-4 py-2.5">
+            {drafting ? (
+              <Button variant="ghost" size="sm" className="-ml-2 text-muted-foreground" onClick={() => setManual(true)}>
+                <PenLine /> Write manually instead
+              </Button>
+            ) : (
+              <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <Kbd>⌘</Kbd>
+                <Kbd>Enter</Kbd>
+                <span className="ml-0.5">to send · {firstName} sees it instantly</span>
+              </p>
+            )}
+            <Button onClick={() => requestSend(false)} disabled={!reply.trim() || send.isPending} className="shrink-0">
+              {send.isPending ? <Loader2 className="animate-spin" /> : <Send />} {usingDraft && !skipPreview ? 'Review & send' : 'Send'}
             </Button>
           </div>
         </div>
-      ) : (
-        <div className="flex items-end gap-3">
-          <Textarea
-            value={reply}
-            onChange={(e) => setReply(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) requestSend(false)
-            }}
-            rows={2}
-            placeholder={`Reply to ${firstName}…`}
-            className="max-h-64 min-h-12 text-sm"
-          />
-          <Button size="lg" onClick={() => requestSend(false)} disabled={!reply.trim() || send.isPending} className="shrink-0">
-            {send.isPending ? <Loader2 className="animate-spin" /> : <Send />} Send
-          </Button>
-        </div>
-      )}
-      <p className="mt-2 text-[11px] text-muted-foreground">Ctrl/⌘ + Enter to send. The author sees replies instantly.</p>
+      </div>
 
       <Dialog open={!!preview} onOpenChange={(o) => !o && setPreview(null)}>
         <DialogContent className="sm:max-w-xl">
@@ -234,79 +258,113 @@ export function Composer({ ticket }: { ticket: AdminTicketDetail }) {
   )
 }
 
-function DraftBanner({
+function Kbd({ children }: { children: ReactNode }) {
+  return (
+    <kbd className="inline-flex h-5 min-w-5 items-center justify-center rounded border bg-card px-1 font-sans text-[10px] font-medium text-foreground/70 shadow-xs">
+      {children}
+    </kbd>
+  )
+}
+
+type HeaderMode = 'drafting' | 'ready' | 'edited' | 'manual'
+
+const AI_CHIP: Record<Exclude<HeaderMode, 'manual'>, { label: string; className: string }> = {
+  drafting: { label: 'Writing…', className: 'bg-violet-50 text-violet-700 ring-violet-600/20' },
+  ready: { label: 'Ready to review', className: 'bg-violet-50 text-violet-700 ring-violet-600/20' },
+  edited: { label: 'Edited by you', className: 'bg-muted text-muted-foreground ring-border' },
+}
+
+function ComposerHeader({
+  mode,
   status,
   loading,
   sources,
-  usingDraft,
-  edited,
-  onRegenerate,
+  firstName,
   regenerating,
-  onDiscard,
+  onRegenerate,
+  onInsert,
+  onClear,
 }: {
+  mode: HeaderMode
   status?: string
   loading: boolean
   sources?: { key: string; title: string }[]
-  usingDraft: boolean
-  edited: boolean
-  onRegenerate: () => void
+  firstName: string
   regenerating: boolean
-  onDiscard: () => void
+  onRegenerate: () => void
+  onInsert: () => void
+  onClear: () => void
 }) {
-  if (loading) return null
-  if (status === 'disabled') {
+  if (mode === 'manual') {
     return (
-      <p className="mb-3 rounded-lg bg-muted px-3 py-2 text-xs text-muted-foreground">
-        AI drafting isn't configured on this server. Write your reply manually.
-      </p>
-    )
-  }
-  if (status === 'failed') {
-    return (
-      <div className="mb-3 flex items-center justify-between gap-2 rounded-lg border px-3 py-2 text-xs text-muted-foreground">
-        <span className="flex items-center gap-1.5">
-          <AlertTriangle className="size-3.5 text-amber-600" /> AI draft unavailable right now. Write your reply manually.
-        </span>
-        <Button variant="ghost" size="sm" onClick={onRegenerate} disabled={regenerating}>
-          <RefreshCw className={cn(regenerating && 'animate-spin')} /> Try again
-        </Button>
+      <div className="flex min-h-12 items-center gap-3 border-b px-4 py-2">
+        <p className="text-sm font-medium">Reply to {firstName}</p>
+        <div className="ml-auto flex items-center gap-2 text-xs text-muted-foreground">
+          {!loading && status === 'ready' && (
+            <Button variant="outline" size="sm" onClick={onInsert}>
+              <Sparkles className="text-violet-600" /> Use AI draft
+            </Button>
+          )}
+          {!loading && status === 'generating' && (
+            <span className="flex items-center gap-1.5">
+              <Loader2 className="size-3.5 animate-spin text-violet-600" /> AI draft on its way
+            </span>
+          )}
+          {!loading && status === 'failed' && (
+            <>
+              <span className="flex items-center gap-1.5">
+                <AlertTriangle className="size-3.5 text-amber-600" /> AI draft unavailable
+              </span>
+              <Button variant="ghost" size="sm" onClick={onRegenerate} disabled={regenerating}>
+                <RefreshCw className={cn(regenerating && 'animate-spin')} /> Try again
+              </Button>
+            </>
+          )}
+          {!loading && status === 'disabled' && <span>AI drafting is off on this server</span>}
+        </div>
       </div>
     )
   }
-  if (status === 'generating') {
-    return (
-      <p className="mb-3 flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs text-muted-foreground">
-        <Loader2 className="size-3.5 animate-spin text-violet-600" /> AI is drafting a reply…
-      </p>
-    )
-  }
-  if (status !== 'ready') return null
+
+  const chip = AI_CHIP[mode]
   return (
-    <div className="mb-3 rounded-lg border px-3 py-2">
-      <div className="flex flex-wrap items-center gap-2 text-xs">
-        <span className="flex items-center gap-1.5 font-medium">
-          <Sparkles className="size-3.5 text-violet-600" />
-          {usingDraft ? (edited ? 'AI draft, edited by you' : 'AI draft ready, review before sending') : 'AI draft available'}
-        </span>
-        <span className="ml-auto flex gap-1">
+    <div className="flex items-center gap-3 border-b px-4 py-3">
+      <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-linear-to-br from-violet-500 via-fuchsia-500 to-sky-400 text-white shadow-sm">
+        <Sparkles className={cn('size-4.5', mode === 'drafting' && 'animate-pulse')} />
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="flex items-center gap-2 text-sm font-semibold">
+          <span className="bg-linear-to-r from-violet-600 to-fuchsia-600 bg-clip-text text-transparent">AI draft</span>
+          <span className={cn('inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ring-1 ring-inset', chip.className)}>
+            {mode === 'drafting' && <Loader2 className="size-3 animate-spin" />}
+            {chip.label}
+          </span>
+        </p>
+        <p className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+          {mode === 'drafting' ? (
+            'Reading the ticket, book details and knowledge base…'
+          ) : sources?.length ? (
+            <>
+              Based on
+              {sources.map((s) => (
+                <span key={s.key} className="inline-flex items-center gap-1 rounded-md bg-muted px-1.5 py-0.5 font-medium text-foreground/80">
+                  <BookMarked className="size-3" /> {s.title}
+                </span>
+              ))}
+            </>
+          ) : (
+            'Check facts and tone before sending.'
+          )}
+        </p>
+      </div>
+      {mode !== 'drafting' && (
+        <div className="flex shrink-0 items-center gap-0.5">
           <Button variant="ghost" size="sm" onClick={onRegenerate} disabled={regenerating}>
             <RefreshCw className={cn(regenerating && 'animate-spin')} /> Regenerate
           </Button>
-          {usingDraft && (
-            <Button variant="ghost" size="sm" onClick={onDiscard}>
-              <Trash2 /> Clear
-            </Button>
-          )}
-        </span>
-      </div>
-      {!!sources?.length && (
-        <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
-          Based on:
-          {sources.map((s) => (
-            <span key={s.key} className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 font-medium">
-              <BookMarked className="size-3" /> {s.title}
-            </span>
-          ))}
+          <Button variant="ghost" size="sm" onClick={onClear} className="text-muted-foreground">
+            <Trash2 /> Clear
+          </Button>
         </div>
       )}
     </div>

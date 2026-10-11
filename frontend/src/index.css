@@ -117,6 +117,63 @@
     --sidebar-ring: oklch(0.556 0 0);
 }
 
+/* Animated gradient ring marking AI-generated content. */
+@property --ai-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes ai-ring-spin {
+  to {
+    --ai-angle: 360deg;
+  }
+}
+
+@utility ai-ring {
+  position: relative;
+  isolation: isolate;
+  padding: 2px;
+  background: conic-gradient(from var(--ai-angle), #8b5cf6, #d946ef, #38bdf8, #34d399, #8b5cf6);
+  animation: ai-ring-spin 6s linear infinite;
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 4px;
+    z-index: -1;
+    border-radius: inherit;
+    background: inherit;
+    animation: inherit;
+    filter: blur(16px);
+    opacity: 0.5;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
+@keyframes ai-shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+
+@utility ai-shimmer {
+  background: linear-gradient(90deg, #ede9fe 0%, #fae8ff 25%, #e0f2fe 50%, #ede9fe 75%, #fae8ff 100%);
+  background-size: 200% 100%;
+  animation: ai-shimmer 1.8s linear infinite;
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
+@utility ai-ring-still {
+  animation-play-state: paused;
+  &::before {
+    opacity: 0.15;
+  }
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
