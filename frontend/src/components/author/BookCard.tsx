@@ -1,4 +1,4 @@
-import { Check, Copy, Info, Leaf, MessageCircleQuestion } from 'lucide-react'
+import { Check, Copy, Info, Leaf, LifeBuoy } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -148,13 +148,11 @@ export function RoyaltyBreakdown({ book }: { book: Book }) {
   )
 }
 
-export function PlatformChips({ platforms, max }: { platforms: string[]; max?: number }) {
+export function PlatformChips({ platforms }: { platforms: string[] }) {
   if (!platforms.length) return null
-  const shown = max ? platforms.slice(0, max) : platforms
-  const hidden = platforms.slice(shown.length)
   return (
-    <div className={cn('flex gap-1.5', max ? 'flex-nowrap' : 'flex-wrap')}>
-      {shown.map((p) => (
+    <div className="flex flex-wrap gap-1.5">
+      {platforms.map((p) => (
         <span
           key={p}
           className={cn(
@@ -165,14 +163,6 @@ export function PlatformChips({ platforms, max }: { platforms: string[]; max?: n
           {p}
         </span>
       ))}
-      {hidden.length > 0 && (
-        <span
-          title={hidden.join(', ')}
-          className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground ring-1 ring-border ring-inset"
-        >
-          +{hidden.length}
-        </span>
-      )}
     </div>
   )
 }
@@ -277,21 +267,28 @@ export function BookCard({ book }: { book: Book }) {
         </div>
       </div>
 
-      <footer className="flex items-center justify-between gap-3 border-t px-6 py-4">
-        <div className="flex min-w-0 flex-col gap-2">
-          <div className="text-xs">
-            <span className="text-muted-foreground">ISBN </span>
-            <IsbnChip isbn={book.isbn} />
+      <footer className="space-y-5 border-t px-6 pt-5 pb-6">
+        <dl className="space-y-3 text-sm">
+          <div className="flex items-center gap-4">
+            <dt className="w-14 shrink-0 text-xs font-medium tracking-wide text-muted-foreground uppercase">ISBN</dt>
+            <dd className="min-w-0">
+              <IsbnChip isbn={book.isbn} />
+            </dd>
           </div>
-          {book.available_on.length ? (
-            <PlatformChips platforms={book.available_on} max={2} />
-          ) : (
-            <span className="text-xs text-muted-foreground">Store listings appear after launch</span>
-          )}
-        </div>
-        <Button asChild variant="outline" className="shrink-0">
+          <div className="flex items-start gap-4">
+            <dt className="w-14 shrink-0 pt-0.5 text-xs font-medium tracking-wide text-muted-foreground uppercase">Stores</dt>
+            <dd className="min-w-0 flex-1">
+              {book.available_on.length ? (
+                <PlatformChips platforms={book.available_on} />
+              ) : (
+                <span className="text-xs text-muted-foreground">Listings appear after launch</span>
+              )}
+            </dd>
+          </div>
+        </dl>
+        <Button asChild size="lg" className="w-full">
           <Link to={`/author/tickets/new?book=${book.id}`}>
-            <MessageCircleQuestion className="text-primary" /> Ask about this book
+            <LifeBuoy /> Get help with this book
           </Link>
         </Button>
       </footer>
