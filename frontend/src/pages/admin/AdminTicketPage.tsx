@@ -351,46 +351,33 @@ function BookContextCard({ ticket }: { ticket: AdminTicketDetail }) {
     )
   }
   return (
-    <Card title="Book" icon={BookOpen} action={<BookStatusBadge status={b.status} published={b.is_published} size="sm" />}>
-      <div className="grid gap-5 md:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
-        <div className="flex gap-4">
-          <BookCover book={b} className="w-20" />
-          <div className="min-w-0 flex-1">
-            <p className="line-clamp-2 font-semibold leading-snug">{b.title}</p>
-            <p className="mt-0.5 text-xs text-muted-foreground">
-              {b.genre} · <span className="font-mono">{b.book_code}</span>
-            </p>
-            <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 text-xs">
-              <div>
-                <dt className="text-muted-foreground">ISBN</dt>
-                <dd className="mt-0.5">
-                  <IsbnChip isbn={b.isbn} />
-                </dd>
+    <Card title="Book" icon={BookOpen} action={<BookStatusBadge status={b.status} published={b.is_published} size="sm" />} bodyClassName="@container">
+      <div className="grid gap-5 @3xl:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="min-w-0 space-y-4">
+          <div className="flex items-start gap-4">
+            <BookCover book={b} className="w-16" compact />
+            <div className="min-w-0 flex-1">
+              <p className="text-base leading-snug font-semibold">{b.title}</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {b.genre} · <span className="font-mono">{b.book_code}</span>
+              </p>
+              <div className="mt-2.5">
+                <PlatformChips platforms={b.available_on} />
               </div>
-              <div>
-                <dt className="text-muted-foreground">Published</dt>
-                <dd className="mt-0.5 font-medium">{formatDate(b.publication_date, 'Not yet')}</dd>
-              </div>
-              <div>
-                <dt className="text-muted-foreground">MRP · per copy</dt>
-                <dd className="mt-0.5 font-medium">
-                  {formatINR(b.mrp)} · {formatINR(b.author_royalty_per_copy)}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-muted-foreground">Copies sold</dt>
-                <dd className="mt-0.5 font-medium">{b.is_published ? formatNumber(b.total_copies_sold) : '—'}</dd>
-              </div>
-              {b.print_partner && (
-                <div className="col-span-2">
-                  <dt className="text-muted-foreground">Print partner</dt>
-                  <dd className="mt-0.5 font-medium">{b.print_partner}</dd>
-                </div>
-              )}
-            </dl>
+            </div>
           </div>
+          <dl className="grid grid-cols-2 gap-2 @md:grid-cols-3">
+            <BookFact label="ISBN" className="col-span-2 @md:col-span-1">
+              <IsbnChip isbn={b.isbn} />
+            </BookFact>
+            <BookFact label="Published">{formatDate(b.publication_date, 'Not yet')}</BookFact>
+            {b.is_published && <BookFact label="Copies sold">{formatNumber(b.total_copies_sold)}</BookFact>}
+            {Number(b.mrp) > 0 && <BookFact label="MRP">{formatINR(b.mrp)}</BookFact>}
+            {Number(b.author_royalty_per_copy) > 0 && <BookFact label="Royalty / copy">{formatINR(b.author_royalty_per_copy)}</BookFact>}
+            {b.print_partner && <BookFact label="Print partner">{b.print_partner}</BookFact>}
+          </dl>
         </div>
-        <div className="space-y-3">
+        <div className="min-w-0">
           {b.is_published ? (
             <RoyaltyBreakdown book={b} />
           ) : (
@@ -398,10 +385,18 @@ function BookContextCard({ ticket }: { ticket: AdminTicketDetail }) {
               <StageProgress book={b} compact />
             </div>
           )}
-          <PlatformChips platforms={b.available_on} />
         </div>
       </div>
     </Card>
+  )
+}
+
+function BookFact({ label, className, children }: { label: string; className?: string; children: ReactNode }) {
+  return (
+    <div className={cn('min-w-0 rounded-lg bg-muted/50 px-3 py-2', className)}>
+      <dt className="text-[10px] font-semibold tracking-wide text-muted-foreground uppercase">{label}</dt>
+      <dd className="mt-0.5 truncate text-sm font-medium">{children}</dd>
+    </div>
   )
 }
 
@@ -582,7 +577,7 @@ export function AdminTicketPage() {
 
       <TicketHeader ticket={ticket} update={update} pending={mutation.isPending} />
 
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
+      <div className="grid gap-5 xl:grid-cols-[340px_minmax(0,1fr)]">
         <AuthorCard ticket={ticket} />
         <BookContextCard ticket={ticket} />
       </div>

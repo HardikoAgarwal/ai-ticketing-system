@@ -87,26 +87,24 @@ function TicketTableRow({ ticket, selected, onOpen }: { ticket: AdminTicket; sel
         overdue && 'bg-red-50/40',
       )}
     >
-      <td className="py-3.5 pr-2 pl-5 align-top">
-        <PriorityBadge priority={ticket.priority} source={ticket.priority_source} />
-      </td>
-      <td className="max-w-0 py-3.5 pr-4 align-top">
-        <div className="flex items-center gap-1.5">
+      <td className="max-w-0 py-3.5 pr-4 pl-5 align-top">
+        <div className="flex min-w-0 items-center gap-2">
+          <PriorityBadge priority={ticket.priority} source={ticket.priority_source} size="sm" />
           {ticket.has_unread && <span className="size-1.5 shrink-0 rounded-full bg-primary" aria-label="New author activity" />}
-          <p className={cn('truncate text-sm', ticket.has_unread ? 'font-semibold' : 'font-medium')}>{ticket.subject}</p>
+          <p className={cn('min-w-0 truncate text-sm', ticket.has_unread ? 'font-semibold' : 'font-medium')}>{ticket.subject}</p>
         </div>
-        <p className="mt-0.5 truncate text-xs text-muted-foreground">
-          {ticket.reference} · {ticket.author.name} · {ticket.book ? ticket.book.title : 'General'}
+        <p className="mt-1 truncate text-xs text-muted-foreground">
+          <span className="font-mono">{ticket.reference}</span> · {ticket.author.name} · {ticket.book ? ticket.book.title : 'General'}
         </p>
       </td>
       <td className="py-3.5 pr-4 align-top">
         {ticket.ai_status === 'PENDING' && ticket.category_source !== 'ADMIN' ? (
-          <span className="inline-flex items-center gap-1 rounded-full bg-violet-50 px-2.5 py-1 text-xs font-medium text-violet-700 ring-1 ring-violet-600/20 ring-inset">
+          <span className="inline-flex items-center gap-1 rounded-full bg-violet-50 px-2 py-0.5 text-[11px] font-medium text-violet-700 ring-1 ring-violet-600/20 ring-inset">
             <Loader2 className="size-3 animate-spin" /> Classifying
           </span>
         ) : (
           <div className="flex flex-col items-start gap-1">
-            <CategoryBadge category={ticket.category} source={ticket.category_source} short />
+            <CategoryBadge category={ticket.category} source={ticket.category_source} short size="sm" />
             {ticket.ai_status === 'FAILED' && ticket.category_source === 'FALLBACK' && (
               <span className="text-[11px] font-medium text-amber-700">Needs triage</span>
             )}
@@ -114,12 +112,12 @@ function TicketTableRow({ ticket, selected, onOpen }: { ticket: AdminTicket; sel
         )}
       </td>
       <td className="py-3.5 pr-4 align-top">
-        <StatusBadge status={ticket.status} />
+        <StatusBadge status={ticket.status} size="sm" />
       </td>
       <td className="py-3.5 pr-4 align-top">
-        <SlaBadge state={ticket.sla_state} dueAt={ticket.sla_due_at} />
+        <SlaBadge state={ticket.sla_state} dueAt={ticket.sla_due_at} size="sm" />
       </td>
-      <td className="py-3.5 pr-4 align-top text-xs text-muted-foreground">
+      <td className="py-3.5 pr-4 align-top text-xs whitespace-nowrap text-muted-foreground">
         <RelativeTime value={ticket.created_at} />
       </td>
       <td className="py-3.5 pr-4 align-top">
@@ -280,20 +278,18 @@ export function QueuePage() {
           />
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[860px] table-fixed text-left">
+            <table className="w-full min-w-[900px] table-fixed text-left">
               <colgroup>
-                <col className="w-28" />
                 <col />
-                <col className="w-36" />
-                <col className="w-28" />
+                <col className="w-44" />
                 <col className="w-32" />
-                <col className="w-24" />
-                <col className="w-24" />
+                <col className="w-36" />
+                <col className="w-32" />
+                <col className="w-28" />
               </colgroup>
               <thead>
                 <tr className="border-b bg-muted/30 text-[11px] tracking-wide text-muted-foreground uppercase">
-                  <th className="py-2.5 pr-2 pl-5 font-semibold">Priority</th>
-                  <th className="py-2.5 pr-4 font-semibold">Ticket</th>
+                  <th className="py-2.5 pr-4 pl-5 font-semibold">Ticket</th>
                   <th className="py-2.5 pr-4 font-semibold">Category</th>
                   <th className="py-2.5 pr-4 font-semibold">Status</th>
                   <th className="py-2.5 pr-4 font-semibold">First reply SLA</th>
