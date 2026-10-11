@@ -85,6 +85,8 @@ def chat(
     }
     if response_format:
         kwargs["response_format"] = response_format
+    if settings.AI_REASONING_EFFORT:
+        kwargs["reasoning_effort"] = settings.AI_REASONING_EFFORT
 
     try:
         response = _client().chat.completions.create(**kwargs)

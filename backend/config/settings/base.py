@@ -218,6 +218,8 @@ AI_ENABLED = env_bool("AI_ENABLED", True) and bool(OPENAI_API_KEY)
 # Any OpenAI-compatible endpoint (e.g. Gemini, Groq); empty means api.openai.com.
 AI_BASE_URL = os.environ.get("AI_BASE_URL") or None
 AI_MODEL = os.environ.get("AI_MODEL", "gpt-4o-mini")
+# For thinking models (e.g. Gemini): "none" stops hidden reasoning from eating the small token caps.
+AI_REASONING_EFFORT = os.environ.get("AI_REASONING_EFFORT", "")
 AI_TIMEOUT_SECONDS = float(os.environ.get("AI_TIMEOUT_SECONDS", "20"))
 AI_CIRCUIT_FAILURE_THRESHOLD = int(os.environ.get("AI_CIRCUIT_FAILURE_THRESHOLD", "5"))
 AI_CIRCUIT_COOLDOWN_SECONDS = int(os.environ.get("AI_CIRCUIT_COOLDOWN_SECONDS", "300"))

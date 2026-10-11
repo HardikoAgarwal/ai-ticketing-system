@@ -235,16 +235,18 @@ cp .env.example .env                    # add an AI key to enable AI (see "AI pr
 .venv/bin/python manage.py migrate
 .venv/bin/python manage.py seed_bookleaf --with-sample-tickets
 .venv/bin/daphne -b 127.0.0.1 -p 8000 config.asgi:application        # API + WebSockets
-.venv/bin/celery -A config worker --loglevel=info                    # second terminal: AI pipeline
+.venv/bin/celery -A config worker --pool=threads --loglevel=info     # second terminal: AI pipeline
 ```
 
 ### AI provider
 The client speaks the OpenAI Chat Completions API, so any compatible provider works by changing env vars only:
 
-| Provider | `OPENAI_API_KEY` | `AI_BASE_URL` | `AI_MODEL` |
-|---|---|---|---|
-| OpenAI (default) | OpenAI key | *(empty)* | `gpt-4o-mini` |
-| Google Gemini (free tier) | key from [AI Studio](https://aistudio.google.com/apikey) | `https://generativelanguage.googleapis.com/v1beta/openai/` | `gemini-2.5-flash` |
+| Provider | `OPENAI_API_KEY` | `AI_BASE_URL` | `AI_MODEL` | `AI_REASONING_EFFORT` |
+|---|---|---|---|---|
+| OpenAI (default) | OpenAI key | *(empty)* | `gpt-4o-mini` | *(empty)* |
+| Google Gemini (free tier) | key from [AI Studio](https://aistudio.google.com/apikey) | `https://generativelanguage.googleapis.com/v1beta/openai/` | `gemini-3.8-flash` | `none` |
+
+Gemini models think before answering; `AI_REASONING_EFFORT=none` keeps that hidden reasoning from using up the 150/450 token caps. On the free tier, set `AI_PRICE_INPUT_PER_M=0` and `AI_PRICE_OUTPUT_PER_M=0` so the analytics cost reads $0.
 
 Without a key, the app runs on the keyword fallback and shows that AI is off.
 
