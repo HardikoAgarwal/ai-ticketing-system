@@ -93,6 +93,36 @@ function FieldLabel({ children }: { children: ReactNode }) {
   return <p className="mb-1.5 text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">{children}</p>
 }
 
+function ResolveAction({ ticket, update, pending }: { ticket: AdminTicketDetail; update: Update; pending: boolean }) {
+  const [confirm, setConfirm] = useState<ConfirmOptions | null>(null)
+
+  if (ticket.status === 'RESOLVED') {
+    return (
+      <span className="inline-flex items-center gap-2 rounded-lg border bg-card px-4 py-2.5 text-sm text-muted-foreground">
+        <CheckCircle2 className="size-4 text-emerald-600" /> Resolved, waiting for the author to confirm
+      </span>
+    )
+  }
+  if (ticket.status !== 'OPEN' && ticket.status !== 'IN_PROGRESS') return null
+
+  const markResolved = () =>
+    setConfirm({
+      title: `Mark ${ticket.reference} as resolved?`,
+      description: `${ticket.author.name.split(' ')[0]} will be asked to confirm the issue is sorted. If they say it isn't, the ticket reopens automatically.`,
+      confirmLabel: 'Mark as resolved',
+      onConfirm: () => update({ status: 'RESOLVED' }, 'Ticket marked as resolved'),
+    })
+
+  return (
+    <>
+      <Button size="lg" onClick={markResolved} disabled={pending} className="px-6">
+        <CheckCircle2 /> Mark as resolved
+      </Button>
+      <ConfirmDialog options={confirm} onClose={() => setConfirm(null)} />
+    </>
+  )
+}
+
 /* ----------------------------------------------------------------------------------------------- */
 /* Header: what the ticket is + every triage/workflow control in one row                          */
 /* ----------------------------------------------------------------------------------------------- */
@@ -116,14 +146,6 @@ function TicketHeader({ ticket, update, pending }: { ticket: AdminTicketDetail; 
     }
     update({ status }, `Status changed to ${STATUS_META[status].label}`)
   }
-
-  const markResolved = () =>
-    setConfirm({
-      title: `Mark ${ticket.reference} as resolved?`,
-      description: `${ticket.author.name.split(' ')[0]} will be asked to confirm the issue is sorted. If they say it isn't, the ticket reopens automatically.`,
-      confirmLabel: 'Mark as resolved',
-      onConfirm: () => update({ status: 'RESOLVED' }, 'Ticket marked as resolved'),
-    })
 
   const changeAssignee = (value: string | null) => {
     const assigned_to = !value || value === 'none' ? null : Number(value)
@@ -153,19 +175,7 @@ function TicketHeader({ ticket, update, pending }: { ticket: AdminTicketDetail; 
             <SlaBadge state={ticket.sla_state} dueAt={ticket.sla_due_at} />
           </span>
         </div>
-        <div className="mt-4 flex flex-wrap items-start justify-between gap-4">
-          <h1 className="min-w-0 flex-1 text-2xl font-semibold tracking-tight">{ticket.subject}</h1>
-          {(ticket.status === 'OPEN' || ticket.status === 'IN_PROGRESS') && (
-            <Button size="lg" onClick={markResolved} disabled={pending} className="px-6">
-              <CheckCircle2 /> Mark as resolved
-            </Button>
-          )}
-          {ticket.status === 'RESOLVED' && (
-            <span className="inline-flex items-center gap-2 rounded-lg border px-4 py-2.5 text-sm text-muted-foreground">
-              <CheckCircle2 className="size-4 text-emerald-600" /> Resolved, waiting for the author to confirm
-            </span>
-          )}
-        </div>
+        <h1 className="mt-4 text-2xl font-semibold tracking-tight">{ticket.subject}</h1>
         <div className="mt-4 flex flex-wrap items-center gap-2.5">
           <StatusBadge status={ticket.status} size="lg" />
           <PriorityBadge priority={ticket.priority} source={ticket.priority_source} size="lg" />
@@ -654,11 +664,14 @@ export function AdminTicketPage() {
 
   return (
     <div className="mx-auto max-w-[1440px] space-y-6 pb-6">
-      <Button asChild variant="ghost" size="sm" className="-ml-2">
-        <Link to="/admin">
-          <ArrowLeft /> Back to queue
-        </Link>
-      </Button>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <Button asChild variant="ghost" size="sm" className="-ml-2">
+          <Link to="/admin">
+            <ArrowLeft /> Back to queue
+          </Link>
+        </Button>
+        <ResolveAction ticket={ticket} update={update} pending={mutation.isPending} />
+      </div>
 
       <TicketHeader ticket={ticket} update={update} pending={mutation.isPending} />
 
