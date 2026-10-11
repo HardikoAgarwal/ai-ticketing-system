@@ -3,10 +3,9 @@ import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
 
-import { BookStatusBadge } from '@/components/badges'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import { PLATFORM_STYLES, PRODUCTION_STAGES, coverGradient } from '@/lib/constants'
+import { PLATFORM_STYLES, PRODUCTION_STAGES, coverGradient, coverSolid } from '@/lib/constants'
 import { formatDate, formatINR, formatNumber } from '@/lib/format'
 import type { Book } from '@/lib/types'
 import { cn } from '@/lib/utils'
@@ -149,27 +148,40 @@ export function RoyaltyBreakdown({ book }: { book: Book }) {
   )
 }
 
-export function PlatformChips({ platforms }: { platforms: string[] }) {
+export function PlatformChips({ platforms, max }: { platforms: string[]; max?: number }) {
   if (!platforms.length) return null
+  const shown = max ? platforms.slice(0, max) : platforms
+  const hidden = platforms.slice(shown.length)
   return (
-    <div className="flex flex-wrap gap-1.5">
-      {platforms.map((p) => (
+    <div className={cn('flex gap-1.5', max ? 'flex-nowrap' : 'flex-wrap')}>
+      {shown.map((p) => (
         <span
           key={p}
-          className={cn('rounded-full px-2 py-0.5 text-[11px] font-medium ring-1 ring-inset', PLATFORM_STYLES[p] ?? 'bg-muted text-muted-foreground ring-border')}
+          className={cn(
+            'shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium whitespace-nowrap ring-1 ring-inset',
+            PLATFORM_STYLES[p] ?? 'bg-muted text-muted-foreground ring-border',
+          )}
         >
           {p}
         </span>
       ))}
+      {hidden.length > 0 && (
+        <span
+          title={hidden.join(', ')}
+          className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground ring-1 ring-border ring-inset"
+        >
+          +{hidden.length}
+        </span>
+      )}
     </div>
   )
 }
 
 function Fact({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div className="min-w-0">
+    <div className="min-w-0 px-4 py-3">
       <dt className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">{label}</dt>
-      <dd className="mt-0.5 truncate text-sm font-semibold">{children}</dd>
+      <dd className="mt-1 truncate text-base font-semibold">{children}</dd>
     </div>
   )
 }
@@ -189,50 +201,95 @@ export function IsbnChip({ isbn }: { isbn: string }) {
 }
 
 export function BookCard({ book }: { book: Book }) {
+  const earned = Number(book.total_royalty_earned)
+  const paidPct = earned ? (Number(book.royalty_paid) / earned) * 100 : 0
   return (
-    <article className="flex flex-col overflow-hidden rounded-2xl border bg-card shadow-xs transition-shadow hover:shadow-md">
-      <div className="flex gap-5 p-5">
-        <BookCover book={book} className="w-24" />
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center justify-between gap-2">
-            <BookStatusBadge status={book.status} published={book.is_published} />
-            <span className="font-mono text-[11px] text-muted-foreground">{book.book_code}</span>
+    <article className="flex h-full flex-col overflow-hidden rounded-2xl border bg-card shadow-xs transition-shadow hover:shadow-md">
+      <div className={cn('relative flex h-44 items-end gap-5 overflow-hidden px-6 pb-5 text-white', coverSolid(book.id))}>
+        <span className="absolute -top-20 -right-16 size-56 rounded-full bg-white/10" />
+        <span className="absolute -bottom-24 right-24 size-44 rounded-full bg-black/10" />
+        <BookCover book={book} className="relative w-24 shadow-xl ring-2 ring-white/25" />
+        <div className="relative min-w-0 flex-1 pb-1">
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-2.5 py-1 text-xs font-medium backdrop-blur-sm">
+              <span className={cn('size-1.5 rounded-full', book.is_published ? 'animate-pulse bg-emerald-300' : 'bg-amber-300')} />
+              {book.is_published ? 'Live on stores' : book.status.replace('In Production - ', '')}
+            </span>
+            <span className="ml-auto font-mono text-[11px] text-white/70">{book.book_code}</span>
           </div>
-          <h3 className="mt-2 line-clamp-2 text-lg leading-snug font-semibold" title={book.title}>
+          <h3 className="mt-3 line-clamp-2 text-xl leading-snug font-semibold tracking-tight" title={book.title}>
             {book.title}
           </h3>
-          <p className="mt-0.5 text-sm text-muted-foreground">
+          <p className="mt-1 truncate text-sm text-white/80">
             {book.genre}
-            {book.publication_date && <> · Published {formatDate(book.publication_date)}</>}
+            {book.publication_date ? ` · Published ${formatDate(book.publication_date)}` : ' · Not yet published'}
           </p>
-          <dl className="mt-4 grid grid-cols-3 gap-3">
-            <Fact label="MRP">{formatINR(book.mrp)}</Fact>
-            <Fact label="Copies sold">{book.is_published ? formatNumber(book.total_copies_sold) : '—'}</Fact>
-            <Fact label="Per copy">{formatINR(book.author_royalty_per_copy)}</Fact>
-          </dl>
         </div>
       </div>
 
-      <div className="flex-1 px-5 pb-5">
-        {book.is_published ? (
-          <RoyaltyBreakdown book={book} />
-        ) : (
-          <div className="rounded-xl bg-amber-50/50 p-4 ring-1 ring-amber-600/15 ring-inset">
-            <StageProgress book={book} />
-            <p className="mt-3 text-xs text-muted-foreground">Sales and royalties appear here once your book is live.</p>
-          </div>
-        )}
+      <div className="flex flex-1 flex-col gap-5 p-6">
+        <dl className="grid grid-cols-3 divide-x rounded-xl border">
+          <Fact label="MRP">{formatINR(book.mrp)}</Fact>
+          <Fact label="Copies sold">{book.is_published ? formatNumber(book.total_copies_sold) : '—'}</Fact>
+          <Fact label="Royalty / copy">{formatINR(book.author_royalty_per_copy)}</Fact>
+        </dl>
+
+        <div className="flex flex-1 flex-col rounded-xl bg-muted/40 p-5">
+          {book.is_published ? (
+            <>
+              <div className="flex items-baseline justify-between">
+                <p className="text-sm text-muted-foreground">Royalty earned</p>
+                <p className="text-2xl font-semibold tracking-tight">{formatINR(book.total_royalty_earned)}</p>
+              </div>
+              <div className="mt-3 flex h-2.5 overflow-hidden rounded-full bg-muted" aria-hidden>
+                <div className="h-full bg-emerald-500" style={{ width: `${paidPct}%` }} />
+                <div className="h-full bg-amber-400" style={{ width: `${earned ? 100 - paidPct : 0}%` }} />
+              </div>
+              <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
+                <span className="flex items-center gap-2">
+                  <span className="size-2.5 rounded-full bg-emerald-500" />
+                  <span className="text-muted-foreground">Paid</span>
+                  <span className="ml-auto font-semibold text-emerald-700">{formatINR(book.royalty_paid)}</span>
+                </span>
+                <span className="flex items-center gap-2">
+                  <span className="size-2.5 rounded-full bg-amber-400" />
+                  <span className="text-muted-foreground">Pending</span>
+                  <span className="ml-auto font-semibold text-amber-700">{formatINR(book.royalty_pending)}</span>
+                </span>
+              </div>
+              <div className="mt-auto space-y-1.5 pt-4">
+                <p className="text-xs text-muted-foreground">
+                  Last payout <span className="font-medium text-foreground">{formatDate(book.last_royalty_payout_date, 'none yet')}</span>
+                </p>
+                <RoyaltyNote book={book} />
+              </div>
+            </>
+          ) : (
+            <>
+              <p className="mb-4 text-sm text-muted-foreground">Production progress</p>
+              <StageProgress book={book} />
+              <p className="mt-auto flex items-start gap-1.5 pt-4 text-xs text-muted-foreground">
+                <Info className="mt-px size-3.5 shrink-0" />
+                Sales and royalties appear here once your book is live on stores.
+              </p>
+            </>
+          )}
+        </div>
       </div>
 
-      <footer className="flex flex-wrap items-center justify-between gap-3 border-t bg-muted/30 px-5 py-3">
-        <div className="flex min-w-0 flex-col gap-1.5">
+      <footer className="flex items-center justify-between gap-3 border-t px-6 py-4">
+        <div className="flex min-w-0 flex-col gap-2">
           <div className="text-xs">
             <span className="text-muted-foreground">ISBN </span>
             <IsbnChip isbn={book.isbn} />
           </div>
-          <PlatformChips platforms={book.available_on} />
+          {book.available_on.length ? (
+            <PlatformChips platforms={book.available_on} max={2} />
+          ) : (
+            <span className="text-xs text-muted-foreground">Store listings appear after launch</span>
+          )}
         </div>
-        <Button asChild variant="outline" size="sm">
+        <Button asChild variant="outline" className="shrink-0">
           <Link to={`/author/tickets/new?book=${book.id}`}>
             <MessageCircleQuestion className="text-primary" /> Ask about this book
           </Link>

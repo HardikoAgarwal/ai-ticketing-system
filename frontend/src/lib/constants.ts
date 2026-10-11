@@ -259,6 +259,10 @@ const COVER_GRADIENTS = [
 ]
 export const coverGradient = (seed: number) => COVER_GRADIENTS[seed % COVER_GRADIENTS.length]
 
+/** Solid band colour matching each cover gradient (same index). */
+const COVER_SOLIDS = ['bg-emerald-700', 'bg-indigo-600', 'bg-rose-600', 'bg-sky-600', 'bg-amber-600', 'bg-fuchsia-600', 'bg-teal-600']
+export const coverSolid = (seed: number) => COVER_SOLIDS[seed % COVER_SOLIDS.length]
+
 export const ATTACHMENT_TYPES = ['application/pdf', 'image/png', 'image/jpeg', 'image/webp']
 export const ATTACHMENT_MAX_BYTES = 10 * 1024 * 1024
 export const ATTACHMENT_MAX_FILES = 3
