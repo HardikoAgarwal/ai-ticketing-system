@@ -231,11 +231,18 @@ export function TicketDetailPage() {
 
   return (
     <div className="mx-auto max-w-4xl space-y-5">
-      <Button asChild variant="ghost" size="sm" className="-ml-2">
-        <Link to="/author/tickets">
-          <ArrowLeft /> My Tickets
-        </Link>
-      </Button>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <Button asChild variant="ghost" size="sm" className="-ml-2">
+          <Link to="/author/tickets">
+            <ArrowLeft /> My Tickets
+          </Link>
+        </Button>
+        {(ticket.status === 'OPEN' || ticket.status === 'IN_PROGRESS') && (
+          <Button size="lg" onClick={() => setConfirmOpen(true)} disabled={markResolved.isPending} className="px-6">
+            {markResolved.isPending ? <Loader2 className="animate-spin" /> : <CheckCircle2 />} Mark as resolved
+          </Button>
+        )}
+      </div>
 
       <section className="overflow-hidden rounded-2xl border bg-card shadow-xs">
         <div className="px-6 py-6">
@@ -250,14 +257,7 @@ export function TicketDetailPage() {
               <StatusBadge status={ticket.status} audience="author" size="lg" />
             </span>
           </div>
-          <div className="mt-4 flex flex-wrap items-start justify-between gap-4">
-            <h1 className="min-w-0 flex-1 text-2xl font-semibold tracking-tight">{ticket.subject}</h1>
-            {(ticket.status === 'OPEN' || ticket.status === 'IN_PROGRESS') && (
-              <Button size="lg" onClick={() => setConfirmOpen(true)} disabled={markResolved.isPending} className="px-6">
-                {markResolved.isPending ? <Loader2 className="animate-spin" /> : <CheckCircle2 />} Mark as resolved
-              </Button>
-            )}
-          </div>
+          <h1 className="mt-4 text-2xl font-semibold tracking-tight">{ticket.subject}</h1>
         </div>
         <div className="border-t px-6 py-5">
           <StatusStepper ticket={ticket} />
