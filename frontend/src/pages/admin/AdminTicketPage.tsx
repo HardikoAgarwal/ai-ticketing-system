@@ -549,7 +549,7 @@ function Conversation({ ticket, className }: { ticket: AdminTicketDetail; classN
   }, [replies.length])
 
   return (
-    <section className={cn('flex min-h-0 flex-col overflow-hidden rounded-2xl border bg-card shadow-xs', className)}>
+    <section className={cn('flex min-h-0 flex-col rounded-2xl border bg-card shadow-xs', className)}>
       <header className="flex shrink-0 items-center justify-between gap-2 border-b px-6 py-3.5">
         <h3 className="flex items-center gap-2 text-sm font-semibold">
           <MessagesSquare className="size-4 text-primary" /> Conversation with {ticket.author.name.split(' ')[0]}
@@ -557,7 +557,7 @@ function Conversation({ ticket, className }: { ticket: AdminTicketDetail; classN
         </h3>
         <span className="text-xs text-muted-foreground">The author sees everything in this thread</span>
       </header>
-      <div ref={scrollRef} className="min-h-0 flex-1 space-y-6 overflow-y-auto bg-muted/20 px-6 py-7">
+      <div ref={scrollRef} className="min-h-0 flex-1 space-y-6 overflow-y-auto bg-muted/20 px-6 pt-7 pb-16">
         <ChatBubble
           side="left"
           variant="author"
