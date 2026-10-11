@@ -95,37 +95,47 @@ function ResolutionPrompt({ ticket }: { ticket: AuthorTicketDetail }) {
   })
 
   return (
-    <div className="border-t bg-card px-6 py-5">
-      <div className="flex items-start gap-3">
-        <CheckCircle2 className="mt-0.5 size-5 shrink-0 text-emerald-600" />
-        <div className="flex-1">
-          <p className="font-semibold">We've marked this as resolved</p>
-          <p className="text-sm text-muted-foreground">Did our reply solve your issue?</p>
-          {!needsHelp ? (
-            <div className="mt-3 flex flex-wrap gap-2">
-              <Button onClick={() => mutation.mutate(true)} disabled={mutation.isPending}>
-                {mutation.isPending && mutation.variables === true ? <Loader2 className="animate-spin" /> : <Check />} Yes, close ticket
-              </Button>
-              <Button variant="outline" onClick={() => setNeedsHelp(true)} disabled={mutation.isPending}>
-                <RotateCcw /> No, I still need help
-              </Button>
-            </div>
-          ) : (
-            <div className="mt-3 space-y-2">
-              <Textarea rows={3} value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Tell us what's still not working (optional)" autoFocus />
-              <div className="flex gap-2">
-                <Button onClick={() => mutation.mutate(false)} disabled={mutation.isPending}>
-                  {mutation.isPending && <Loader2 className="animate-spin" />} Reopen ticket
-                </Button>
-                <Button variant="ghost" onClick={() => setNeedsHelp(false)} disabled={mutation.isPending}>
-                  Cancel
-                </Button>
-              </div>
-            </div>
-          )}
+    <section className="rounded-2xl border border-emerald-200 bg-emerald-50/60 px-6 py-5 shadow-xs">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+        <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
+          <CheckCircle2 className="size-5" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="font-semibold">Our team has marked this as resolved</p>
+          <p className="mt-0.5 text-sm text-muted-foreground">Did that solve your issue? Let us know so we can close it, or reopen it if not.</p>
         </div>
+        {!needsHelp && (
+          <div className="flex shrink-0 flex-wrap gap-2">
+            <Button variant="outline" size="lg" onClick={() => setNeedsHelp(true)} disabled={mutation.isPending} className="bg-card">
+              <RotateCcw /> I still need help
+            </Button>
+            <Button size="lg" onClick={() => mutation.mutate(true)} disabled={mutation.isPending}>
+              {mutation.isPending ? <Loader2 className="animate-spin" /> : <Check />} Yes, it's resolved
+            </Button>
+          </div>
+        )}
       </div>
-    </div>
+      {needsHelp && (
+        <div className="mt-4 space-y-3 sm:pl-15">
+          <Textarea
+            rows={3}
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            placeholder="Tell us what's still not working (optional)"
+            className="bg-card"
+            autoFocus
+          />
+          <div className="flex justify-end gap-2">
+            <Button variant="ghost" onClick={() => setNeedsHelp(false)} disabled={mutation.isPending}>
+              Cancel
+            </Button>
+            <Button onClick={() => mutation.mutate(false)} disabled={mutation.isPending}>
+              {mutation.isPending ? <Loader2 className="animate-spin" /> : <RotateCcw />} Reopen ticket
+            </Button>
+          </div>
+        </div>
+      )}
+    </section>
   )
 }
 
@@ -264,6 +274,8 @@ export function TicketDetailPage() {
         </div>
       </section>
 
+      {ticket.status === 'RESOLVED' && <ResolutionPrompt key={ticket.id} ticket={ticket} />}
+
       <section className="overflow-hidden rounded-2xl border bg-card shadow-xs">
         <header className="flex items-center justify-between border-b px-5 py-3">
           <h2 className="flex items-center gap-2 text-sm font-semibold">
@@ -298,7 +310,6 @@ export function TicketDetailPage() {
             </div>
           )}
         </div>
-        {ticket.status === 'RESOLVED' && <ResolutionPrompt ticket={ticket} />}
         <ReplyBox ticket={ticket} />
       </section>
 
