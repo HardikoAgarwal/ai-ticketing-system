@@ -184,7 +184,9 @@ SPECTACULAR_SETTINGS = {
 }
 
 # --- CORS ---
-CORS_ALLOWED_ORIGINS = env_list("CORS_ALLOWED_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173")
+CORS_ALLOWED_ORIGINS = [
+    origin.rstrip("/") for origin in env_list("CORS_ALLOWED_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173")
+]
 CSRF_TRUSTED_ORIGINS = CORS_ALLOWED_ORIGINS
 
 # --- Redis / Channels / Celery ---

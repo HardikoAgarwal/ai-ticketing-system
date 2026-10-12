@@ -4,8 +4,8 @@ A support portal for BookLeaf Publishing. Authors see their books and royalties 
 
 | | |
 |---|---|
-| **Live app** | `https://<your-app>.vercel.app` *(fill in after deploy)* |
-| **API + Swagger** | `https://<your-api>.onrender.com/api/docs/` |
+| **Live app** | [bookleaf-portal-theta-brown.vercel.app](https://bookleaf-portal-theta-brown.vercel.app) |
+| **API + Swagger** | [bookleaf-api-2dez.onrender.com/api/docs/](https://bookleaf-api-2dez.onrender.com/api/docs/) *(free tier: the first request after idling takes ~50 s to wake up)* |
 | **Write-up** | [docs/WRITEUP.md](docs/WRITEUP.md) |
 
 ### Test credentials
