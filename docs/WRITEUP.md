@@ -8,7 +8,7 @@
    - Drafts are grounded in two inputs: only the KB sections relevant to the ticket's category, and a fact sheet computed in Python (exact royalty figures, next payout date, whether the amount is below the ₹1,000 threshold, the production stage). The model phrases facts but never derives them, which removes the most damaging failure: a confidently wrong number sent to an author.
 2. **Graceful degradation as a feature, not an afterthought.**
    - A keyword classifier runs at creation, so every ticket has a category, priority and SLA deadline before any LLM call.
-   - AI runs in Celery with backoff retries and a circuit breaker. A total OpenAI outage changes one thing: agents see "write manually" instead of a draft.
+   - AI runs in Celery with backoff retries and a circuit breaker. A total LLM outage changes one thing: agents see "write manually" instead of a draft.
 3. **Correct data boundaries.**
    - Authors get separate serializers that have no triage fields at all, and requests for other users' data return 404.
    - Internal notes are excluded from both the author's API and the AI prompt, and tests enforce this.
@@ -16,7 +16,7 @@
 
 ## Trade-offs I made
 - **Category-scoped KB instead of embedding retrieval (RAG).** The KB fits in about 800 tokens, and a deterministic category→sections map is cheaper, debuggable, and impossible to retrieve wrongly. The cost is that a ticket spanning two categories only gets one category's policy. It's the right call at this KB size; see the evolution plan below.
-- **gpt-4o-mini over a frontier model.** Both tasks are narrow and templated. At ≈ \$0.0005 per ticket (classification plus draft, with drafts cached by an input hash), cost is negligible even at BookLeaf's volume. The model name is configuration and every call logs its prompt version, so upgrading is a measured decision rather than a guess.
+- **A small, fast model over a frontier model.** Both tasks are narrow and templated, and the model only phrases facts that Python computes. The demo runs Gemini 3.1 Flash-Lite on its free tier, so it costs \$0 and reviewers can use it freely. The price is ~6 s latency, which is hidden because AI runs in the background, plus occasional rate limits, which the fallback design absorbs. At paid `gpt-4o-mini` prices it would be ≈ \$0.0004 per ticket. The provider and model are env vars and every call logs its prompt version, so switching is a measured decision rather than a guess.
 - **Celery worker inside the web container.** This is purely a free-tier hosting constraint. The code is unchanged if the worker becomes its own service.
 - **WebSocket events carry signals, not data.** This costs one extra fetch per update, but the socket can never bypass the API's permission checks.
 - **Scope I deliberately left out:** email notifications, author self-service metadata edits, and multi-language replies.

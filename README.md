@@ -54,7 +54,11 @@ The login page has one-click buttons that fill these in. Good edge-case authors 
   - Keyboard navigation: `J`/`K` to move, `Enter` to open.
 - **Ticket workspace**:
   - **Triage card**: shows the AI category and priority with confidence and reasoning. Both can be overridden; an override is marked "Overridden by team" and the AI never overwrites it. A "Re-run AI" button is available.
-  - **Composer**: the AI draft is preloaded, editable, and shows which KB sections it used. Inline reply box with Send (Ctrl/⌘ + Enter), regenerate, and a separate **Internal notes** panel that authors never see.
+  - **Composer**: a plain reply box with Send (Ctrl/⌘ + Enter) and a send preview. Above it floats a collapsible **AI draft** chip with an animated gradient ring.
+    - Expanding it shows the draft, the KB sections it used, and Regenerate, Copy and **Use this draft**.
+    - "Use this draft" copies it into the reply box for editing and asks first if you've already typed something. The reply box is then labelled "From AI draft", or "edited by you" after changes.
+    - The chip shows "Writing…" while the draft is generated, and "AI draft unavailable · Try again" if AI failed.
+  - **Internal notes**: a separate panel that authors never see.
   - **Mark as resolved**: a prominent header action with a confirmation dialog; the author is then asked to confirm or reopen. Authors can also mark their own open ticket resolved.
   - **Workflow**: status changes (closing asks for confirmation), assign to me or reassign (asks for confirmation if the ticket is someone else's), and the SLA state.
   - **Context**: author profile and full book and royalty facts, plus an activity timeline of every change and who made it.
@@ -92,7 +96,7 @@ flowchart LR
   PG[(Postgres)]
   R[(Redis<br/>broker · channel layer · cache)]
   S3[(Supabase Storage<br/>S3 API · attachments)]
-  OAI[[OpenAI<br/>gpt-4o-mini]]
+  OAI[[Gemini 3.1 Flash-Lite<br/>OpenAI-compatible API]]
 
   SPA -- REST + JWT --> API
   SPA <-- wss + JWT --> WS
@@ -116,7 +120,7 @@ flowchart LR
 - **A service layer, not fat views or models.** Every business rule lives in `tickets/services.py`: transitions, SLA, the AI-vs-admin source of truth, and side effects like broadcasts and enqueues. Views only handle HTTP, and the same functions back the API, the seed command and the tests.
 - **Separate author and admin serializers.** The author's view of a ticket structurally omits priority, AI reasoning, notes and activity, so a missed filter can't leak triage data.
 - **AI runs asynchronously in Celery, never in the request.**
-  - Ticket creation responds immediately, unaffected by OpenAI latency or outages.
+  - Ticket creation responds immediately, unaffected by LLM latency or outages.
   - Retries and backoff happen without a user waiting.
   - The draft is already waiting when an agent opens the ticket.
   - `transaction.on_commit` makes sure the worker never sees a half-written ticket.
@@ -131,7 +135,7 @@ flowchart LR
 | `apps/accounts` | Custom `User` (email login, `AUTHOR`/`ADMIN` role), author profiles, JWT login |
 | `apps/catalog` | Books, production stages, royalty rules (payout window, ₹1,000 threshold), seed command |
 | `apps/tickets` | Ticket, message, attachment and activity models; **service layer** (`services.py`) holding all business rules: state machine, SLA, assignment, notes vs replies; filters; viewset |
-| `apps/ai` | KB loader, prompts, classifier, drafter, keyword fallback, OpenAI client with circuit breaker and usage logging, Celery tasks |
+| `apps/ai` | KB loader, prompts, classifier, drafter, keyword fallback, provider-agnostic LLM client (OpenAI SDK) with circuit breaker and usage logging, Celery tasks |
 | `apps/realtime` | JWT WebSocket middleware, consumer, broadcast helpers |
 | `apps/analytics` | Aggregated metrics endpoint |
 | `common/` | Error envelope, RBAC permissions, pagination |
@@ -165,17 +169,27 @@ flowchart LR
 
 ## AI strategy
 
-### Model: `gpt-4o-mini`
-- **Fit for the job**: both tasks are short, well-specified text tasks (6-way classification and a ~150-word templated reply), not open-ended reasoning, so a frontier model would add cost and latency without a visible quality gain.
-- **Structured outputs**: strict `json_schema` mode means the classifier returns a valid enum every time, with no free-text parsing.
-- **Cost**: \$0.15 per million input tokens and \$0.60 per million output tokens (see the budget below).
-- **Latency**: about 1–2 s per call, so the draft is usually ready before an agent opens the ticket.
-- **Swappable**: the model is set by the `AI_MODEL` env var, and every draft and log row records the model and `PROMPT_VERSION`.
+### Model: Gemini 3.1 Flash-Lite on the live demo, `gpt-4o-mini` as the drop-in alternative
+The live demo runs **Google Gemini 3.1 Flash-Lite** (`gemini-3.1-flash-lite`) through Google's OpenAI-compatible endpoint. The code is provider-agnostic: it uses the official `openai` SDK, and switching to OpenAI `gpt-4o-mini` means changing three env vars, with no code changes (see [AI provider](#ai-provider)).
+
+Why a small, fast model rather than a frontier one:
+- **Fit for the job**: both tasks are short, well-specified text tasks (6-way classification and a ~150-word templated reply), not open-ended reasoning. A frontier model would add cost and latency without a visible quality gain, and the deterministic fact sheet (below) means the model never has to calculate anything.
+- **Structured outputs**: the classifier uses strict `json_schema` mode, which both Gemini's compatible endpoint and OpenAI support, so it returns a valid enum every time with no free-text parsing.
+
+Why Gemini Flash-Lite for the demo specifically:
+- **Free tier**: about 500 requests a day with no billing account, so reviewers can create tickets and regenerate drafts without me pre-paying for an API. Each ticket uses two calls (classify, draft).
+- **Quality**: on the 10 seeded tickets it matched the expected categories and raised the priorities a human would (for example, unpaid royalties as Critical). Drafts quote the fact sheet's exact figures and follow the tone rules.
+- **No hidden reasoning**: Gemini 3.x models "think" by default, which would eat the output token caps. `AI_REASONING_EFFORT=none` turns that off, so classification and drafts stay within 150 and 450 tokens.
+
+Trade-offs:
+- **Latency**: free-tier calls averaged about 6 s in my logs (classification ~7 s, drafts ~6 s), versus 1–2 s for paid `gpt-4o-mini`. This is invisible to authors because AI runs in Celery after the ticket is saved, and the draft is normally ready before an agent opens the ticket.
+- **Rate limits**: the free tier can return 429 at busy times. That is exactly the case the retry, circuit-breaker and fallback design handles (see [Graceful degradation](#graceful-degradation)).
+- **Swappable**: for production volume I would move to a paid tier of either provider. The model is the `AI_MODEL` env var, and every draft and log row records the model and `PROMPT_VERSION`, so the switch can be compared on real data.
 
 ### Classification (`apps/ai/classifier.py`, `prompts.py`)
 - The system prompt defines the 6 categories with boundary rules, for example "royalty *amount* questions are Royalty, not General".
 - It also includes a priority rubric with examples, and the rule that author frustration can raise priority by at most one level and never lowers it.
-- It receives only the subject, the description (truncated) and a one-line book summary (status, pending royalty, last payout). It does **not** receive the KB, which keeps it at about 640 tokens.
+- It receives only the subject, the description (truncated) and a one-line book summary (status, pending royalty, last payout). It does **not** receive the KB, which keeps it at about 575 input tokens.
 - Settings: temperature 0, at most 150 output tokens. The output is validated with Pydantic and returns category, priority, confidence and a one-sentence reason shown to the agent.
 
 ### Response drafting (`apps/ai/drafter.py`)
@@ -190,7 +204,7 @@ flowchart LR
   - No mention of AI or internal notes.
   - A fixed sign-off.
 - **Conversation**: only the last 3 *non-note* messages are included. Internal notes never reach the prompt (covered by a test).
-- **Agent stays in control**: the draft is only a pre-fill. The agent edits it and sends it, and the message records whether the AI draft was sent as-is or edited (shown in analytics).
+- **Agent stays in control**: the draft is a suggestion, never sent automatically. It appears in a separate AI draft panel above the reply box; the agent reviews it, clicks "Use this draft" to copy it into the reply box, edits, and sends. The message records whether the AI draft was sent as-is, edited, or replaced (shown in analytics).
 
 ### Graceful degradation
 | Failure | Behaviour |
@@ -204,7 +218,9 @@ flowchart LR
 The keyword fallback is not a stub. It uses weighted word-start matching plus regex rules for critical and high signals (for example "not received … 6 months" or "blurry/misaligned"), and it classifies all six of the brief's example queries correctly (see `tests/test_domain.py`).
 
 ### Cost awareness
-- Classification uses about 640 input and 60 output tokens. A draft uses about 900 input and 250 output tokens. That is **≈ \$0.0005 per ticket, or ≈ \$0.50 per 1,000 tickets**.
+- Measured from the request logs: classification uses about 575 input and 60 output tokens, and a draft about 880 input and 235 output tokens.
+  - On the demo's Gemini free tier this costs **\$0**.
+  - At paid `gpt-4o-mini` prices (\$0.15 per million input tokens, \$0.60 per million output) it is **≈ \$0.0004 per ticket, or ≈ \$0.40 per 1,000 tickets**.
 - **Drafts are cached** by a hash of their inputs (category, conversation and facts). Reopening a ticket or refreshing costs nothing; a new draft is generated only when something relevant changes.
 - Drafts are generated in the background once per ticket, not on every page view.
 - Regenerate and reclassify are throttled to 30 per hour per user.
@@ -212,7 +228,7 @@ The keyword fallback is not a stub. It uses weighted word-start matching plus re
 - Every call is logged in `AIRequestLog` with tokens, cost, latency, outcome and prompt version, and appears on the Analytics page.
 
 ### Security
-`OPENAI_API_KEY` is read from the environment on the server only. The frontend never calls OpenAI and its bundle contains no secrets; its only env var is the public API URL. `.env` files are gitignored, and `.env.example` documents every variable without values.
+The LLM key is read from the `OPENAI_API_KEY` environment variable on the server only (it holds the Gemini key on the demo; the name comes from the OpenAI SDK). The frontend never calls the LLM and its bundle contains no secrets; its only env var is the public API URL. `.env` files are gitignored, and `.env.example` documents every variable without values.
 
 ---
 
@@ -312,7 +328,7 @@ Supabase setup:
 - An author replying to a resolved ticket reopens it and refreshes the AI draft. Authors can also confirm a resolution, which closes the ticket.
 - A category override regenerates the draft with the right KB sections. A priority override recalculates the SLA.
 - Two admins on one ticket see a collision banner, and reassigning someone else's ticket asks for confirmation.
-- Composer text survives reloads (stored in localStorage) and is never overwritten by a late-arriving draft.
+- Composer text survives reloads (stored in localStorage). A draft that arrives late or is regenerated never touches the reply box; it only updates the AI draft panel.
 
 ## Known limitations / next steps
 - On the free tier, the worker shares the web dyno and the service sleeps when idle. In production the worker would be a separate service with autoscaling.
