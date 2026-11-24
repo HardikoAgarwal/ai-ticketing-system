@@ -122,11 +122,12 @@ def build_workspace(template_key: str, *, now=None) -> dict:
         customers.append((user, recs))
 
     # --- Featured tickets (hand-written, fully conversational) --------------------
+    batch = _Batch()
     number = 0
     for t in spec["tickets"]:
         number += 1
         user, recs = customers[t["customer"]]
-        _create_ticket(ws, number, user, recs, t, cats, articles, staff, embeddings, now, rng)
+        _create_ticket(batch, ws, number, user, recs, t, cats, articles, staff, embeddings, now, rng)
 
     # --- Historical tickets (procedural, for analytics) ---------------------------
     for _ in range(spec.get("history_count", 40)):
@@ -140,14 +141,38 @@ def build_workspace(template_key: str, *, now=None) -> dict:
             "age_hours": rng.randint(30, 24 * 29), "history": True,
             "reply": pool.get("reply", "Thanks for flagging this. We've sorted it out on our side. Let us know if anything still looks off."),
         }
-        _create_ticket(ws, number, user, recs, t, cats, articles, staff, embeddings, now, rng)
+        _create_ticket(batch, ws, number, user, recs, t, cats, articles, staff, embeddings, now, rng)
 
+    batch.flush()
     ws.ticket_counter = number
     ws.save(update_fields=["ticket_counter"])
     return {"workspace": ws, "visitor": visitor, "customer": customers[0][0]}
 
 
-def _create_ticket(ws, number, user, recs, t, cats, articles, staff, embeddings, now, rng):
+class _Batch:
+    """Collects unsaved rows so a whole workspace is written with a handful of bulk INSERTs.
+
+    A demo is ~60 tickets with ~600 child rows. Row-by-row that is ~600 round trips, which is
+    painfully slow when the database is a network hop away (serverless Postgres), so we bulk-create.
+    """
+
+    def __init__(self):
+        self.tickets, self.messages, self.activities, self.drafts, self.logs = [], [], [], [], []
+
+    def add(self, kind, obj, ticket):
+        obj._ticket = ticket
+        getattr(self, kind).append(obj)
+
+    def flush(self):
+        Ticket.objects.bulk_create(self.tickets)
+        for kind, model in (("messages", TicketMessage), ("activities", TicketActivity), ("drafts", AIDraft), ("logs", AIRequestLog)):
+            rows = getattr(self, kind)
+            for row in rows:
+                row.ticket_id = row._ticket.pk
+            model.objects.bulk_create(rows)
+
+
+def _create_ticket(batch, ws, number, user, recs, t, cats, articles, staff, embeddings, now, rng):
     created = now - timedelta(hours=t["age_hours"])
     history = t.get("history", False)
     category = cats[t["category"]]
@@ -171,80 +196,86 @@ def _create_ticket(ws, number, user, recs, t, cats, articles, staff, embeddings,
         embedding=embeddings.get("tickets", {}).get(ticket_embedding_key(t["subject"], t["description"])),
     )
     ticket.set_priority(t["priority"])
-    ticket.save()
-    TicketActivity.objects.create(ticket=ticket, actor=user, action=ActivityAction.CREATED, created_at=created)
-    TicketActivity.objects.create(
-        ticket=ticket, action=ActivityAction.AI_CLASSIFIED, created_at=created + timedelta(seconds=9),
+
+    def activity(**kw):
+        batch.add("activities", TicketActivity(**kw), ticket)
+
+    def message(**kw):
+        m = TicketMessage(**kw)
+        batch.add("messages", m, ticket)
+        return m
+
+    activity(actor=user, action=ActivityAction.CREATED, created_at=created)
+    activity(
+        action=ActivityAction.AI_CLASSIFIED, created_at=created + timedelta(seconds=9),
         to_value=f"{ai_category.name} / {t.get('ai_priority', t['priority']).title()}",
     )
-    TicketMessage.objects.create(ticket=ticket, sender=user, kind=MessageKind.REPLY, body=t["description"], created_at=created)
+    message(sender=user, kind=MessageKind.REPLY, body=t["description"], created_at=created)
 
     agent = staff[0] if t.get("mine") else rng.choice(staff[1:] or staff)
     if status != TicketStatus.OPEN or t.get("conversation"):
         ticket.assigned_to = agent
     last = created
-    for i, turn in enumerate(t.get("conversation", [])):
+    for turn in t.get("conversation", []):
         when = created + timedelta(minutes=turn["after_min"])
         last = when
         from_customer = turn["from"] == "customer"
         kind = MessageKind.NOTE if turn["from"] == "note" else MessageKind.REPLY
-        sender = user if from_customer else agent
-        TicketMessage.objects.create(ticket=ticket, sender=sender, kind=kind, body=turn["body"], created_at=when)
+        message(sender=user if from_customer else agent, kind=kind, body=turn["body"], created_at=when)
         if from_customer:
             ticket.last_requester_activity_at = when
-            TicketActivity.objects.create(ticket=ticket, actor=user, action=ActivityAction.REQUESTER_REPLIED, created_at=when)
+            activity(actor=user, action=ActivityAction.REQUESTER_REPLIED, created_at=when)
         elif kind == MessageKind.NOTE:
-            TicketActivity.objects.create(ticket=ticket, actor=agent, action=ActivityAction.NOTE_ADDED, created_at=when)
+            activity(actor=agent, action=ActivityAction.NOTE_ADDED, created_at=when)
         else:
             ticket.first_response_at = ticket.first_response_at or when
             ticket.last_staff_reply_at = when
             ticket.staff_last_seen_at = when
-            TicketActivity.objects.create(ticket=ticket, actor=agent, action=ActivityAction.REPLIED, created_at=when)
+            activity(actor=agent, action=ActivityAction.REPLIED, created_at=when)
 
     if history:
         resp_min = rng.randint(8, int(ws.sla_for(t["priority"]).total_seconds() / 60 * 1.15))
         when = created + timedelta(minutes=resp_min)
-        TicketMessage.objects.create(ticket=ticket, sender=agent, kind=MessageKind.REPLY, body=t["reply"], created_at=when)
+        reply = message(sender=agent, kind=MessageKind.REPLY, body=t["reply"], created_at=when)
+        if rng.random() < 0.55:
+            reply.ai_draft_edited = rng.random() < 0.6
         ticket.assigned_to = agent
         ticket.first_response_at = when
         ticket.last_staff_reply_at = when
         ticket.staff_last_seen_at = when
-        ticket.requester_last_seen_at = when  # history is already read; only featured tickets show unread
         last = when
-        TicketActivity.objects.create(ticket=ticket, actor=agent, action=ActivityAction.REPLIED, created_at=when)
-        _log_ai(ws, ticket, created, rng)
-        if rng.random() < 0.55:
-            TicketMessage.objects.filter(ticket=ticket, sender=agent).update(ai_draft_edited=rng.random() < 0.6)
+        activity(actor=agent, action=ActivityAction.REPLIED, created_at=when)
+        _log_ai(batch, ws, ticket, created, rng)
 
     if status in (TicketStatus.RESOLVED, TicketStatus.CLOSED):
         when = last + timedelta(minutes=rng.randint(20, 600))
         ticket.resolved_at = when
-        TicketActivity.objects.create(ticket=ticket, actor=agent, action=ActivityAction.STATUS_CHANGED, from_value="In Progress",
-                                      to_value="Resolved", created_at=when)
+        activity(actor=agent, action=ActivityAction.STATUS_CHANGED, from_value="In Progress", to_value="Resolved", created_at=when)
         if status == TicketStatus.CLOSED:
             ticket.closed_at = when + timedelta(hours=rng.randint(1, 30))
         if history and rng.random() < 0.6:
             ticket.csat_score = rng.choices([5, 4, 3, 2, 1], [8, 5, 2, 1, 1])[0]
     elif status == TicketStatus.IN_PROGRESS and not ticket.first_response_at and not t.get("conversation"):
         ticket.status = TicketStatus.OPEN
-    ticket.save()
+
+    batch.tickets.append(ticket)
 
     if not history and t.get("draft"):
         cites = [{"article_id": articles[title].id, "title": title, "score": round(rng.uniform(0.74, 0.91), 3)}
                  for title in t.get("citations", [])]
-        AIDraft.objects.create(
-            ticket=ticket, content=t["draft"].strip(), model=settings.AI_MODEL, prompt_version=PROMPT_VERSION,
+        batch.add("drafts", AIDraft(
+            content=t["draft"].strip(), model=settings.AI_MODEL, prompt_version=PROMPT_VERSION,
             citations=cites, input_hash="seed-" + text_hash(t["subject"])[:16],
-        )
-        _log_ai(ws, ticket, created, rng)
+        ), ticket)
+        _log_ai(batch, ws, ticket, created, rng)
 
 
-def _log_ai(ws, ticket, created, rng):
-    """Plausible usage rows so the analytics page has history. Marked implicitly by the demo workspace."""
+def _log_ai(batch, ws, ticket, created, rng):
+    """Plausible usage rows so the analytics page has history (sandbox data, flagged by the demo workspace)."""
     for feature, p_in, p_out, ms in ((AIFeature.CLASSIFY, 575, 70, 1900), (AIFeature.DRAFT, 880, 235, 4200)):
-        AIRequestLog.objects.create(
-            workspace=ws, ticket=ticket, feature=feature, model=settings.AI_MODEL, prompt_version=PROMPT_VERSION,
+        batch.add("logs", AIRequestLog(
+            workspace=ws, feature=feature, model=settings.AI_MODEL, prompt_version=PROMPT_VERSION,
             prompt_tokens=int(p_in * rng.uniform(0.85, 1.2)), completion_tokens=int(p_out * rng.uniform(0.8, 1.3)),
             cost_usd=Decimal("0"), latency_ms=int(ms * rng.uniform(0.7, 1.5)), success=rng.random() > 0.03,
             created_at=created + timedelta(seconds=rng.randint(4, 40)),
-        )
+        ), ticket)
