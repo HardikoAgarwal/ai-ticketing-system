@@ -5,6 +5,7 @@ Run once with a real key (OPENAI_API_KEY + AI_BASE_URL for Gemini) and commit th
 """
 
 import json
+import time
 
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
@@ -14,7 +15,9 @@ from apps.demo.seed import DATA_DIR, ticket_embedding_key
 from apps.demo.templates_data import TEMPLATES
 from apps.kb.indexing import chunk_hash, split_text
 
-BATCH = 50
+BATCH = 40
+RETRIES = 8
+RATE_LIMIT_WAIT = 35  # free tier: 100 embed requests/minute, each text counts as one
 
 
 def _embed_all(texts: dict[str, str]) -> dict[str, list[float]]:
@@ -22,7 +25,14 @@ def _embed_all(texts: dict[str, str]) -> dict[str, list[float]]:
     out: dict[str, list[float]] = {}
     for i in range(0, len(keys), BATCH):
         batch = keys[i : i + BATCH]
-        vectors = client.embed([texts[k] for k in batch])
+        for attempt in range(RETRIES):
+            try:
+                vectors = client.embed([texts[k] for k in batch])
+                break
+            except client.AIUnavailableError:
+                if attempt == RETRIES - 1:
+                    raise
+                time.sleep(RATE_LIMIT_WAIT)
         out.update({k: [round(x, 6) for x in v] for k, v in zip(batch, vectors)})
     return out
 
