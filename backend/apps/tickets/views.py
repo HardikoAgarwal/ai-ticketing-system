@@ -65,7 +65,8 @@ class TicketViewSet(
 
     @property
     def is_staff_user(self) -> bool:
-        return bool(self.request.membership and self.request.membership.is_staff_member)
+        m = getattr(self.request, "membership", None)
+        return bool(m and m.is_staff_member)
 
     def _detail_qs(self):
         return tickets_visible_to(self.request).prefetch_related(
@@ -75,6 +76,8 @@ class TicketViewSet(
         )
 
     def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):
+            return Ticket.objects.none()
         qs = tickets_visible_to(self.request)
         if self.action == "retrieve":
             return self._detail_qs()

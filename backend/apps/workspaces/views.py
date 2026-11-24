@@ -62,6 +62,8 @@ class CategoryViewSet(WorkspaceViewMixin, viewsets.ModelViewSet):
     http_method_names = ("get", "post", "patch", "delete")
 
     def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):
+            return Category.objects.none()
         return Category.objects.filter(workspace=self.request.workspace)
 
     def get_permissions(self):
@@ -84,9 +86,11 @@ class MemberViewSet(WorkspaceViewMixin, mixins.ListModelMixin, viewsets.GenericV
     permission_classes = (IsAuthenticated, IsStaff)
 
     def get_serializer_class(self):
-        return MembershipSerializer if self.request.membership.is_manager else MemberBriefSerializer
+        return MembershipSerializer if getattr(self.request, "membership", None) and self.request.membership.is_manager else MemberBriefSerializer
 
     def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):
+            return Membership.objects.none()
         qs = Membership.objects.filter(workspace=self.request.workspace).select_related("user").order_by("user__full_name")
         if self.request.query_params.get("role") == "staff":
             qs = qs.filter(role__in=[Role.OWNER, Role.ADMIN, Role.AGENT])
@@ -100,6 +104,8 @@ class InviteViewSet(WorkspaceViewMixin, mixins.ListModelMixin, mixins.CreateMode
     permission_classes = (IsAuthenticated, IsManager)
 
     def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):
+            return Invite.objects.none()
         return Invite.objects.filter(workspace=self.request.workspace, accepted_at__isnull=True).order_by("-created_at")
 
     def perform_create(self, serializer):
@@ -117,6 +123,8 @@ class RecordViewSet(WorkspaceViewMixin, mixins.ListModelMixin, mixins.RetrieveMo
     permission_classes = (IsAuthenticated,)
 
     def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):
+            return Record.objects.none()
         qs = Record.objects.filter(workspace=self.request.workspace)
         if not self.request.membership.is_staff_member:
             return qs.filter(owner=self.request.user)
@@ -135,6 +143,8 @@ class ArticleViewSet(WorkspaceViewMixin, viewsets.ModelViewSet):
         return ArticleListSerializer if self.action == "list" else ArticleSerializer
 
     def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):
+            return Article.objects.none()
         return Article.objects.filter(workspace=self.request.workspace).select_related("category")
 
     def get_permissions(self):
@@ -191,6 +201,8 @@ class MacroViewSet(WorkspaceViewMixin, viewsets.ModelViewSet):
     http_method_names = ("get", "post", "patch", "delete")
 
     def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):
+            return Macro.objects.none()
         return Macro.objects.filter(workspace=self.request.workspace)
 
     def perform_create(self, serializer):

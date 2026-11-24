@@ -1,0 +1,47 @@
+# Local full stack: `docker compose up --build`  ->  API on http://localhost:8000
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: helpdesk
+      POSTGRES_USER: helpdesk
+      POSTGRES_PASSWORD: helpdesk
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U helpdesk -d helpdesk"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build: ./backend
+    depends_on:
+      db: { condition: service_healthy }
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.prod
+      SECRET_KEY: local-compose-secret-change-me
+      DATABASE_URL: postgres://helpdesk:helpdesk@db:5432/helpdesk
+      ALLOWED_HOSTS: localhost,127.0.0.1
+      CORS_ALLOWED_ORIGINS: http://localhost:5173
+      SECURE_SSL_REDIRECT: "false"
+      # Enable live AI (optional). Without a key the app runs on rule-based triage + pre-baked demo data.
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      AI_BASE_URL: ${AI_BASE_URL:-}
+      AI_MODEL: ${AI_MODEL:-gpt-4o-mini}
+    ports: ["8000:8000"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://127.0.0.1:8000/health/')"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  # Frontend (uncomment once frontend/ has a Dockerfile, or just run `npm run dev` in frontend/):
+  # web:
+  #   build: ./frontend
+  #   environment:
+  #     VITE_API_URL: http://localhost:8000
+  #   ports: ["5173:80"]
+  #   depends_on: [api]
+
+volumes:
+  pgdata:

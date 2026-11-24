@@ -10,8 +10,11 @@ DEBUG = False
 if SECRET_KEY.startswith("dev-insecure"):
     raise ImproperlyConfigured("SECRET_KEY must be set in production")
 
-if render_host := os.environ.get("RENDER_EXTERNAL_HOSTNAME"):
-    ALLOWED_HOSTS = [*ALLOWED_HOSTS, render_host]
+# Platform-provided hostnames (Render, Railway, Koyeb, Fly) are added automatically; anything else
+# goes in ALLOWED_HOSTS.
+for _var in ("RENDER_EXTERNAL_HOSTNAME", "RAILWAY_PUBLIC_DOMAIN", "KOYEB_PUBLIC_DOMAIN", "FLY_APP_NAME"):
+    if _host := os.environ.get(_var):
+        ALLOWED_HOSTS = [*ALLOWED_HOSTS, f"{_host}.fly.dev" if _var == "FLY_APP_NAME" else _host]
 
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 SECURE_SSL_REDIRECT = env_bool("SECURE_SSL_REDIRECT", True)

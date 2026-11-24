@@ -3,6 +3,7 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.http import JsonResponse
 from django.urls import include, path
+from apps.tickets.inbound import InboundEmailView
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
 
@@ -23,6 +24,7 @@ def health(_request):
 api_v1 = [
     path("auth/", include("apps.accounts.urls")),
     path("demo/", include("apps.demo.urls")),
+    path("inbound/email/", InboundEmailView.as_view(), name="inbound-email"),
     path("w/<slug:slug>/", include("apps.workspaces.urls")),
     path("w/<slug:slug>/", include("apps.tickets.urls")),
     path("w/<slug:slug>/", include("apps.analytics.urls")),

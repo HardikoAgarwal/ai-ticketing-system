@@ -140,6 +140,9 @@ ATTACHMENT_ALLOWED_TYPES = {
 }
 ATTACHMENT_MAX_FILES = 3
 
+# --- Inbound email webhook (disabled unless a shared secret is set) ---
+INBOUND_EMAIL_SECRET = os.environ.get("INBOUND_EMAIL_SECRET", "")
+
 # --- Demo sandbox ---
 DEMO_TTL_HOURS = int(os.environ.get("DEMO_TTL_HOURS", "24"))
 DEMO_MAX_ACTIVE = int(os.environ.get("DEMO_MAX_ACTIVE", "200"))

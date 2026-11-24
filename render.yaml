@@ -1,6 +1,8 @@
+# Render blueprint: one free web service. The database is NOT created here: use Neon (free, no expiry)
+# and paste its connection string as DATABASE_URL. Re-verify Render's current free-tier limits.
 services:
   - type: web
-    name: bookleaf-api
+    name: helpdesk-api
     runtime: python
     plan: free
     rootDir: backend
@@ -15,32 +17,31 @@ services:
       - key: SECRET_KEY
         generateValue: true
       - key: DATABASE_URL
-        fromDatabase:
-          name: bookleaf-db
-          property: connectionString
-      - key: REDIS_URL
-        fromService:
-          type: keyvalue
-          name: bookleaf-redis
-          property: connectionString
+        sync: false # Neon pooled or direct connection string
       - key: CORS_ALLOWED_ORIGINS
-        sync: false # e.g. https://bookleaf-portal.vercel.app
+        sync: false # your Cloudflare Pages URL, e.g. https://helpdesk-ai.pages.dev
       - key: OPENAI_API_KEY
-        sync: false
+        sync: false # Gemini key from AI Studio (free tier)
       - key: AI_BASE_URL
-        sync: false # empty for OpenAI; https://generativelanguage.googleapis.com/v1beta/openai/ for Gemini
+        value: https://generativelanguage.googleapis.com/v1beta/openai/
       - key: AI_MODEL
-        sync: false # gpt-4o-mini (OpenAI) or gemini-3.1-flash-lite (Gemini free tier)
+        value: gemini-3.1-flash-lite
       - key: AI_REASONING_EFFORT
-        sync: false # empty for OpenAI; "none" for Gemini
+        value: none
+      - key: AI_EMBED_MODEL
+        value: gemini-embedding-001
       - key: AI_PRICE_INPUT_PER_M
-        sync: false # 0 on Gemini's free tier
+        value: "0"
       - key: AI_PRICE_OUTPUT_PER_M
-        sync: false
-      - key: SEED_ON_START
-        value: "true"
+        value: "0"
+      - key: AI_DAILY_CALL_CAP
+        value: "400"
+      - key: AI_WORKSPACE_DAILY_CAP
+        value: "40"
+      - key: INBOUND_EMAIL_SECRET
+        sync: false # optional; leave blank to disable the email webhook
       - key: AWS_STORAGE_BUCKET_NAME
-        sync: false
+        sync: false # Supabase Storage bucket (optional)
       - key: AWS_ACCESS_KEY_ID
         sync: false
       - key: AWS_SECRET_ACCESS_KEY
@@ -51,14 +52,3 @@ services:
         sync: false
       - key: AWS_S3_ADDRESSING_STYLE
         value: path
-
-  - type: keyvalue
-    name: bookleaf-redis
-    plan: free
-    maxmemoryPolicy: noeviction
-    ipAllowList: []
-
-databases:
-  - name: bookleaf-db
-    plan: free
-    databaseName: bookleaf

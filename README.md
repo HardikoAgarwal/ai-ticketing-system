@@ -1,337 +1,139 @@
-# BookLeaf Author Support & Communication Portal
+# Helpdesk AI
 
-A support portal for BookLeaf Publishing. Authors see their books and royalties and raise support tickets. The support team works a prioritised queue where AI does the first triage: it classifies each ticket, sets its priority, and drafts a reply in BookLeaf's tone using the knowledge base.
+A multi-workspace support desk where AI does the first pass: it triages every ticket, spots duplicates and sentiment, and drafts a reply **grounded in the workspace's own knowledge base, with citations**. Agents stay in control; customers get a clean portal with self-service suggestions.
+
+> "Helpdesk AI" is a working name. Search-and-replace it (README, `SPECTACULAR_SETTINGS`, frontend title) to rebrand.
 
 | | |
 |---|---|
-| **Live app** | [bookleaf-portal-theta-brown.vercel.app](https://bookleaf-portal-theta-brown.vercel.app) |
-| **API + Swagger** | [bookleaf-api-2dez.onrender.com/api/docs/](https://bookleaf-api-2dez.onrender.com/api/docs/) *(free tier: the first request after idling takes ~50 s to wake up)* |
-| **Write-up** | [docs/WRITEUP.md](docs/WRITEUP.md) |
+| **Live demo** | _add your Cloudflare Pages URL_ (one click creates a private, pre-filled sandbox) |
+| **API + Swagger** | _add your API URL_`/api/docs/` |
+| **Architecture write-up** | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) |
 
-### Test credentials
+## Try it in 10 seconds
+Click **Try the demo** and pick a template (SaaS analytics, internal IT helpdesk, or an online store). You get your own sandbox workspace with ~50 tickets, a knowledge base, a month of analytics history and AI results already attached. Switch between the **Agent view** and the **Customer view** to see both sides. Sandboxes are isolated and deleted after 24 hours.
 
-| Role | Email | Password |
-|---|---|---|
-| Author | `priya.sharma@email.com` (any of the 10 authors in the sample data) | `Author@123` |
-| Admin | `admin@bookleaf.com` | `Admin@123` |
-| Admin | `neha@bookleaf.com`, `kabir@bookleaf.com` | `Admin@123` |
+## Features
+**For customers (requesters)**
+- Portal with their items (orders, subscriptions, devices...), ticket history, live updates and notifications
+- Self-service suggestions from the knowledge base while typing a ticket (keyword retrieval, costs no AI quota)
+- Reply, confirm or reopen a resolution, rate the support (CSAT)
 
-The login page has one-click buttons that fill these in. Good edge-case authors to try:
-- `sneha.kulkarni@email.com`: a book still in cover design.
-- `kavita.deshmukh@email.com`: one book in typesetting, plus pending royalty below the ₹1,000 payout threshold.
-- `ananya.reddy@email.com`: a book that has never been paid out.
+**For agents and admins**
+- Prioritised queue: filters, saved views, SLA countdowns, keyboard navigation, collision warnings
+- **AI triage card**: category, priority, sentiment, one-line summary, confidence and reasoning. Staff overrides always win and are tracked
+- **RAG drafts with citations**: the draft shows which knowledge-base articles it used; "Use this draft", regenerate, edit, send
+- Possible-duplicate detection (embedding similarity), internal notes, macros, assignment, activity timeline
+- Analytics: volume, first-response and resolution times, SLA breach rate, sentiment, CSAT, AI override rate, tokens, cost, latency, draft accept/edit rate
+- Knowledge-base editor with a search box that runs the same retrieval the AI uses
 
-> The Render free tier sleeps after 15 minutes of inactivity, so the first request can take about 50 seconds.
-
----
-
-## What's built
-
-### Author portal
-- **Dashboard**: a greeting, royalty totals (earned, paid, pending), the next payout window, active tickets, and unread replies.
-- **My Books**: title, ISBN, genre, publication date, MRP, copies sold and royalty earned/paid/pending.
-  - Books in production show a 9-stage progress bar instead.
-  - Contextual notes cover cases like "pending is below the ₹1,000 payout threshold" or "never paid out yet".
-- **New ticket**:
-  - Book dropdown (published and in-production books are grouped) plus "General / Account Level".
-  - Subject, description, and up to 3 attachments (PDF/PNG/JPG/WEBP, 10 MB each) with drag-and-drop and an upload progress bar.
-  - A side panel shows the selected book's facts.
-  - The draft is protected against accidental navigation.
-- **My Tickets**: Active / Resolved / All tabs, an unread badge, and a status timeline. Authors can reply, confirm a resolution, or reopen a ticket.
-- **Real-time updates**: new replies and status changes arrive over WebSockets with a toast. If the socket drops, the page falls back to polling.
-- **Notifications** (authors and admins):
-  - A header bell lists unread replies with a preview. Authors also see "resolved, please confirm" items; admins see new tickets and author replies on tickets that are theirs or unassigned, with priority chips.
-  - Opening a ticket clears its item, and "Mark all as read" clears the rest. The feed comes from the existing read receipts, so there's no separate notifications table to keep in sync.
-  - The tab title shows the unread count, e.g. `(3) BookLeaf…`.
-  - Optional desktop alerts can be switched on from the bell; they only fire while the tab is in the background.
-
-### Admin portal
-- **Queue**:
-  - Ordered by priority, then age.
-  - Filters for status, category, priority, date range, assignee and SLA state, plus search by text or `TKT-0001`. Filters are stored in the URL.
-  - Quick views: Needs attention, Mine, Unassigned, All.
-  - KPI cards; overdue tickets have a red edge and SLA countdowns ("Reply in 3h" / "Overdue 2h").
-  - Keyboard navigation: `J`/`K` to move, `Enter` to open.
-- **Ticket workspace**:
-  - **Triage card**: shows the AI category and priority with confidence and reasoning. Both can be overridden; an override is marked "Overridden by team" and the AI never overwrites it. A "Re-run AI" button is available.
-  - **Composer**: a plain reply box with Send (Ctrl/⌘ + Enter) and a send preview. Above it floats a collapsible **AI draft** chip with an animated gradient ring.
-    - Expanding it shows the draft, the KB sections it used, and Regenerate, Copy and **Use this draft**.
-    - "Use this draft" copies it into the reply box for editing and asks first if you've already typed something. The reply box is then labelled "From AI draft", or "edited by you" after changes.
-    - The chip shows "Writing…" while the draft is generated, and "AI draft unavailable · Try again" if AI failed.
-  - **Internal notes**: a separate panel that authors never see.
-  - **Mark as resolved**: a prominent header action with a confirmation dialog; the author is then asked to confirm or reopen. Authors can also mark their own open ticket resolved.
-  - **Workflow**: status changes (closing asks for confirmation), assign to me or reassign (asks for confirmation if the ticket is someone else's), and the SLA state.
-  - **Context**: author profile and full book and royalty facts, plus an activity timeline of every change and who made it.
-  - **Collision and activity banners**: warn when another admin owns the ticket or the author replied while you were typing.
-- **Analytics** for 7, 30 or 90 days:
-  - Volume, average first-response and resolution times, and SLA breach rate.
-  - Breakdowns by category and priority.
-  - AI override rate (a proxy for classifier accuracy), AI cost, tokens, latency and failure rate.
-  - How often AI drafts are sent as-is, edited, or replaced.
-
-### SLA policy (first response)
-| Priority | Target | Example |
-|---|---|---|
-| Critical | 4 h | Royalty unpaid for months, legal or rights issues |
-| High | 24 h | Wrong ISBN or metadata live, print defects |
-| Medium | 48 h | Status questions, a missing platform listing |
-| Low | 72 h | Bio updates, general questions |
-
-A ticket is "at risk" once 75% of its window has elapsed. Changing the priority recalculates the deadline.
-
----
+**Platform**
+- Real multi-tenancy: sign up and get your own workspace; owner/admin/agent/requester roles; invites
+- Per-workspace categories, SLA targets, tone and sign-off, AI on/off
+- Inbound email webhook (`POST /api/v1/inbound/email/`) turns forwarded emails into tickets
+- OpenAPI docs, 55+ backend tests, CI, free-tier friendly deploy
 
 ## Architecture
-
 ```mermaid
 flowchart LR
-  subgraph Vercel
+  subgraph CF["Cloudflare Pages"]
     SPA[React SPA<br/>Vite + TS + Tailwind + shadcn/ui]
   end
-  subgraph Render["Render web service (one container)"]
-    API[Django + DRF<br/>Daphne ASGI]
-    WS[Channels<br/>WebSockets]
-    W[Celery worker<br/>AI pipeline]
+  subgraph API["One container (Koyeb / Render free)"]
+    D[Django + DRF<br/>Daphne ASGI]
+    WS[Channels WebSockets<br/>in-memory layer]
+    J[Job pool<br/>in-process threads]
   end
-  PG[(Postgres)]
-  R[(Redis<br/>broker · channel layer · cache)]
-  S3[(Supabase Storage<br/>S3 API · attachments)]
-  OAI[[Gemini 3.1 Flash-Lite<br/>OpenAI-compatible API]]
-
-  SPA -- REST + JWT --> API
-  SPA <-- wss + JWT --> WS
-  API --> PG
-  API -- enqueue --> R --> W
-  W --> OAI
-  W -- broadcast --> R --> WS
-  API --> S3
+  PG[(Neon Postgres<br/>data + durable job table)]
+  S3[(Supabase Storage<br/>S3 API attachments)]
+  G[[Gemini Flash-Lite + embeddings<br/>OpenAI-compatible API]]
+  SPA -- REST + JWT --> D
+  SPA <-- WSS --> WS
+  D --> PG
+  D -- enqueue --> J
+  J --> PG
+  J --> G
+  J -- broadcast --> WS
+  D --> S3
 ```
 
 **Ticket lifecycle**
-1. An author submits a ticket. Inside the same transaction, a keyword classifier assigns a provisional category and priority, so the SLA clock starts immediately and the ticket is never untriaged.
-2. On commit, a Celery task asks the LLM to classify it. The result overwrites the provisional values but never values an admin has set.
-3. A second task drafts a reply using only the KB sections for that category plus a deterministic fact sheet for the author and book.
-4. Every state change is broadcast to the `admins` group and to the author's own group. Authors' payloads never include triage data. The UI refetches what changed.
+1. A requester submits a ticket. In the same transaction a keyword classifier assigns a provisional category and priority, so the SLA clock starts immediately.
+2. After commit, a job asks the LLM to triage (category, priority, sentiment, summary) and embeds the ticket. Staff-set values are never overwritten.
+3. A second job retrieves the most relevant knowledge-base chunks and drafts a reply from those plus a deterministic **fact sheet** built from the customer's profile and the linked record.
+4. Every state change is broadcast to the workspace's staff group and the requester's own group. The UI refetches through the normal permission-checked REST endpoints.
 
-### Key decisions and why
-- **Django + DRF.**
-  - The domain is relational (authors → books → tickets → messages), and Django's ORM, migrations, admin and auth save days of work.
-  - DRF provides serializers, permissions and throttling out of the box, and drf-spectacular generates the OpenAPI spec from the code, so the docs can't drift.
-- **A service layer, not fat views or models.** Every business rule lives in `tickets/services.py`: transitions, SLA, the AI-vs-admin source of truth, and side effects like broadcasts and enqueues. Views only handle HTTP, and the same functions back the API, the seed command and the tests.
-- **Separate author and admin serializers.** The author's view of a ticket structurally omits priority, AI reasoning, notes and activity, so a missed filter can't leak triage data.
-- **AI runs asynchronously in Celery, never in the request.**
-  - Ticket creation responds immediately, unaffected by LLM latency or outages.
-  - Retries and backoff happen without a user waiting.
-  - The draft is already waiting when an agent opens the ticket.
-  - `transaction.on_commit` makes sure the worker never sees a half-written ticket.
-- **Keyword fallback runs synchronously at creation.** There's always a category, priority and SLA deadline, even if AI never answers.
-- **Django Channels WebSockets for real time.** Events are small "ticket X changed" signals; the client invalidates the relevant TanStack Query cache and refetches through the normal, permission-checked REST endpoints. Data never bypasses RBAC through the socket, and polling takes over if the socket drops.
-- **Postgres and Redis.** Postgres handles relational integrity and the aggregation queries for analytics. One Redis instance serves as the Celery broker, the Channels layer, and the cache for the circuit breaker and throttles.
-- **React + Vite SPA with shadcn/ui.** The UI is accessible, consistent and fully typed (TypeScript types mirror the API), and the components are owned in the repo rather than locked in a library.
+### Key decisions
+- **Multi-tenancy by foreign key.** Every tenant table carries a `workspace` FK; access goes through `Membership` roles. Non-members get **404, not 403**, so workspace slugs can't be probed. Isolation is covered by tests.
+- **Service layer.** All business rules (state machine, SLA, assignment, AI-vs-staff precedence, broadcasts, enqueues) live in `tickets/services.py`. Views only handle HTTP.
+- **Separate requester and staff serializers.** A requester's ticket structurally has no triage fields or internal notes, so a missed filter can't leak them.
+- **The model phrases, Python computes.** Amounts, dates and statuses come from the fact sheet, never from the model. Internal notes never enter prompts (tested).
+- **Override wins.** Staff changes to category/priority are final; the AI suggestion is stored beside it so the override rate is a live quality metric.
+- **Graceful degradation.** Rule-based triage at creation; retries with backoff; a circuit breaker; hard daily budget caps; and pre-baked AI results in demo data. An AI outage changes one thing: agents write replies manually.
+- **No Redis, Celery or pgvector (yet).** At demo and small-team scale they are cost and moving parts without benefit:
+  - Jobs are rows in Postgres run by an in-process pool; a sweeper re-dispatches anything left after a restart. No polling worker, so serverless Postgres can scale to zero.
+  - Channels uses the in-memory layer (single instance).
+  - Embeddings are JSON and cosine similarity runs in Python over one workspace's chunks, with a keyword fallback.
+  - **Add them when:** more than one API instance (Redis or Postgres channel layer), sustained job throughput or scheduled jobs (Celery/RQ), or tens of thousands of chunks per workspace (pgvector).
 
-### Backend layout (`backend/`)
-| Path | Responsibility |
+## AI strategy and free-tier budget
+Provider-agnostic (OpenAI SDK; Gemini through its OpenAI-compatible endpoint). Re-verify current free-tier numbers before relying on them.
+
+| Concern | Approach |
 |---|---|
-| `apps/accounts` | Custom `User` (email login, `AUTHOR`/`ADMIN` role), author profiles, JWT login |
-| `apps/catalog` | Books, production stages, royalty rules (payout window, ₹1,000 threshold), seed command |
-| `apps/tickets` | Ticket, message, attachment and activity models; **service layer** (`services.py`) holding all business rules: state machine, SLA, assignment, notes vs replies; filters; viewset |
-| `apps/ai` | KB loader, prompts, classifier, drafter, keyword fallback, provider-agnostic LLM client (OpenAI SDK) with circuit breaker and usage logging, Celery tasks |
-| `apps/realtime` | JWT WebSocket middleware, consumer, broadcast helpers |
-| `apps/analytics` | Aggregated metrics endpoint |
-| `common/` | Error envelope, RBAC permissions, pagination |
-| `knowledge_base/kb.yaml` | BookLeaf policies, tone guidelines, category→section map, example responses |
-
-### API conventions
-- Every endpoint requires a JWT except `auth/login` and `auth/refresh`. Access tokens last 30 minutes and refresh tokens 7 days; the SPA refreshes automatically.
-- **RBAC** is enforced on both permissions and querysets. An author requesting another author's ticket or book gets **404**, not 403, so IDs don't leak. Admin-only actions return 403 for authors.
-- Errors always use one shape:
-  ```json
-  { "error": { "code": "validation_error", "message": "subject: Ensure this field has at least 5 characters.", "details": { "subject": ["..."] } } }
-  ```
-- Invalid status transitions return `409 conflict`. Throttles apply to ticket creation, AI regeneration and login.
-- Docs: Swagger UI at `/api/docs/`, raw schema at `/api/schema/`, and a static copy at [`docs/openapi.yaml`](docs/openapi.yaml).
-
-| Endpoint | Who | Purpose |
-|---|---|---|
-| `POST /api/v1/auth/login/` · `refresh/` · `GET me/` | all | JWT auth |
-| `GET /api/v1/books/` · `books/{id}/` · `me/summary/` | author (admin: all books) | Books, royalties, dashboard summary |
-| `GET/POST /api/v1/tickets/` · `GET /tickets/{id}/` | author: own · admin: all | List/create/detail |
-| `PATCH /tickets/{id}/` · `POST assign-to-me/` | admin | Status, category, priority, assignee overrides |
-| `GET/POST /tickets/{id}/messages/` | both (notes: admin only) | Replies and internal notes |
-| `POST /tickets/{id}/confirm-resolution/` · `mark-seen/` | author / both | Close the loop, read receipts |
-| `GET /tickets/notifications/` · `POST notifications/mark-all-read/` | both (scoped to the caller) | Notification bell feed |
-| `GET /tickets/{id}/draft/` · `POST draft/regenerate/` · `POST reclassify/` | admin | AI draft and classification |
-| `GET /tickets/{id}/attachments/{aid}/` | ticket participants | Authorised download link (5-minute signed URL) |
-| `GET /tickets/stats/` · `/admin/analytics/summary/` · `/admin/agents/` | admin | Queue counts, analytics, assignee list |
-| `ws(s)://…/ws/events/?token=<access>` | both | Real-time events |
-
----
-
-## AI strategy
-
-### Model: Gemini 3.1 Flash-Lite on the live demo, `gpt-4o-mini` as the drop-in alternative
-The live demo runs **Google Gemini 3.1 Flash-Lite** (`gemini-3.1-flash-lite`) through Google's OpenAI-compatible endpoint. The code is provider-agnostic: it uses the official `openai` SDK, and switching to OpenAI `gpt-4o-mini` means changing three env vars, with no code changes (see [AI provider](#ai-provider)).
-
-Why a small, fast model rather than a frontier one:
-- **Fit for the job**: both tasks are short, well-specified text tasks (6-way classification and a ~150-word templated reply), not open-ended reasoning. A frontier model would add cost and latency without a visible quality gain, and the deterministic fact sheet (below) means the model never has to calculate anything.
-- **Structured outputs**: the classifier uses strict `json_schema` mode, which both Gemini's compatible endpoint and OpenAI support, so it returns a valid enum every time with no free-text parsing.
-
-Why Gemini Flash-Lite for the demo specifically:
-- **Free tier**: about 500 requests a day with no billing account, so reviewers can create tickets and regenerate drafts without me pre-paying for an API. Each ticket uses two calls (classify, draft).
-- **Quality**: on the 10 seeded tickets it matched the expected categories and raised the priorities a human would (for example, unpaid royalties as Critical). Drafts quote the fact sheet's exact figures and follow the tone rules.
-- **No hidden reasoning**: Gemini 3.x models "think" by default, which would eat the output token caps. `AI_REASONING_EFFORT=none` turns that off, so classification and drafts stay within 150 and 450 tokens.
-
-Trade-offs:
-- **Latency**: free-tier calls averaged about 6 s in my logs (classification ~7 s, drafts ~6 s), versus 1–2 s for paid `gpt-4o-mini`. This is invisible to authors because AI runs in Celery after the ticket is saved, and the draft is normally ready before an agent opens the ticket.
-- **Rate limits**: the free tier can return 429 at busy times. That is exactly the case the retry, circuit-breaker and fallback design handles (see [Graceful degradation](#graceful-degradation)).
-- **Swappable**: for production volume I would move to a paid tier of either provider. The model is the `AI_MODEL` env var, and every draft and log row records the model and `PROMPT_VERSION`, so the switch can be compared on real data.
-
-### Classification (`apps/ai/classifier.py`, `prompts.py`)
-- The system prompt defines the 6 categories with boundary rules, for example "royalty *amount* questions are Royalty, not General".
-- It also includes a priority rubric with examples, and the rule that author frustration can raise priority by at most one level and never lowers it.
-- It receives only the subject, the description (truncated) and a one-line book summary (status, pending royalty, last payout). It does **not** receive the KB, which keeps it at about 575 input tokens.
-- Settings: temperature 0, at most 150 output tokens. The output is validated with Pydantic and returns category, priority, confidence and a one-sentence reason shown to the agent.
-
-### Response drafting (`apps/ai/drafter.py`)
-- **KB scoping**: `kb.yaml` maps each category to the policy sections it needs, so a royalty ticket gets the royalty policy and not the printing SLA. This keeps prompts focused (about 800–1,000 tokens) and stops the model mixing up policies as the KB grows.
-- **Example guidance**: the brief's "how BookLeaf handles similar queries" table is included for the matching category as few-shot style guidance.
-- **Deterministic fact sheet**: Python computes the facts and the model only phrases them, so numbers are never hallucinated. Facts include the exact royalty amounts, last payout date, next payout window ("Q3 2026 payouts by 14 Nov 2026"), whether pending is below the threshold, and the production stage index.
-- **Tone**: the tone guidelines sit in the system prompt with explicit rules:
-  - Greet by first name and acknowledge the concern before explaining.
-  - Commit to concrete timelines from policy.
-  - Own BookLeaf's mistakes.
-  - Never invent tracking IDs or payment references.
-  - No mention of AI or internal notes.
-  - A fixed sign-off.
-- **Conversation**: only the last 3 *non-note* messages are included. Internal notes never reach the prompt (covered by a test).
-- **Agent stays in control**: the draft is a suggestion, never sent automatically. It appears in a separate AI draft panel above the reply box; the agent reviews it, clicks "Use this draft" to copy it into the reply box, edits, and sends. The message records whether the AI draft was sent as-is, edited, or replaced (shown in analytics).
-
-### Graceful degradation
-| Failure | Behaviour |
-|---|---|
-| No API key / `AI_ENABLED=false` | Keyword classifier runs; the composer shows "AI drafting is off" and agents write manually |
-| Timeout, 429, 5xx | Celery retries with exponential backoff (5s, 10s, 20s), then marks the ticket *Needs triage* (amber banner) and keeps the keyword classification |
-| 5 consecutive failures | **Circuit breaker** opens for 5 minutes and calls are skipped immediately instead of piling up |
-| Bad request / invalid JSON / schema violation | Not retried; falls back immediately |
-| Redis/broker down | Ticket creation still succeeds and AI is marked failed, so the request never errors |
-
-The keyword fallback is not a stub. It uses weighted word-start matching plus regex rules for critical and high signals (for example "not received … 6 months" or "blurry/misaligned"), and it classifies all six of the brief's example queries correctly (see `tests/test_domain.py`).
-
-### Cost awareness
-- Measured from the request logs: classification uses about 575 input and 60 output tokens, and a draft about 880 input and 235 output tokens.
-  - On the demo's Gemini free tier this costs **\$0**.
-  - At paid `gpt-4o-mini` prices (\$0.15 per million input tokens, \$0.60 per million output) it is **≈ \$0.0004 per ticket, or ≈ \$0.40 per 1,000 tickets**.
-- **Drafts are cached** by a hash of their inputs (category, conversation and facts). Reopening a ticket or refreshing costs nothing; a new draft is generated only when something relevant changes.
-- Drafts are generated in the background once per ticket, not on every page view.
-- Regenerate and reclassify are throttled to 30 per hour per user.
-- Token caps: 150 for classification, 450 for drafts. Long descriptions are truncated.
-- Every call is logged in `AIRequestLog` with tokens, cost, latency, outcome and prompt version, and appears on the Analytics page.
-
-### Security
-The LLM key is read from the `OPENAI_API_KEY` environment variable on the server only (it holds the Gemini key on the demo; the name comes from the OpenAI SDK). The frontend never calls the LLM and its bundle contains no secrets; its only env var is the public API URL. `.env` files are gitignored, and `.env.example` documents every variable without values.
-
----
+| Model | Gemini Flash-Lite for triage and drafts; `gemini-embedding-001` (768 dims) for retrieval and duplicates |
+| Daily quota (~500 chat requests for the whole project on the free tier) | `AI_DAILY_CALL_CAP=400` global and `AI_WORKSPACE_DAILY_CAP=40` per sandbox; over the cap, tickets keep rule-based triage and show a clear banner |
+| Cost per ticket | ~2 chat calls plus 1 embedding. $0 on the free tier; ~$0.0004 at paid `gpt-4o-mini` prices |
+| Never-empty demo | Template data ships with AI results and (optionally) precomputed embeddings: `python manage.py build_demo_embeddings` |
+| Caching | Drafts are cached by a hash of their inputs (prompt, facts, KB hits); query embeddings are cached for an hour |
+| Observability | Every call is logged (`AIRequestLog`) with tokens, latency, cost and outcome; shown in Analytics |
 
 ## Running locally
-
-**Requirements:** Python 3.12, Node 20+, Postgres 15+, Redis 7+.
-
-On macOS:
+Requirements: Python 3.12, Node 20+, Postgres 15+.
 ```bash
-brew install postgresql@16 redis uv && brew services start postgresql@16 redis
-createdb bookleaf
-```
-
-### Backend
-```bash
+createdb helpdesk
 cd backend
 uv venv --python 3.12 .venv && uv pip install --python .venv/bin/python -r requirements.txt
-# or: python3.12 -m venv .venv && .venv/bin/pip install -r requirements.txt
-cp .env.example .env                    # add an AI key to enable AI (see "AI provider" below)
+cp .env.example .env      # add an AI key to enable live AI (optional)
 .venv/bin/python manage.py migrate
-.venv/bin/python manage.py seed_bookleaf --with-sample-tickets
-.venv/bin/daphne -b 127.0.0.1 -p 8000 config.asgi:application        # API + WebSockets
-.venv/bin/celery -A config worker --pool=threads --loglevel=info     # second terminal: AI pipeline
+.venv/bin/daphne -b 127.0.0.1 -p 8000 config.asgi:application   # API + WebSockets + job pool
 ```
-
-### AI provider
-The client speaks the OpenAI Chat Completions API, so any compatible provider works by changing env vars only:
-
-| Provider | `OPENAI_API_KEY` | `AI_BASE_URL` | `AI_MODEL` | `AI_REASONING_EFFORT` |
-|---|---|---|---|---|
-| OpenAI (default) | OpenAI key | *(empty)* | `gpt-4o-mini` | *(empty)* |
-| Google Gemini (free tier) | key from [AI Studio](https://aistudio.google.com/apikey) | `https://generativelanguage.googleapis.com/v1beta/openai/` | `gemini-3.1-flash-lite` | `none` |
-
-Use a Flash-Lite model on the free tier: it allows about 500 requests a day, while the full Flash models allow only about 20 (each ticket uses two: classify and draft). After enabling AI on an existing database, run `python manage.py ai_backfill` to classify and draft tickets created while it was off.
-
-Gemini models think before answering; `AI_REASONING_EFFORT=none` keeps that hidden reasoning from using up the 150/450 token caps. On the free tier, set `AI_PRICE_INPUT_PER_M=0` and `AI_PRICE_OUTPUT_PER_M=0` so the analytics cost reads $0.
-
-Without a key, the app runs on the keyword fallback and shows that AI is off.
-
-### Frontend
 ```bash
-cd frontend
-cp .env.example .env.local
-npm install
-npm run dev        # http://localhost:5173
+cd frontend && cp .env.example .env.local && npm install && npm run dev   # http://localhost:5173
 ```
+Or run API + Postgres with `docker compose up --build`.
 
 ### Tests
 ```bash
-cd backend && .venv/bin/pytest      # 56 tests
+cd backend && DJANGO_SETTINGS_MODULE=config.settings.test .venv/bin/pytest -q tests
 ```
-The tests cover:
-- Authentication and RBAC scoping, including 404 for other users' data.
-- Internal-note isolation in both the API and the AI prompt.
-- Validation and the error envelope, attachment rules, the state machine, SLA recalculation, and admin overrides winning over AI.
-- The full AI pipeline with a mocked OpenAI client: success, retry then success, persistent outage, permanent error, invalid model output, the circuit breaker, AI disabled, and the draft cache.
-- Fallback accuracy on the brief's examples, payout-window maths, and seed idempotency.
+Covers auth and tenant isolation, RBAC, the ticket state machine and SLA, notifications, the AI pipeline against a mocked client (success, retry then success, outage, permanent error, bad output, circuit breaker, budget caps, cache), retrieval, duplicate detection, every demo template, and the inbound webhook.
 
----
+## Free, permanent deployment
+Verify each provider's current free-tier terms before you rely on them.
+1. **Database: Neon.** Create a project, copy the connection string into `DATABASE_URL`.
+2. **API: Koyeb or Render (free web service).** Use `backend/Dockerfile` (or `render.yaml`). Set the env vars below. Health check path: `/health/`.
+3. **Frontend: Cloudflare Pages.** Root `frontend`, build `npm run build`, output `dist`, env `VITE_API_URL=https://<your-api>`; set `CORS_ALLOWED_ORIGINS` on the API to the Pages URL.
+4. **Attachments: Supabase Storage** (optional): private bucket plus S3 credentials (see `.env.example`). Without them files use local disk, which is wiped on restarts.
+5. **Keep warm: GitHub Actions.** Set the repository variable `API_URL`; `keepalive.yml` pings `/health/` every 10 minutes so visitors rarely see a cold start. The same endpoint re-dispatches unfinished background jobs.
+6. **AI:** create a Gemini API key in Google AI Studio and set `OPENAI_API_KEY`, `AI_BASE_URL`, `AI_MODEL`, `AI_REASONING_EFFORT=none`.
 
-## Deployment
+### Environment variables
+| Variable | Purpose |
+|---|---|
+| `SECRET_KEY`, `DATABASE_URL`, `ALLOWED_HOSTS`, `CORS_ALLOWED_ORIGINS` | Core Django config. Hosts from Render, Railway, Koyeb and Fly are added automatically |
+| `SECURE_SSL_REDIRECT` | Default `true`; set `false` if your platform already redirects |
+| `OPENAI_API_KEY`, `AI_BASE_URL`, `AI_MODEL`, `AI_REASONING_EFFORT`, `AI_EMBED_MODEL`, `AI_EMBED_DIMENSIONS` | AI provider (server side only) |
+| `AI_DAILY_CALL_CAP`, `AI_WORKSPACE_DAILY_CAP`, `AI_TIMEOUT_SECONDS` | Free-tier protection and timeouts |
+| `DEMO_TTL_HOURS`, `DEMO_MAX_ACTIVE`, `DEMO_START_THROTTLE` | Sandbox lifetime, capacity and rate limit |
+| `INBOUND_EMAIL_SECRET` | Enables the email webhook (header `X-Inbound-Secret`); empty disables it |
+| `AWS_*` | S3-compatible attachment storage |
 
-**Backend on Render** (`render.yaml` blueprint, free tier):
-- The blueprint creates the web service, Postgres and Redis (Key Value).
-- `backend/start.sh` runs migrations, optionally seeds, starts the Celery worker in the background (thread pool, low memory), and then runs Daphne in the foreground.
-- Running the worker in the same container avoids needing a paid background-worker plan.
-- Set these secrets in the dashboard:
-  - `OPENAI_API_KEY`, plus `AI_BASE_URL` and `AI_MODEL` (see "AI provider")
-  - `CORS_ALLOWED_ORIGINS` (the Vercel URL)
-  - the `AWS_*` variables for attachment storage (see below)
-- `SEED_ON_START=true` seeds the demo data idempotently.
+### Inbound email
+`POST /api/v1/inbound/email/` with header `X-Inbound-Secret` and JSON `{workspace, from_email, from_name, subject, body}`. It finds or creates the sender as a requester in that workspace and creates a ticket through the normal pipeline. Never active for demo workspaces. Point a provider's inbound-parse webhook (or a small Cloudflare Email Worker) at it.
 
-**Frontend on Vercel**: set the root directory to `frontend`, the framework to Vite, and the env var `VITE_API_URL=https://<api>.onrender.com`. `vercel.json` handles SPA routing.
-
-**Attachments**: the demo uses **Supabase Storage** (free tier, no card) through its S3-compatible API, via `django-storages`. Any S3-compatible store (AWS S3, Cloudflare R2, Backblaze B2) works by changing only the env vars.
-- Files are private objects in a private bucket.
-- Downloads go through an authorised endpoint that checks the user can see the ticket, then returns a signed URL that expires after 5 minutes.
-- Without `AWS_STORAGE_BUCKET_NAME`, files go to local disk, which is fine locally but wiped on every Render restart.
-
-Supabase setup:
-1. Create a project, then a **private** bucket named `attachments`.
-2. Go to *Project Settings → Storage → S3 Connection*, enable it, and create an access key.
-3. Set these variables:
-   - `AWS_STORAGE_BUCKET_NAME=attachments`
-   - `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`
-   - `AWS_S3_ENDPOINT_URL=https://<ref>.supabase.co/storage/v1/s3`
-   - `AWS_S3_REGION_NAME=<project region>`
-   - `AWS_S3_ADDRESSING_STYLE=path`
-
----
-
-## Edge cases handled
-- Books in production have no ISBN, sales or royalty. The UI shows stage progress instead of zeros, and the AI's fact sheet says the book isn't live yet.
-- Pending royalty below ₹1,000 rolls over: the UI shows a note, and the AI explains the threshold instead of promising a payout.
-- Books that were never paid out, or fully paid, get specific copy.
-- General tickets with no book get account-level facts only.
-- An author replying to a resolved ticket reopens it and refreshes the AI draft. Authors can also confirm a resolution, which closes the ticket.
-- A category override regenerates the draft with the right KB sections. A priority override recalculates the SLA.
-- Two admins on one ticket see a collision banner, and reassigning someone else's ticket asks for confirmation.
-- Composer text survives reloads (stored in localStorage). A draft that arrives late or is regenerated never touches the reply box; it only updates the AI draft panel.
-
-## Known limitations / next steps
-- On the free tier, the worker shares the web dyno and the service sleeps when idle. In production the worker would be a separate service with autoscaling.
-- There's no email notification channel yet; real-time updates are in-app only.
-- The KB is a version-controlled YAML file. A larger KB would move to a database with an admin editor and embedding retrieval, and the category scoping would become a pre-filter.
-- Classification quality is tracked through the override rate. A labelled evaluation set and prompt A/B tests (using `prompt_version`, already logged) would be the next step.
+## Limitations and next steps
+- Single API instance by design; scaling out means a shared channel layer and a proper worker (see decisions above).
+- Free hosts sleep and free-tier AI is rate limited; both are handled gracefully but not eliminated.
+- Email is inbound-only; outbound notifications are in-app.
+- Next: pgvector once KBs grow, a labelled evaluation set for prompt A/B tests (`prompt_version` is already logged), SSO, automation rules and outbound webhooks.
