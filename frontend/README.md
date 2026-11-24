@@ -1,32 +1,41 @@
-# React + TypeScript + Vite
+# Helpdesk AI: frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+React 19 + Vite + TypeScript + Tailwind v4 + shadcn/ui + TanStack Query.
 
-Currently, two official plugins are available:
+## Routes
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+| Path | Who | What |
+|---|---|---|
+| `/` | public | Landing page, demo launcher |
+| `/login`, `/signup`, `/invite/:token` | public | Auth |
+| `/w/:slug/agent` | staff (owner/admin/agent) | Queue, ticket workspace, analytics, knowledge base, settings |
+| `/w/:slug/help` | customers (requesters) | My tickets, new request with live KB suggestions, ticket thread, CSAT |
 
-## React Compiler
+A role-based guard sends each user to the right area of `/w/:slug`; non-members never see a workspace.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Demo sessions
 
-## Expanding the Oxlint configuration
+`POST /demo/start` returns tokens for an agent and a customer in a fresh sandbox workspace. Both sessions are kept in
+`localStorage` (`helpdesk.sessions.v1`), so the top bar can flip between "Agent view" and "Customer view" without logging in.
+Expired demo workspaces (HTTP 410 `workspace_expired`) send the visitor back to the landing page.
 
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
+## Develop
 
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```bash
+cp .env.example .env.local   # point VITE_API_URL at the API
+npm install
+npm run dev                  # http://localhost:5173
+npm run lint && npm run build
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+## Deploy (Cloudflare Pages)
+
+Build command `npm run build`, output directory `dist`, env var `VITE_API_URL=https://<api-host>`.
+`public/_redirects` provides SPA routing (`vercel.json` is kept for Vercel).
+
+## Structure
+
+- `src/lib`: API client with a two-session store, typed endpoints (`wsApi(slug)`), types, constants
+- `src/auth`: `AuthProvider`, `useWorkspace()` (slug, role, bound API) and the `RequireArea` guard
+- `src/realtime`: one WebSocket per workspace (`?token=&workspace=`), React Query invalidation, polling fallback
+- `src/pages/{customer,agent}`, `src/layouts`, `src/components`

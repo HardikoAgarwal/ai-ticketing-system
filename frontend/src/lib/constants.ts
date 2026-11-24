@@ -6,19 +6,17 @@ import {
   CheckCircle2,
   CircleDot,
   Clock,
-  Factory,
   Flame,
-  HelpCircle,
   Minus,
-  Printer,
-  ScanBarcode,
+  Tag,
+  Angry,
+  Meh,
+  Smile,
   Timer,
-  Truck,
-  Wallet,
   type LucideIcon,
 } from 'lucide-react'
 
-import type { SlaState, TicketCategory, TicketPriority, TicketStatus } from './types'
+import type { Sentiment, SlaState, TicketPriority, TicketStatus } from './types'
 
 /**
  * Visual tokens per value. `pill` styles badges, `tint` styles a select trigger showing that value,
@@ -33,11 +31,11 @@ export interface Tone {
   dot: string
 }
 
-export const STATUS_META: Record<TicketStatus, Tone & { authorLabel: string; authorHint: string }> = {
+export const STATUS_META: Record<TicketStatus, Tone & { requesterLabel: string; requesterHint: string }> = {
   OPEN: {
     label: 'Open',
-    authorLabel: 'Received',
-    authorHint: 'Waiting for our team to pick it up',
+    requesterLabel: 'Received',
+    requesterHint: 'Waiting for our team to pick it up',
     icon: CircleDot,
     pill: 'bg-sky-50 text-sky-700 ring-sky-600/20',
     tint: 'border-sky-200 bg-sky-50/70 text-sky-900',
@@ -46,8 +44,8 @@ export const STATUS_META: Record<TicketStatus, Tone & { authorLabel: string; aut
   },
   IN_PROGRESS: {
     label: 'In Progress',
-    authorLabel: "We're on it",
-    authorHint: 'Our team is working on this',
+    requesterLabel: "We're on it",
+    requesterHint: 'Our team is working on this',
     icon: Timer,
     pill: 'bg-violet-50 text-violet-700 ring-violet-600/20',
     tint: 'border-violet-200 bg-violet-50/70 text-violet-900',
@@ -56,8 +54,8 @@ export const STATUS_META: Record<TicketStatus, Tone & { authorLabel: string; aut
   },
   RESOLVED: {
     label: 'Resolved',
-    authorLabel: 'Resolved',
-    authorHint: 'Please confirm it solved your issue',
+    requesterLabel: 'Resolved',
+    requesterHint: 'Please confirm it solved your issue',
     icon: CheckCircle2,
     pill: 'bg-emerald-50 text-emerald-700 ring-emerald-600/20',
     tint: 'border-emerald-200 bg-emerald-50/70 text-emerald-900',
@@ -66,8 +64,8 @@ export const STATUS_META: Record<TicketStatus, Tone & { authorLabel: string; aut
   },
   CLOSED: {
     label: 'Closed',
-    authorLabel: 'Closed',
-    authorHint: 'Reply any time to reopen',
+    requesterLabel: 'Closed',
+    requesterHint: 'Reply any time to reopen',
     icon: Archive,
     pill: 'bg-zinc-100 text-zinc-600 ring-zinc-500/20',
     tint: 'border-zinc-200 bg-zinc-50 text-zinc-700',
@@ -76,10 +74,9 @@ export const STATUS_META: Record<TicketStatus, Tone & { authorLabel: string; aut
   },
 }
 
-export const PRIORITY_META: Record<TicketPriority, Tone & { sla: string }> = {
+export const PRIORITY_META: Record<TicketPriority, Tone> = {
   CRITICAL: {
     label: 'Critical',
-    sla: 'Reply within 4h',
     icon: Flame,
     pill: 'bg-red-50 text-red-700 ring-red-600/20',
     tint: 'border-red-200 bg-red-50/70 text-red-900',
@@ -88,7 +85,6 @@ export const PRIORITY_META: Record<TicketPriority, Tone & { sla: string }> = {
   },
   HIGH: {
     label: 'High',
-    sla: 'Reply within 24h',
     icon: ArrowUp,
     pill: 'bg-orange-50 text-orange-700 ring-orange-600/20',
     tint: 'border-orange-200 bg-orange-50/70 text-orange-900',
@@ -97,7 +93,6 @@ export const PRIORITY_META: Record<TicketPriority, Tone & { sla: string }> = {
   },
   MEDIUM: {
     label: 'Medium',
-    sla: 'Reply within 48h',
     icon: Minus,
     pill: 'bg-amber-50 text-amber-800 ring-amber-600/20',
     tint: 'border-amber-200 bg-amber-50/70 text-amber-900',
@@ -106,67 +101,9 @@ export const PRIORITY_META: Record<TicketPriority, Tone & { sla: string }> = {
   },
   LOW: {
     label: 'Low',
-    sla: 'Reply within 72h',
     icon: ArrowDown,
     pill: 'bg-slate-100 text-slate-600 ring-slate-500/20',
     tint: 'border-slate-200 bg-slate-50 text-slate-700',
-    iconClass: 'text-slate-500',
-    dot: 'bg-slate-400',
-  },
-}
-
-export const CATEGORY_META: Record<TicketCategory, Tone & { short: string }> = {
-  ROYALTY_PAYMENTS: {
-    label: 'Royalty & Payments',
-    short: 'Royalty',
-    icon: Wallet,
-    pill: 'bg-emerald-50 text-emerald-700 ring-emerald-600/20',
-    tint: 'border-emerald-200 bg-emerald-50/70 text-emerald-900',
-    iconClass: 'text-emerald-600',
-    dot: 'bg-emerald-500',
-  },
-  ISBN_METADATA: {
-    label: 'ISBN & Metadata Issues',
-    short: 'ISBN & Metadata',
-    icon: ScanBarcode,
-    pill: 'bg-indigo-50 text-indigo-700 ring-indigo-600/20',
-    tint: 'border-indigo-200 bg-indigo-50/70 text-indigo-900',
-    iconClass: 'text-indigo-600',
-    dot: 'bg-indigo-500',
-  },
-  PRINTING_QUALITY: {
-    label: 'Printing & Quality',
-    short: 'Printing',
-    icon: Printer,
-    pill: 'bg-rose-50 text-rose-700 ring-rose-600/20',
-    tint: 'border-rose-200 bg-rose-50/70 text-rose-900',
-    iconClass: 'text-rose-600',
-    dot: 'bg-rose-500',
-  },
-  DISTRIBUTION: {
-    label: 'Distribution & Availability',
-    short: 'Distribution',
-    icon: Truck,
-    pill: 'bg-cyan-50 text-cyan-700 ring-cyan-600/20',
-    tint: 'border-cyan-200 bg-cyan-50/70 text-cyan-900',
-    iconClass: 'text-cyan-600',
-    dot: 'bg-cyan-500',
-  },
-  BOOK_STATUS: {
-    label: 'Book Status & Production',
-    short: 'Production',
-    icon: Factory,
-    pill: 'bg-amber-50 text-amber-800 ring-amber-600/20',
-    tint: 'border-amber-200 bg-amber-50/70 text-amber-900',
-    iconClass: 'text-amber-600',
-    dot: 'bg-amber-500',
-  },
-  GENERAL: {
-    label: 'General Inquiry',
-    short: 'General',
-    icon: HelpCircle,
-    pill: 'bg-slate-100 text-slate-700 ring-slate-500/20',
-    tint: 'border-slate-200 bg-slate-50 text-slate-800',
     iconClass: 'text-slate-500',
     dot: 'bg-slate-400',
   },
@@ -225,52 +162,59 @@ export const SLA_META: Record<SlaState, Tone> = {
 
 export const STATUSES = Object.keys(STATUS_META) as TicketStatus[]
 export const PRIORITIES = Object.keys(PRIORITY_META) as TicketPriority[]
-export const CATEGORIES = Object.keys(CATEGORY_META) as TicketCategory[]
-
-export const PRODUCTION_STAGES = [
-  'Manuscript Received',
-  'Editing',
-  'Cover Design',
-  'Typesetting',
-  'Proofreading',
-  'ISBN Assignment',
-  'Printing',
-  'Distribution Setup',
-  'Published & Live',
-]
-
-export const PLATFORM_STYLES: Record<string, string> = {
-  'Amazon India': 'bg-orange-50 text-orange-800 ring-orange-600/20',
-  'Amazon US': 'bg-orange-50 text-orange-800 ring-orange-600/20',
-  'Amazon UK': 'bg-orange-50 text-orange-800 ring-orange-600/20',
-  Flipkart: 'bg-blue-50 text-blue-700 ring-blue-600/20',
-  'BookLeaf Store': 'bg-emerald-50 text-emerald-700 ring-emerald-600/20',
-}
-
-/** Deterministic cover gradients so each book keeps the same look everywhere. */
-const COVER_GRADIENTS = [
-  'from-emerald-600 to-teal-800',
-  'from-indigo-500 to-violet-700',
-  'from-rose-500 to-orange-600',
-  'from-sky-500 to-blue-700',
-  'from-amber-500 to-orange-700',
-  'from-fuchsia-500 to-purple-700',
-  'from-teal-500 to-cyan-700',
-]
-export const coverGradient = (seed: number) => COVER_GRADIENTS[seed % COVER_GRADIENTS.length]
-
-/** Deep band colour that contrasts with the cover gradient at the same index. */
-const COVER_SOLIDS = [
-  'bg-slate-800',
-  'bg-teal-800',
-  'bg-cyan-900',
-  'bg-rose-900',
-  'bg-indigo-900',
-  'bg-emerald-900',
-  'bg-violet-900',
-]
-export const coverSolid = (seed: number) => COVER_SOLIDS[seed % COVER_SOLIDS.length]
-
 export const ATTACHMENT_TYPES = ['application/pdf', 'image/png', 'image/jpeg', 'image/webp']
 export const ATTACHMENT_MAX_BYTES = 10 * 1024 * 1024
 export const ATTACHMENT_MAX_FILES = 3
+
+
+export const SENTIMENT_META: Record<Sentiment, Tone> = {
+  NEGATIVE: {
+    label: 'Frustrated',
+    icon: Angry,
+    pill: 'bg-rose-50 text-rose-700 ring-rose-600/20',
+    tint: 'border-rose-200 bg-rose-50/70 text-rose-900',
+    iconClass: 'text-rose-600',
+    dot: 'bg-rose-500',
+  },
+  NEUTRAL: {
+    label: 'Neutral',
+    icon: Meh,
+    pill: 'bg-zinc-50 text-zinc-600 ring-zinc-500/20',
+    tint: 'border-zinc-200 bg-zinc-50 text-zinc-700',
+    iconClass: 'text-zinc-500',
+    dot: 'bg-zinc-400',
+  },
+  POSITIVE: {
+    label: 'Happy',
+    icon: Smile,
+    pill: 'bg-emerald-50 text-emerald-700 ring-emerald-600/20',
+    tint: 'border-emerald-200 bg-emerald-50/70 text-emerald-900',
+    iconClass: 'text-emerald-600',
+    dot: 'bg-emerald-500',
+  },
+}
+
+/** Categories are workspace-defined, so tones are derived from the key (stable per category). */
+const CATEGORY_TONES = [
+  { pill: 'bg-emerald-50 text-emerald-700 ring-emerald-600/20', iconClass: 'text-emerald-600', dot: 'bg-emerald-500', fill: '#10b981' },
+  { pill: 'bg-indigo-50 text-indigo-700 ring-indigo-600/20', iconClass: 'text-indigo-600', dot: 'bg-indigo-500', fill: '#6366f1' },
+  { pill: 'bg-rose-50 text-rose-700 ring-rose-600/20', iconClass: 'text-rose-600', dot: 'bg-rose-500', fill: '#f43f5e' },
+  { pill: 'bg-cyan-50 text-cyan-700 ring-cyan-600/20', iconClass: 'text-cyan-600', dot: 'bg-cyan-500', fill: '#06b6d4' },
+  { pill: 'bg-amber-50 text-amber-800 ring-amber-600/20', iconClass: 'text-amber-600', dot: 'bg-amber-500', fill: '#f59e0b' },
+  { pill: 'bg-fuchsia-50 text-fuchsia-700 ring-fuchsia-600/20', iconClass: 'text-fuchsia-600', dot: 'bg-fuchsia-500', fill: '#d946ef' },
+  { pill: 'bg-sky-50 text-sky-700 ring-sky-600/20', iconClass: 'text-sky-600', dot: 'bg-sky-500', fill: '#0ea5e9' },
+  { pill: 'bg-slate-100 text-slate-700 ring-slate-500/20', iconClass: 'text-slate-500', dot: 'bg-slate-400', fill: '#64748b' },
+]
+
+function hash(key: string) {
+  let h = 0
+  for (let i = 0; i < key.length; i++) h = (h * 31 + key.charCodeAt(i)) >>> 0
+  return h
+}
+
+export function categoryTone(key: string, label?: string): Tone & { fill: string } {
+  const t = CATEGORY_TONES[hash(key) % CATEGORY_TONES.length]
+  return { label: label ?? key, icon: Tag, pill: t.pill, tint: 'border bg-card text-foreground', iconClass: t.iconClass, dot: t.dot, fill: t.fill }
+}
+
+export const PRIORITY_FILLS: Record<TicketPriority, string> = { CRITICAL: '#ef4444', HIGH: '#f97316', MEDIUM: '#fbbf24', LOW: '#94a3b8' }

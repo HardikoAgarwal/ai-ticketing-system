@@ -3,9 +3,9 @@ import { Sparkles, UserCheck } from 'lucide-react'
 import type { ReactNode } from 'react'
 
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import { CATEGORY_META, PRIORITY_META, SLA_META, STATUS_META, type Tone } from '@/lib/constants'
+import { categoryTone, PRIORITY_META, SENTIMENT_META, SLA_META, STATUS_META, type Tone } from '@/lib/constants'
 import { formatDateTime } from '@/lib/format'
-import type { ClassificationSource, SlaState, TicketCategory, TicketPriority, TicketStatus } from '@/lib/types'
+import type { CategoryBrief, ClassificationSource, Sentiment, SlaState, TicketPriority, TicketStatus } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
 type Size = 'sm' | 'md' | 'lg'
@@ -40,9 +40,9 @@ export function Pill({ tone, label, size = 'md', className, children }: {
   )
 }
 
-export function StatusBadge({ status, audience = 'admin', size }: { status: TicketStatus; audience?: 'admin' | 'author'; size?: Size }) {
+export function StatusBadge({ status, audience = 'staff', size }: { status: TicketStatus; audience?: 'staff' | 'requester'; size?: Size }) {
   const meta = STATUS_META[status]
-  return <Pill tone={meta} size={size} label={audience === 'author' ? meta.authorLabel : meta.label} />
+  return <Pill tone={meta} size={size} label={audience === 'requester' ? meta.requesterLabel : meta.label} />
 }
 
 export function PriorityBadge({ priority, source, size }: { priority: TicketPriority; source?: ClassificationSource; size?: Size }) {
@@ -53,35 +53,35 @@ export function PriorityBadge({ priority, source, size }: { priority: TicketPrio
   )
 }
 
-export function CategoryBadge({ category, source, short, size, subtle }: {
-  category: TicketCategory
+export function CategoryBadge({ category, source, size, subtle }: {
+  category: CategoryBrief | null
   source?: ClassificationSource
-  short?: boolean
   size?: Size
   subtle?: boolean
 }) {
-  const meta = CATEGORY_META[category]
+  if (!category) return <span className="text-xs text-muted-foreground">Uncategorised</span>
+  const tone = categoryTone(category.key, category.name)
   return (
-    <Pill
-      tone={meta}
-      size={size}
-      label={short ? meta.short : meta.label}
-      className={subtle ? 'bg-transparent text-foreground/70 ring-border' : undefined}
-    >
+    <Pill tone={tone} size={size} className={subtle ? 'bg-transparent text-foreground/70 ring-border' : undefined}>
       {source && <SourceMarker source={source} />}
     </Pill>
   )
 }
 
+export function SentimentBadge({ sentiment, size = 'sm' }: { sentiment: Sentiment | ''; size?: Size }) {
+  if (!sentiment) return null
+  return <Pill tone={SENTIMENT_META[sentiment]} size={size} />
+}
+
 export function SourceMarker({ source }: { source: ClassificationSource }) {
   const text =
-    source === 'AI' ? 'Suggested by AI' : source === 'ADMIN' ? 'Set by a team member' : 'Estimated by keyword rules (AI pending or unavailable)'
+    source === 'AI' ? 'Suggested by AI' : source === 'STAFF' ? 'Set by a team member' : 'Estimated by keyword rules (AI pending or unavailable)'
   return (
     <Tooltip>
       <TooltipTrigger asChild>
         <span className="inline-flex" aria-label={text}>
           {source === 'AI' && <Sparkles className="size-3 text-violet-500" />}
-          {source === 'ADMIN' && <UserCheck className="size-3 text-emerald-600" />}
+          {source === 'STAFF' && <UserCheck className="size-3 text-emerald-600" />}
           {source === 'FALLBACK' && <span className="text-[10px] opacity-60">~</span>}
         </span>
       </TooltipTrigger>
@@ -116,20 +116,5 @@ export function SlaBadge({ state, dueAt, size }: { state: SlaState; dueAt: strin
       </TooltipTrigger>
       <TooltipContent>First response due {formatDateTime(dueAt)}</TooltipContent>
     </Tooltip>
-  )
-}
-
-export function BookStatusBadge({ status, published, size = 'md' }: { status: string; published: boolean; size?: Size }) {
-  return (
-    <span
-      className={cn(
-        'inline-flex items-center gap-1.5 rounded-full font-medium whitespace-nowrap ring-1 ring-inset',
-        SIZES[size].pill,
-        published ? 'bg-emerald-50 text-emerald-700 ring-emerald-600/20' : 'bg-amber-50 text-amber-800 ring-amber-600/20',
-      )}
-    >
-      <span className={cn('size-1.5 rounded-full', published ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500')} />
-      {published ? 'Live' : status.replace('In Production - ', '')}
-    </span>
   )
 }

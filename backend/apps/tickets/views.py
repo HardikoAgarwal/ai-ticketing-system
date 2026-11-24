@@ -333,23 +333,30 @@ class TicketViewSet(
 
     # --- Helpers ---------------------------------------------------------------
 
+    @staticmethod
+    def _ready(draft) -> dict:
+        return {
+            "status": "ready",
+            "draft": {
+                "id": draft.id,
+                "content": draft.content,
+                "citations": draft.citations,
+                "model": draft.model,
+                "created_at": draft.created_at,
+            },
+            "error": "",
+        }
+
     def _draft_payload(self, ticket: Ticket, generating: bool = False) -> dict:
         if not services.ai_active(ticket.workspace):
+            existing = ticket.ai_drafts.first()
+            if existing and not generating:
+                return self._ready(existing)
             return {"status": "disabled", "draft": None, "error": "AI drafting is off for this workspace."}
         if not generating:
             draft = current_draft(ticket)
             if draft:
-                return {
-                    "status": "ready",
-                    "draft": {
-                        "id": draft.id,
-                        "content": draft.content,
-                        "citations": draft.citations,
-                        "model": draft.model,
-                        "created_at": draft.created_at,
-                    },
-                    "error": "",
-                }
+                return self._ready(draft)
             if ticket.ai_draft_status == AIStatus.FAILED:
                 return {"status": "failed", "draft": None, "error": ticket.ai_error or "AI draft unavailable."}
             if ticket.ai_draft_status != AIStatus.PENDING and ticket.ai_status != AIStatus.PENDING:

@@ -62,7 +62,12 @@ def build_inputs(ticket, *, use_embeddings: bool = True) -> DraftInputs:
 def current_draft(ticket) -> AIDraft | None:
     """Latest draft whose inputs still match the ticket (category, conversation, facts, KB hits)."""
     inputs = build_inputs(ticket)
-    return ticket.ai_drafts.filter(input_hash=inputs.input_hash).first()
+    match = ticket.ai_drafts.filter(input_hash=inputs.input_hash).first()
+    if match:
+        return match
+    # Pre-baked demo drafts carry a "seed-" hash; show them until a live draft replaces them.
+    latest = ticket.ai_drafts.first()
+    return latest if latest and latest.input_hash.startswith("seed-") else None
 
 
 def generate_draft(ticket, *, force: bool = False) -> AIDraft:

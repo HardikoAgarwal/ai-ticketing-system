@@ -3,7 +3,8 @@ import { AlertOctagon, CalendarDays, ChevronLeft, ChevronRight, Clock, Inbox, Lo
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 
-import { CategoryBadge, PriorityBadge, SlaBadge, StatusBadge } from '@/components/badges'
+import { useWorkspace } from '@/auth/workspace'
+import { CategoryBadge, PriorityBadge, SentimentBadge, SlaBadge, StatusBadge } from '@/components/badges'
 import { PageHeader, RelativeTime } from '@/components/common'
 import { MetaSelect, type MetaOption } from '@/components/MetaSelect'
 import { EmptyState, ErrorState, ListSkeleton } from '@/components/states'
@@ -11,10 +12,10 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { CATEGORIES, CATEGORY_META, PRIORITIES, PRIORITY_META, SLA_META, STATUSES, STATUS_META } from '@/lib/constants'
-import { ticketsApi, type TicketQuery } from '@/lib/endpoints'
+import { categoryTone, PRIORITIES, PRIORITY_META, SLA_META, STATUSES, STATUS_META } from '@/lib/constants'
+import type { TicketQuery } from '@/lib/endpoints'
 import { initials } from '@/lib/format'
-import type { AdminTicket } from '@/lib/types'
+import type { StaffTicket } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import { useFallbackInterval } from '@/realtime/RealtimeProvider'
 
@@ -32,35 +33,36 @@ const DATE_RANGES: Record<string, { label: string; days: number }> = {
   '30': { label: 'Last 30 days', days: 30 },
 }
 
-const FILTER_KEYS = ['status', 'category', 'priority', 'sla', 'range', 'q'] as const
+const FILTER_KEYS = ['status', 'category', 'priority', 'sla', 'sentiment', 'range', 'q'] as const
 
 const SLA_FILTER_OPTIONS: MetaOption[] = [
   { value: 'overdue', label: 'Overdue', tone: SLA_META.overdue },
   { value: 'at_risk', label: 'Due soon', tone: SLA_META.at_risk },
 ]
 
-function KpiCard({ label, value, icon: Icon, tone, onClick, active }: {
+function KpiCard({ label, value, icon: Icon, tile, ring, onClick, active }: {
   label: string
   value: number | undefined
   icon: typeof Inbox
-  tone: { tile: string; ring: string; bar: string }
+  tile: string
+  ring: string
   onClick: () => void
   active: boolean
 }) {
   return (
     <button
       onClick={onClick}
+      aria-pressed={active}
       className={cn(
-        'group relative flex items-center gap-4 overflow-hidden rounded-2xl border bg-card p-4 text-left shadow-xs transition-all hover:-translate-y-px hover:shadow-md',
-        active && cn('ring-2', tone.ring),
+        'group flex items-center gap-3 rounded-2xl border bg-card p-3.5 text-left shadow-xs transition-all hover:-translate-y-px hover:shadow-md sm:gap-4 sm:p-4',
+        active && cn('ring-2', ring),
       )}
     >
-      <span className={cn('absolute inset-x-0 top-0 h-1', tone.bar)} />
-      <div className={cn('flex size-11 items-center justify-center rounded-xl', tone.tile)}>
+      <div className={cn('flex size-10 shrink-0 items-center justify-center rounded-xl sm:size-11', tile)}>
         <Icon className="size-5" />
       </div>
       <div>
-        <p className="text-2xl leading-none font-semibold tracking-tight">{value ?? '–'}</p>
+        <p className="text-2xl leading-none font-semibold tracking-tight tabular-nums">{value ?? '–'}</p>
         <p className="mt-1.5 text-xs font-medium text-muted-foreground">{label}</p>
       </div>
     </button>
@@ -74,7 +76,7 @@ const PRIORITY_EDGE: Record<string, string> = {
   LOW: 'shadow-[inset_4px_0_0_0_var(--color-slate-300)]',
 }
 
-function TicketTableRow({ ticket, selected, onOpen }: { ticket: AdminTicket; selected: boolean; onOpen: () => void }) {
+function TicketTableRow({ ticket, selected, onOpen }: { ticket: StaffTicket; selected: boolean; onOpen: () => void }) {
   const overdue = ticket.sla_state === 'overdue'
   return (
     <tr
@@ -86,59 +88,58 @@ function TicketTableRow({ ticket, selected, onOpen }: { ticket: AdminTicket; sel
         overdue && 'bg-red-50/40',
       )}
     >
-      <td className="max-w-0 py-5 pr-6 pl-6 align-middle">
+      <td className="max-w-0 py-4 pr-5 pl-6 align-middle">
         <div className="flex min-w-0 items-center gap-2.5">
           <PriorityBadge priority={ticket.priority} source={ticket.priority_source} />
           <p className={cn('min-w-0 truncate text-[0.95rem]', ticket.has_unread ? 'font-semibold' : 'font-medium')}>{ticket.subject}</p>
-          {ticket.unread_kind === 'author_reply' && (
-            <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-primary px-2.5 py-0.5 text-xs font-semibold text-primary-foreground">
-              <MessageCircleReply className="size-3.5" /> New message
+        </div>
+        <p className="mt-1.5 flex min-w-0 items-center gap-1.5 text-[13px] text-muted-foreground">
+          {ticket.unread_kind === 'requester_reply' && (
+            <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-primary px-2 py-0.5 text-[11px] font-semibold text-primary-foreground">
+              <MessageCircleReply className="size-3" /> New message
             </span>
           )}
           {ticket.unread_kind === 'new_ticket' && (
-            <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary ring-1 ring-primary/25 ring-inset">
-              <Inbox className="size-3.5" /> New ticket
+            <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary ring-1 ring-primary/25 ring-inset">
+              <Inbox className="size-3" /> New
             </span>
           )}
-        </div>
-        <p className="mt-2 truncate text-[13px] text-muted-foreground">
-          <span className="font-mono font-medium text-foreground/70">{ticket.reference}</span>
-          <span className="mx-1.5">·</span>
-          {ticket.author.name}
-          <span className="mx-1.5">·</span>
-          {ticket.book ? ticket.book.title : 'General'}
+          <span className="shrink-0 font-mono font-medium text-foreground/70">{ticket.reference}</span>
+          <span>·</span>
+          <span className="truncate">{ticket.requester.name}</span>
+          {ticket.sentiment === 'NEGATIVE' && (
+            <span className="shrink-0">
+              <SentimentBadge sentiment="NEGATIVE" />
+            </span>
+          )}
         </p>
       </td>
-      <td className="py-5 pr-6 align-middle">
-        {ticket.ai_status === 'PENDING' && ticket.category_source !== 'ADMIN' ? (
+      <td className="py-4 pr-6 align-middle">
+        {ticket.ai_status === 'PENDING' && ticket.category_source !== 'STAFF' ? (
           <span className="inline-flex items-center gap-1.5 rounded-full bg-violet-50 px-2.5 py-1 text-xs font-medium text-violet-700 ring-1 ring-violet-600/20 ring-inset">
-            <Loader2 className="size-3.5 animate-spin" /> Classifying
+            <Loader2 className="size-3.5 animate-spin" /> Triaging
           </span>
         ) : (
           <div className="flex flex-col items-start gap-1.5">
-            <CategoryBadge category={ticket.category} source={ticket.category_source} short subtle />
-            {ticket.ai_status === 'FAILED' && ticket.category_source === 'FALLBACK' && (
-              <span className="text-xs font-medium text-amber-700">Needs triage</span>
-            )}
+            <CategoryBadge category={ticket.category} source={ticket.category_source} subtle />
+            {ticket.ai_status === 'FAILED' && ticket.category_source === 'FALLBACK' && <span className="text-xs font-medium text-amber-700">Needs triage</span>}
           </div>
         )}
       </td>
-      <td className="py-5 pr-6 align-middle">
+      <td className="py-4 pr-6 align-middle">
         <StatusBadge status={ticket.status} />
       </td>
-      <td className="py-5 pr-6 align-middle">
+      <td className="py-4 pr-6 align-middle">
         <SlaBadge state={ticket.sla_state} dueAt={ticket.sla_due_at} />
       </td>
-      <td className="py-5 pr-6 align-middle text-sm whitespace-nowrap text-muted-foreground">
+      <td className="py-4 pr-6 align-middle text-sm whitespace-nowrap text-muted-foreground">
         <RelativeTime value={ticket.created_at} />
       </td>
-      <td className="py-5 pr-6 align-middle">
+      <td className="py-4 pr-6 align-middle">
         {ticket.assigned_to ? (
           <div className="flex min-w-0 items-center gap-2">
             <Avatar className="size-8">
-              <AvatarFallback className="bg-accent text-[11px] font-semibold text-accent-foreground">
-                {initials(ticket.assigned_to.full_name)}
-              </AvatarFallback>
+              <AvatarFallback className="bg-accent text-[11px] font-semibold text-accent-foreground">{initials(ticket.assigned_to.full_name)}</AvatarFallback>
             </Avatar>
             <span className="truncate text-sm">{ticket.assigned_to.full_name.split(' ')[0]}</span>
           </div>
@@ -152,7 +153,34 @@ function TicketTableRow({ ticket, selected, onOpen }: { ticket: AdminTicket; sel
   )
 }
 
+/** Compact card used below the lg breakpoint instead of the wide table. */
+function TicketCard({ ticket, onOpen }: { ticket: StaffTicket; onOpen: () => void }) {
+  return (
+    <button onClick={onOpen} className={cn('block w-full border-b p-4 text-left last:border-0 hover:bg-muted/40', PRIORITY_EDGE[ticket.priority])}>
+      <div className="flex items-center gap-2">
+        <PriorityBadge priority={ticket.priority} />
+        <StatusBadge status={ticket.status} size="sm" />
+        <span className="ml-auto text-xs text-muted-foreground">
+          <RelativeTime value={ticket.created_at} />
+        </span>
+      </div>
+      <p className={cn('mt-2 line-clamp-2 text-sm', ticket.has_unread ? 'font-semibold' : 'font-medium')}>
+        {ticket.unread_kind && <span className="mr-2 inline-block size-2 rounded-full bg-primary align-middle" aria-label="Unread" />}
+        {ticket.subject}
+      </p>
+      <p className="mt-1 truncate text-xs text-muted-foreground">
+        <span className="font-mono">{ticket.reference}</span> · {ticket.requester.name}
+      </p>
+      <div className="mt-2 flex flex-wrap items-center gap-2">
+        <CategoryBadge category={ticket.category} subtle size="sm" />
+        <SlaBadge state={ticket.sla_state} dueAt={ticket.sla_due_at} size="sm" />
+      </div>
+    </button>
+  )
+}
+
 export function QueuePage() {
+  const { slug, api } = useWorkspace()
   const [params, setParams] = useSearchParams()
   const navigate = useNavigate()
   const refetchInterval = useFallbackInterval()
@@ -160,6 +188,9 @@ export function QueuePage() {
   const page = Number(params.get('page') ?? 1)
   const [search, setSearch] = useState(params.get('q') ?? '')
   const [selected, setSelected] = useState(0)
+  const base = `/w/${slug}/agent`
+
+  const categories = useQuery({ queryKey: ['categories', slug], queryFn: api.categories, staleTime: 60_000 })
 
   const setParam = (key: string, value: string | null) => {
     const next = new URLSearchParams(params)
@@ -179,28 +210,28 @@ export function QueuePage() {
 
   const query: TicketQuery = useMemo(() => {
     const q: TicketQuery = { ...VIEWS[view].query, page }
-    for (const key of ['status', 'category', 'priority', 'sla', 'q'] as const) {
+    for (const key of ['status', 'category', 'priority', 'sla', 'sentiment', 'q'] as const) {
       const v = params.get(key)
       if (v) q[key] = v
     }
     const range = params.get('range')
-    if (range && DATE_RANGES[range]) {
-      q.created_after = new Date(Date.now() - DATE_RANGES[range].days * 86400_000).toISOString()
-    }
+    if (range && DATE_RANGES[range]) q.created_after = new Date(Date.now() - DATE_RANGES[range].days * 86400_000).toISOString()
     return q
   }, [params, view, page])
 
-  const stats = useQuery({ queryKey: ['stats'], queryFn: ticketsApi.stats, refetchInterval })
+  const stats = useQuery({ queryKey: ['stats', slug], queryFn: api.tickets.stats, refetchInterval })
   const list = useQuery({
-    queryKey: ['tickets', 'admin', query],
-    queryFn: () => ticketsApi.listAdmin(query),
+    queryKey: ['tickets', slug, 'staff', query],
+    queryFn: () => api.tickets.listStaff(query),
     placeholderData: keepPreviousData,
     refetchInterval,
   })
   const tickets = list.data?.results ?? []
   const activeFilters = FILTER_KEYS.filter((k) => params.get(k))
 
-  useEffect(() => setSelected(0), [query])
+  useEffect(() => {
+    setSelected(0)
+  }, [query])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -208,37 +239,32 @@ export function QueuePage() {
       if (['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName) || target.isContentEditable) return
       if (e.key === 'j') setSelected((s) => Math.min(s + 1, tickets.length - 1))
       if (e.key === 'k') setSelected((s) => Math.max(s - 1, 0))
-      if (e.key === 'Enter' && tickets[selected]) navigate(`/admin/tickets/${tickets[selected].id}`)
+      if (e.key === 'Enter' && tickets[selected]) navigate(`${base}/tickets/${tickets[selected].id}`)
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [tickets, selected, navigate])
+  }, [tickets, selected, navigate, base])
 
   const applyKpi = (next: Record<string, string>) => {
-    const p = new URLSearchParams(next)
     setSearch('')
-    setParams(p, { replace: true })
+    setParams(new URLSearchParams(next), { replace: true })
   }
-
   const totalPages = list.data ? Math.max(1, Math.ceil(list.data.count / 25)) : 1
 
   return (
     <div className="mx-auto max-w-[1440px]">
-      <PageHeader
-        title="Ticket queue"
-        description="Most urgent first, then oldest. Press J / K to move, Enter to open."
-      />
+      <PageHeader title="Ticket queue" description="Most urgent first, then oldest. Press J / K to move, Enter to open." />
 
-      <div className="mb-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <KpiCard label="Open tickets" value={stats.data ? stats.data.open + stats.data.in_progress : undefined} icon={Inbox} tone={{ tile: 'bg-sky-100 text-sky-700', ring: 'ring-sky-300', bar: 'bg-sky-500' }} onClick={() => applyKpi({})} active={view === 'attention' && !activeFilters.length} />
-        <KpiCard label="Unassigned" value={stats.data?.unassigned} icon={UserX} tone={{ tile: 'bg-violet-100 text-violet-700', ring: 'ring-violet-300', bar: 'bg-violet-500' }} onClick={() => applyKpi({ view: 'unassigned' })} active={view === 'unassigned'} />
-        <KpiCard label="Overdue first reply" value={stats.data?.overdue} icon={Clock} tone={{ tile: 'bg-red-100 text-red-700', ring: 'ring-red-300', bar: 'bg-red-500' }} onClick={() => applyKpi({ sla: 'overdue' })} active={params.get('sla') === 'overdue'} />
-        <KpiCard label="Critical open" value={stats.data?.critical} icon={AlertOctagon} tone={{ tile: 'bg-orange-100 text-orange-700', ring: 'ring-orange-300', bar: 'bg-orange-500' }} onClick={() => applyKpi({ priority: 'CRITICAL' })} active={params.get('priority') === 'CRITICAL'} />
+      <div className="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
+        <KpiCard label="Open tickets" value={stats.data ? stats.data.open + stats.data.in_progress : undefined} icon={Inbox} tile="bg-sky-100 text-sky-700" ring="ring-sky-300" onClick={() => applyKpi({})} active={view === 'attention' && !activeFilters.length} />
+        <KpiCard label="Unassigned" value={stats.data?.unassigned} icon={UserX} tile="bg-violet-100 text-violet-700" ring="ring-violet-300" onClick={() => applyKpi({ view: 'unassigned' })} active={view === 'unassigned'} />
+        <KpiCard label="Overdue first reply" value={stats.data?.overdue} icon={Clock} tile="bg-red-100 text-red-700" ring="ring-red-300" onClick={() => applyKpi({ sla: 'overdue' })} active={params.get('sla') === 'overdue'} />
+        <KpiCard label="Critical open" value={stats.data?.critical} icon={AlertOctagon} tile="bg-orange-100 text-orange-700" ring="ring-orange-300" onClick={() => applyKpi({ priority: 'CRITICAL' })} active={params.get('priority') === 'CRITICAL'} />
       </div>
 
       <div className="overflow-hidden rounded-2xl border bg-card shadow-xs">
-        <div className="flex flex-col gap-3 border-b p-4 lg:flex-row lg:items-center">
-          <Tabs value={view} onValueChange={(v) => applyKpi(v === 'attention' ? {} : { view: v })}>
+        <div className="flex flex-col gap-3 border-b p-3 sm:p-4 xl:flex-row xl:items-center">
+          <Tabs value={view} onValueChange={(v) => applyKpi(v === 'attention' ? {} : { view: v })} className="max-w-full overflow-x-auto">
             <TabsList>
               {Object.entries(VIEWS).map(([key, v]) => (
                 <TabsTrigger key={key} value={key}>
@@ -247,24 +273,19 @@ export function QueuePage() {
               ))}
             </TabsList>
           </Tabs>
-          <div className="relative lg:ml-auto lg:w-80">
+          <div className="relative xl:ml-auto xl:w-80">
             <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search subject, author, book, TKT-0001"
-              className="pl-9"
-            />
+            <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search subject, customer, TKT-0001" aria-label="Search tickets" className="pl-9" />
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2.5 border-b bg-muted/20 px-4 py-3">
+        <div className="flex items-center gap-2 overflow-x-auto border-b bg-muted/20 px-3 py-3 sm:flex-wrap sm:overflow-visible sm:px-4 [&>*]:shrink-0">
           <span className="mr-1 flex items-center gap-1.5 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
             <SlidersHorizontal className="size-3.5" /> Filter
           </span>
           <MetaSelect size="sm" value={params.get('status')} onChange={(v) => setParam('status', v)} placeholder="Status" anyLabel="Any status" options={STATUSES.map((s) => ({ value: s, label: STATUS_META[s].label, tone: STATUS_META[s] }))} />
           <MetaSelect size="sm" value={params.get('priority')} onChange={(v) => setParam('priority', v)} placeholder="Priority" anyLabel="Any priority" options={PRIORITIES.map((p) => ({ value: p, label: PRIORITY_META[p].label, tone: PRIORITY_META[p] }))} />
-          <MetaSelect size="sm" value={params.get('category')} onChange={(v) => setParam('category', v)} placeholder="Category" anyLabel="Any category" className="min-w-44" options={CATEGORIES.map((c) => ({ value: c, label: CATEGORY_META[c].label, tone: CATEGORY_META[c] }))} />
+          <MetaSelect size="sm" value={params.get('category')} onChange={(v) => setParam('category', v)} placeholder="Category" anyLabel="Any category" className="min-w-44" options={(categories.data ?? []).map((c) => ({ value: c.key, label: c.name, tone: categoryTone(c.key, c.name) }))} />
           <MetaSelect size="sm" value={params.get('sla')} onChange={(v) => setParam('sla', v)} placeholder="SLA" anyLabel="Any SLA" options={SLA_FILTER_OPTIONS} />
           <MetaSelect size="sm" value={params.get('range')} onChange={(v) => setParam('range', v)} placeholder="Created" anyLabel="Any time" options={Object.entries(DATE_RANGES).map(([value, r]) => ({ value, label: r.label, icon: CalendarDays }))} />
           {activeFilters.length > 0 && (
@@ -289,33 +310,40 @@ export function QueuePage() {
             className="m-3 border-0"
           />
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[1080px] table-fixed text-left">
-              <colgroup>
-                <col />
-                <col className="w-52" />
-                <col className="w-40" />
-                <col className="w-40" />
-                <col className="w-32" />
-                <col className="w-40" />
-              </colgroup>
-              <thead>
-                <tr className="border-b bg-muted/30 text-xs tracking-wide text-muted-foreground uppercase">
-                  <th className="py-3.5 pr-6 pl-6 font-semibold">Ticket</th>
-                  <th className="py-3.5 pr-6 font-semibold">Category</th>
-                  <th className="py-3.5 pr-6 font-semibold">Status</th>
-                  <th className="py-3.5 pr-6 font-semibold">First reply SLA</th>
-                  <th className="py-3.5 pr-6 font-semibold">Age</th>
-                  <th className="py-3.5 pr-6 font-semibold">Owner</th>
-                </tr>
-              </thead>
-              <tbody>
-                {tickets.map((t, i) => (
-                  <TicketTableRow key={t.id} ticket={t} selected={i === selected} onOpen={() => navigate(`/admin/tickets/${t.id}`)} />
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <>
+            <div className="xl:hidden">
+              {tickets.map((t) => (
+                <TicketCard key={t.id} ticket={t} onOpen={() => navigate(`${base}/tickets/${t.id}`)} />
+              ))}
+            </div>
+            <div className="hidden overflow-x-auto xl:block">
+              <table className="w-full min-w-[960px] table-fixed text-left">
+                <colgroup>
+                  <col />
+                  <col className="w-44" />
+                  <col className="w-32" />
+                  <col className="w-36" />
+                  <col className="w-24" />
+                  <col className="w-36" />
+                </colgroup>
+                <thead>
+                  <tr className="border-b bg-muted/30 text-xs tracking-wide text-muted-foreground uppercase">
+                    <th className="py-3 pr-5 pl-6 font-semibold">Ticket</th>
+                    <th className="py-3 pr-6 font-semibold">Category</th>
+                    <th className="py-3 pr-6 font-semibold">Status</th>
+                    <th className="py-3 pr-6 font-semibold">First reply SLA</th>
+                    <th className="py-3 pr-6 font-semibold">Age</th>
+                    <th className="py-3 pr-6 font-semibold">Owner</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {tickets.map((t, i) => (
+                    <TicketTableRow key={t.id} ticket={t} selected={i === selected} onOpen={() => navigate(`${base}/tickets/${t.id}`)} />
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
 
         {list.data && list.data.count > 25 && (

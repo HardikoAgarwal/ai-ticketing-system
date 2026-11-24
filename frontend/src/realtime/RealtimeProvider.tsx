@@ -1,11 +1,11 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useLocation, useMatch, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 
 import { useAuth } from '@/auth/AuthContext'
-import { ensureFreshAccessToken, tokenStore, WS_URL } from '@/lib/api'
-import type { RealtimeEvent } from '@/lib/types'
+import { ensureFreshAccessToken, sessionStore, WS_URL } from '@/lib/api'
+import { isStaff, type RealtimeEvent } from '@/lib/types'
 
 import { showDesktopAlert } from './desktopAlerts'
 
@@ -22,7 +22,10 @@ const PING_INTERVAL_MS = 25_000
  * so permissions are enforced by the API in one place.
  */
 export function RealtimeProvider({ children }: { children: ReactNode }) {
-  const { user } = useAuth()
+  const { user, activeView } = useAuth()
+  const slug = useMatch('/w/:slug/*')?.params.slug
+  const role = user?.memberships.find((m) => m.workspace.slug === slug)?.role
+  const staff = isStaff(role)
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const location = useLocation()
@@ -31,7 +34,7 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
   pathRef.current = location.pathname
 
   useEffect(() => {
-    if (!user) return
+    if (!user || !slug || !role) return
     let socket: WebSocket | null = null
     let attempts = 0
     let closedByUs = false
@@ -47,14 +50,13 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
       queryClient.invalidateQueries({ queryKey: ['tickets'] })
       queryClient.invalidateQueries({ queryKey: ['ticket', ticketId] })
       queryClient.invalidateQueries({ queryKey: ['stats'] })
-      queryClient.invalidateQueries({ queryKey: ['summary'] })
       queryClient.invalidateQueries({ queryKey: ['notifications'] })
       if (msg.event === 'ticket.updated') queryClient.invalidateQueries({ queryKey: ['draft', ticketId] })
       if (ticket.status !== 'RESOLVED') resolvedAlerted.delete(ticketId)
 
       if (msg.actor_id === user.id) return
       const viewingTicket = pathRef.current.endsWith(`/tickets/${ticketId}`)
-      const url = `/${user.role === 'ADMIN' ? 'admin' : 'author'}/tickets/${ticketId}`
+      const url = `/w/${slug}/${staff ? 'agent' : 'help'}/tickets/${ticketId}`
       const notify = (title: string, description: string, opts: { urgent?: boolean; label?: string } = {}) => {
         showDesktopAlert(title, description, `${msg.event}:${ticketId}`, () => navigate(url))
         if (viewingTicket) return
@@ -64,8 +66,8 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
         })
       }
 
-      if (user.role === 'AUTHOR') {
-        if (msg.event === 'message.created') notify(`BookLeaf replied to ${ticket.reference}`, ticket.subject, { label: 'View' })
+      if (!staff) {
+        if (msg.event === 'message.created') notify(`New reply on ${ticket.reference}`, ticket.subject, { label: 'View' })
         if (msg.event === 'ticket.updated' && ticket.status === 'RESOLVED' && !resolvedAlerted.has(ticketId)) {
           resolvedAlerted.add(ticketId)
           notify(`${ticket.reference} was marked as resolved`, 'Please confirm whether your issue is sorted.', { label: 'Confirm' })
@@ -76,22 +78,22 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
       const relevant = ticket.assigned_to === user.id || ticket.assigned_to == null
       if (msg.event === 'ticket.created') {
         const urgent = ticket.priority === 'CRITICAL' || ticket.priority === 'HIGH'
-        notify(`New ${urgent ? ticket.priority!.toLowerCase() + ' ' : ''}ticket from ${ticket.author_name}`, ticket.subject, { urgent })
+        notify(`New ${urgent ? ticket.priority!.toLowerCase() + ' ' : ''}ticket from ${ticket.requester_name}`, ticket.subject, { urgent })
       }
-      if (msg.event === 'message.created' && msg.by_author && relevant) {
-        notify(`${ticket.author_name} replied on ${ticket.reference}`, ticket.subject)
+      if (msg.event === 'message.created' && msg.by_requester && relevant) {
+        notify(`${ticket.requester_name} replied on ${ticket.reference}`, ticket.subject)
       }
     }
 
     const connect = async () => {
       setState('connecting')
-      const token = attempts > 0 ? await ensureFreshAccessToken() : tokenStore.access
+      const token = attempts > 0 ? await ensureFreshAccessToken() : sessionStore.access
       if (closedByUs) return
       if (!token) {
         setState('offline')
         return
       }
-      socket = new WebSocket(`${WS_URL}/ws/events/?token=${encodeURIComponent(token)}`)
+      socket = new WebSocket(`${WS_URL}/ws/events/?token=${encodeURIComponent(token)}&workspace=${encodeURIComponent(slug)}`)
       socket.onopen = () => {
         const wasReconnect = attempts > 0
         attempts = 0
@@ -125,7 +127,8 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
       socket?.close()
       setState('offline')
     }
-  }, [user, queryClient, navigate])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, slug, role, activeView, queryClient, navigate])
 
   return <RealtimeContext.Provider value={state}>{children}</RealtimeContext.Provider>
 }

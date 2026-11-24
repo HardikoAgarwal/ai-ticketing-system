@@ -2,6 +2,7 @@ import { LogOut } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 
 import { useAuth } from '@/auth/AuthContext'
+import { useWorkspace } from '@/auth/workspace'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import {
   DropdownMenu,
@@ -15,6 +16,7 @@ import { initials } from '@/lib/format'
 
 export function UserMenu() {
   const { user, logout } = useAuth()
+  const { brief, role } = useWorkspace()
   const navigate = useNavigate()
   if (!user) return null
   return (
@@ -29,22 +31,21 @@ export function UserMenu() {
       <DropdownMenuContent align="end" className="w-60">
         <DropdownMenuLabel className="font-normal">
           <p className="text-sm font-medium">{user.full_name}</p>
-          <p className="text-xs text-muted-foreground">{user.email}</p>
-          {user.author_profile && (
+          <p className="truncate text-xs text-muted-foreground">{user.is_demo ? 'Demo account' : user.email}</p>
+          {brief && (
             <p className="mt-1 text-xs text-muted-foreground">
-              Author ID {user.author_profile.author_code} · {user.author_profile.city}
+              {role === 'REQUESTER' ? 'Customer' : (role ?? '').charAt(0) + (role ?? '').slice(1).toLowerCase()} · {brief.name}
             </p>
           )}
-          {user.role === 'ADMIN' && <p className="mt-1 text-xs text-muted-foreground">BookLeaf Support Team</p>}
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem
           onClick={() => {
             logout()
-            navigate('/login')
+            navigate('/')
           }}
         >
-          <LogOut className="size-4" /> Sign out
+          <LogOut className="size-4" /> {user.is_demo ? 'Leave demo' : 'Sign out'}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

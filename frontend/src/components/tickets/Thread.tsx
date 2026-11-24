@@ -1,15 +1,15 @@
-import { Download, FileText, ImageIcon, Leaf, Sparkles } from 'lucide-react'
+import { Download, FileText, ImageIcon, LifeBuoy, Sparkles } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { toast } from 'sonner'
 
 import { RelativeTime } from '@/components/common'
 import { errorMessage } from '@/lib/api'
-import { ticketsApi } from '@/lib/endpoints'
+import { useWorkspace } from '@/auth/workspace'
 import { formatBytes, initials } from '@/lib/format'
 import type { Attachment, Message } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
-type Viewer = 'author' | 'admin'
+type Viewer = 'requester' | 'staff'
 
 export function ChatBubble({
   side,
@@ -24,7 +24,7 @@ export function ChatBubble({
   name: string
   meta?: ReactNode
   time: string
-  variant: 'team' | 'author'
+  variant: 'team' | 'customer'
   avatar: ReactNode
   children: ReactNode
 }) {
@@ -53,7 +53,7 @@ export function ChatBubble({
   )
 }
 
-export function PersonAvatar({ name, variant }: { name: string; variant: 'team' | 'author' }) {
+export function PersonAvatar({ name, variant }: { name: string; variant: 'team' | 'customer' }) {
   return (
     <span
       className={cn(
@@ -61,31 +61,31 @@ export function PersonAvatar({ name, variant }: { name: string; variant: 'team' 
         variant === 'team' ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground/80',
       )}
     >
-      {variant === 'team' && name === 'BookLeaf Support' ? <Leaf className="size-4" /> : initials(name)}
+      {initials(name)}
     </span>
   )
 }
 
 export function MessageBubble({ message, viewer }: { message: Message; viewer: Viewer }) {
-  const fromTeam = message.sender_role === 'ADMIN'
-  const variant = fromTeam ? 'team' : 'author'
-  const side = (viewer === 'admin') === fromTeam ? 'right' : 'left'
-  const avatarName = viewer === 'author' && fromTeam ? 'BookLeaf Support' : message.sender_name
-  const name = viewer === 'author' && !fromTeam ? 'You' : avatarName
+  const fromTeam = !message.sender_is_requester
+  const variant = fromTeam ? 'team' : 'customer'
+  const side = (viewer === 'staff') === fromTeam ? 'right' : 'left'
   return (
     <ChatBubble
       side={side}
-      name={name}
+      name={viewer === 'requester' && message.sender_is_requester ? 'You' : message.sender_name}
       variant={variant}
       time={message.created_at}
-      avatar={<PersonAvatar name={avatarName} variant={variant} />}
+      avatar={<PersonAvatar name={message.sender_name} variant={variant} />}
       meta={
-        viewer === 'admin' && message.ai_draft_id ? (
+        viewer === 'staff' && message.ai_draft_id ? (
           <span className="inline-flex items-center gap-1 rounded-full bg-violet-50 px-2 py-0.5 text-[11px] font-medium text-violet-700 ring-1 ring-violet-600/20 ring-inset">
             <Sparkles className="size-3" /> {message.ai_draft_edited ? 'AI draft, edited' : 'AI draft'}
           </span>
-        ) : viewer === 'author' && fromTeam && message.sender_name ? (
-          <span className="text-muted-foreground">{message.sender_name.split(' ')[0]}</span>
+        ) : viewer === 'requester' && fromTeam ? (
+          <span className="inline-flex items-center gap-1 text-muted-foreground">
+            <LifeBuoy className="size-3" /> Support
+          </span>
         ) : null
       }
     >
@@ -105,10 +105,11 @@ export function DayDivider({ label }: { label: string }) {
 }
 
 export function AttachmentList({ ticketId, attachments }: { ticketId: number; attachments: Attachment[] }) {
+  const { api } = useWorkspace()
   if (!attachments.length) return null
   const open = async (a: Attachment) => {
     try {
-      const { url } = await ticketsApi.attachmentUrl(ticketId, a.id)
+      const { url } = await api.tickets.attachmentUrl(ticketId, a.id)
       window.open(url, '_blank', 'noopener,noreferrer')
     } catch (err) {
       toast.error(errorMessage(err))

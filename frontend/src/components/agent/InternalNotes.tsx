@@ -2,23 +2,24 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Loader2, Lock, Plus, StickyNote } from 'lucide-react'
 import { toast } from 'sonner'
 
-import { usePersistentText } from '@/components/admin/Composer'
+import { useWorkspace } from '@/auth/workspace'
+import { usePersistentText } from '@/components/agent/Composer'
 import { RelativeTime } from '@/components/common'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { errorMessage } from '@/lib/api'
-import { ticketsApi } from '@/lib/endpoints'
 import { initials } from '@/lib/format'
-import type { AdminTicketDetail } from '@/lib/types'
+import type { StaffTicketDetail } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
-export function InternalNotes({ ticket, className }: { ticket: AdminTicketDetail; className?: string }) {
+export function InternalNotes({ ticket, className }: { ticket: StaffTicketDetail; className?: string }) {
   const queryClient = useQueryClient()
-  const [note, setNote] = usePersistentText(`bookleaf.note.${ticket.id}`)
+  const { slug, api } = useWorkspace()
+  const [note, setNote] = usePersistentText(`helpdesk.note.${slug}.${ticket.id}`)
   const notes = ticket.messages.filter((m) => m.is_internal)
 
   const add = useMutation({
-    mutationFn: () => ticketsApi.postMessage(ticket.id, { body: note, kind: 'NOTE' }),
+    mutationFn: () => api.tickets.postMessage(ticket.id, { body: note, kind: 'NOTE' }),
     onSuccess: () => {
       setNote('')
       toast.success('Internal note added')
@@ -44,7 +45,7 @@ export function InternalNotes({ ticket, className }: { ticket: AdminTicketDetail
       <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4">
         {notes.length === 0 ? (
           <p className="px-1 py-2 text-xs text-muted-foreground">
-            No notes yet. Use notes for context the author shouldn't see, e.g. "Checked with finance, payout batch delayed".
+            No notes yet. Use notes for context the customer shouldn't see, e.g. "Confirmed duplicate in the billing console".
           </p>
         ) : (
           notes.map((n) => (
@@ -69,6 +70,7 @@ export function InternalNotes({ ticket, className }: { ticket: AdminTicketDetail
           }}
           rows={1}
           placeholder="Add a note for the team…"
+          aria-label="Internal note"
           className="max-h-32 min-h-10 py-2.5 text-sm"
         />
         <Button onClick={submit} disabled={!note.trim() || add.isPending} variant="outline" className="shrink-0">

@@ -4,23 +4,85 @@ export const API_URL = (import.meta.env.VITE_API_URL as string | undefined)?.rep
 export const WS_URL =
   (import.meta.env.VITE_WS_URL as string | undefined)?.replace(/\/$/, '') || API_URL.replace(/^http/, 'ws')
 
-const ACCESS_KEY = 'bookleaf.access'
-const REFRESH_KEY = 'bookleaf.refresh'
+/**
+ * Sessions. A normal login stores one session ("main"). The public demo stores two
+ * ("agent" and "customer") so a visitor can flip between both sides of the same workspace.
+ */
+export type SessionKey = 'main' | 'agent' | 'customer'
 
-export const tokenStore = {
+export interface StoredSession {
+  access: string
+  refresh: string
+}
+export interface DemoMeta {
+  slug: string
+  expiresAt: string | null
+}
+interface Store {
+  active: SessionKey | null
+  sessions: Partial<Record<SessionKey, StoredSession>>
+  demo: DemoMeta | null
+}
+
+const STORE_KEY = 'helpdesk.sessions.v1'
+
+function read(): Store {
+  try {
+    const raw = localStorage.getItem(STORE_KEY)
+    if (raw) return JSON.parse(raw) as Store
+  } catch {
+    /* corrupt or unavailable storage */
+  }
+  return { active: null, sessions: {}, demo: null }
+}
+
+let store: Store = read()
+const write = () => {
+  try {
+    localStorage.setItem(STORE_KEY, JSON.stringify(store))
+  } catch {
+    /* ignore */
+  }
+}
+
+export const sessionStore = {
+  get active() {
+    return store.active
+  },
+  get demo() {
+    return store.demo
+  },
   get access() {
-    return localStorage.getItem(ACCESS_KEY)
+    return store.active ? (store.sessions[store.active]?.access ?? null) : null
   },
   get refresh() {
-    return localStorage.getItem(REFRESH_KEY)
+    return store.active ? (store.sessions[store.active]?.refresh ?? null) : null
   },
-  set(access: string, refresh?: string) {
-    localStorage.setItem(ACCESS_KEY, access)
-    if (refresh) localStorage.setItem(REFRESH_KEY, refresh)
+  has(key: SessionKey) {
+    return !!store.sessions[key]
+  },
+  setSession(key: SessionKey, session: StoredSession, makeActive = true) {
+    store = { ...store, sessions: { ...store.sessions, [key]: session }, active: makeActive ? key : store.active }
+    write()
+  },
+  setDemo(demo: DemoMeta | null) {
+    store = { ...store, demo }
+    write()
+  },
+  switchTo(key: SessionKey) {
+    store = { ...store, active: key }
+    write()
+  },
+  updateAccess(access: string, refresh?: string) {
+    if (!store.active) return
+    const current = store.sessions[store.active]
+    if (!current) return
+    store = { ...store, sessions: { ...store.sessions, [store.active]: { access, refresh: refresh ?? current.refresh } } }
+    write()
   },
   clear() {
-    localStorage.removeItem(ACCESS_KEY)
-    localStorage.removeItem(REFRESH_KEY)
+    store = { active: null, sessions: {}, demo: null }
+    write()
   },
 }
 
@@ -51,24 +113,28 @@ export class ApiError extends Error {
 export const api = axios.create({ baseURL: `${API_URL}/api/v1`, timeout: 20000 })
 
 api.interceptors.request.use((config) => {
-  const token = tokenStore.access
+  const token = sessionStore.access
   if (token) config.headers.Authorization = `Bearer ${token}`
   return config
 })
 
 let refreshing: Promise<string | null> | null = null
 let onSessionExpired: (() => void) | null = null
+let onWorkspaceExpired: (() => void) | null = null
 
 export function setSessionExpiredHandler(handler: () => void) {
   onSessionExpired = handler
 }
+export function setWorkspaceExpiredHandler(handler: () => void) {
+  onWorkspaceExpired = handler
+}
 
 async function refreshAccessToken(): Promise<string | null> {
-  const refresh = tokenStore.refresh
+  const refresh = sessionStore.refresh
   if (!refresh) return null
   try {
     const { data } = await axios.post(`${API_URL}/api/v1/auth/refresh/`, { refresh })
-    tokenStore.set(data.access, data.refresh)
+    sessionStore.updateAccess(data.access, data.refresh)
     return data.access as string
   } catch {
     return null
@@ -81,9 +147,11 @@ export async function ensureFreshAccessToken(): Promise<string | null> {
   return refreshing
 }
 
+type ErrorBody = { error?: { message?: string; code?: string; details?: Record<string, unknown> } }
+
 api.interceptors.response.use(
   (response) => response,
-  async (error: AxiosError<{ error?: { message?: string; code?: string; details?: Record<string, unknown> } }>) => {
+  async (error: AxiosError<ErrorBody>) => {
     const original = error.config as (InternalAxiosRequestConfig & { _retried?: boolean }) | undefined
     const isAuthCall = original?.url?.includes('/auth/login') || original?.url?.includes('/auth/refresh')
 
@@ -94,12 +162,16 @@ api.interceptors.response.use(
         original.headers.Authorization = `Bearer ${token}`
         return api(original)
       }
-      tokenStore.clear()
+      sessionStore.clear()
       onSessionExpired?.()
     }
 
+    if (error.response?.status === 410 && error.response.data?.error?.code === 'workspace_expired') {
+      onWorkspaceExpired?.()
+    }
+
     if (!error.response) {
-      return Promise.reject(new ApiError("Can't reach BookLeaf servers. Check your connection and try again.", 0, 'network_error'))
+      return Promise.reject(new ApiError("Can't reach the server. Check your connection and try again.", 0, 'network_error'))
     }
     const payload = error.response.data?.error
     return Promise.reject(

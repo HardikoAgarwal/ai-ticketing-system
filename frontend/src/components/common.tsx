@@ -1,4 +1,4 @@
-import { Leaf } from 'lucide-react'
+import { LifeBuoy } from 'lucide-react'
 import type { ReactNode } from 'react'
 
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
@@ -6,14 +6,14 @@ import { formatDateTime, relativeTime } from '@/lib/format'
 import { useConnectionState } from '@/realtime/RealtimeProvider'
 import { cn } from '@/lib/utils'
 
-export function Logo({ subtitle }: { subtitle?: string }) {
+export function Logo({ subtitle, name = 'Helpdesk AI' }: { subtitle?: string; name?: string }) {
   return (
     <div className="flex items-center gap-2">
       <div className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-        <Leaf className="size-4" />
+        <LifeBuoy className="size-4" />
       </div>
       <div className="leading-tight">
-        <p className="text-sm font-semibold tracking-tight">BookLeaf</p>
+        <p className="max-w-40 truncate text-sm font-semibold tracking-tight">{name}</p>
         {subtitle && <p className="text-[11px] text-muted-foreground">{subtitle}</p>}
       </div>
     </div>
@@ -86,13 +86,13 @@ export function Stat({ label, value, hint, icon, tone, accent = 'default' }: {
   const resolved = tone === 'warning' ? 'amber' : tone === 'danger' ? 'red' : tone === 'success' ? 'green' : accent
   const a = STAT_ACCENTS[resolved]
   return (
-    <div className="rounded-2xl border bg-card p-5 shadow-xs">
-      <div className="flex items-start justify-between gap-3">
-        <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">{label}</p>
-        {icon && <span className={cn('flex size-9 items-center justify-center rounded-xl', a.tile)}>{icon}</span>}
+    <div className="rounded-2xl border bg-card p-3.5 shadow-xs sm:p-5">
+      <div className="flex items-start justify-between gap-2 sm:gap-3">
+        <p className="text-[10px] leading-tight font-semibold tracking-wide text-muted-foreground uppercase sm:text-xs">{label}</p>
+        {icon && <span className={cn('hidden size-9 items-center justify-center rounded-xl sm:flex', a.tile)}>{icon}</span>}
       </div>
-      <p className={cn('mt-1 text-2xl font-semibold tracking-tight', a.value)}>{value}</p>
-      {hint && <p className="mt-1.5 text-xs text-muted-foreground">{hint}</p>}
+      <p className={cn('mt-1 text-xl font-semibold tracking-tight sm:text-2xl', a.value)}>{value}</p>
+      {hint && <p className="mt-1.5 hidden text-xs text-muted-foreground sm:block">{hint}</p>}
     </div>
   )
 }

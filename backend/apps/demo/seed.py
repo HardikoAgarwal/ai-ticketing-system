@@ -209,6 +209,7 @@ def _create_ticket(ws, number, user, recs, t, cats, articles, staff, embeddings,
         ticket.first_response_at = when
         ticket.last_staff_reply_at = when
         ticket.staff_last_seen_at = when
+        ticket.requester_last_seen_at = when  # history is already read; only featured tickets show unread
         last = when
         TicketActivity.objects.create(ticket=ticket, actor=agent, action=ActivityAction.REPLIED, created_at=when)
         _log_ai(ws, ticket, created, rng)

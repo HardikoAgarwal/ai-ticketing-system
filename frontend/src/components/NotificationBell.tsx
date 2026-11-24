@@ -12,14 +12,14 @@ import {
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+
+import { useWorkspace } from '@/auth/workspace'
 import { toast } from 'sonner'
 
-import { useAuth } from '@/auth/AuthContext'
 import { RelativeTime } from '@/components/common'
 import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { errorMessage } from '@/lib/api'
-import { ticketsApi } from '@/lib/endpoints'
 import type { AppNotification, NotificationKind } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import { desktopAlertState, disableDesktopAlerts, enableDesktopAlerts, type DesktopAlertState } from '@/realtime/desktopAlerts'
@@ -28,10 +28,10 @@ import { useFallbackInterval } from '@/realtime/RealtimeProvider'
 const baseTitle = () => document.title.replace(/^\(\d+\+?\)\s*/, '')
 
 const KIND_META: Record<NotificationKind, { icon: LucideIcon; tint: string; title: (n: AppNotification) => string }> = {
-  admin_reply: { icon: MessageCircle, tint: 'bg-primary/10 text-primary', title: () => 'BookLeaf replied' },
+  staff_reply: { icon: MessageCircle, tint: 'bg-primary/10 text-primary', title: (n) => `${n.actor_name} replied` },
   resolved: { icon: CheckCircle2, tint: 'bg-emerald-100 text-emerald-700', title: () => 'Marked as resolved. Please confirm' },
   new_ticket: { icon: Inbox, tint: 'bg-sky-100 text-sky-700', title: (n) => `New ticket from ${n.actor_name}` },
-  author_reply: { icon: MessageSquareReply, tint: 'bg-violet-100 text-violet-700', title: (n) => `${n.actor_name} replied` },
+  requester_reply: { icon: MessageSquareReply, tint: 'bg-violet-100 text-violet-700', title: (n) => `${n.actor_name} replied` },
 }
 
 const URGENT = new Set(['CRITICAL', 'HIGH'])
@@ -102,12 +102,12 @@ function DesktopAlertsRow() {
 }
 
 export function NotificationBell() {
-  const { user } = useAuth()
+  const { slug, api, staff } = useWorkspace()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [open, setOpen] = useState(false)
   const refetchInterval = useFallbackInterval(30_000)
-  const { data } = useQuery({ queryKey: ['notifications'], queryFn: ticketsApi.notifications, refetchInterval, enabled: !!user })
+  const { data } = useQuery({ queryKey: ['notifications', slug], queryFn: api.tickets.notifications, refetchInterval })
   const count = data?.count ?? 0
   const items = data?.items ?? []
   const hasReadable = items.some((i) => i.kind !== 'resolved')
@@ -121,18 +121,17 @@ export function NotificationBell() {
   }, [count])
 
   const markAll = useMutation({
-    mutationFn: ticketsApi.markAllNotificationsRead,
+    mutationFn: api.tickets.markAllNotificationsRead,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] })
       queryClient.invalidateQueries({ queryKey: ['tickets'] })
-      queryClient.invalidateQueries({ queryKey: ['summary'] })
     },
     onError: (err) => toast.error(errorMessage(err)),
   })
 
   const openTicket = (item: AppNotification) => {
     setOpen(false)
-    navigate(user?.role === 'ADMIN' ? `/admin/tickets/${item.ticket_id}` : `/author/tickets/${item.ticket_id}`)
+    navigate(`/w/${slug}/${staff ? 'agent' : 'help'}/tickets/${item.ticket_id}`)
   }
 
   return (
@@ -171,7 +170,7 @@ export function NotificationBell() {
             </span>
             <p className="mt-3 text-sm font-semibold">You're all caught up</p>
             <p className="mt-1 text-xs text-muted-foreground">
-              {user?.role === 'ADMIN' ? 'New tickets and author replies will show up here.' : 'Replies from our team will show up here.'}
+              {staff ? 'New tickets and customer replies will show up here.' : 'Replies from our team will show up here.'}
             </p>
           </div>
         ) : (

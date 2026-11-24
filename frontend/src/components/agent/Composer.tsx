@@ -9,6 +9,7 @@ import {
   CornerDownLeft,
   Eye,
   Loader2,
+  MessageSquareText,
   RefreshCw,
   Send,
   Sparkles,
@@ -16,18 +17,19 @@ import {
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { toast } from 'sonner'
 
+import { useAuth } from '@/auth/AuthContext'
+import { useWorkspace } from '@/auth/workspace'
 import { ConfirmDialog, type ConfirmOptions } from '@/components/ConfirmDialog'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Textarea } from '@/components/ui/textarea'
-import { useAuth } from '@/auth/AuthContext'
 import { errorMessage } from '@/lib/api'
-import { ticketsApi } from '@/lib/endpoints'
-import type { AdminTicketDetail, DraftResponse } from '@/lib/types'
+import type { DraftResponse, Macro, StaffTicketDetail } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
-const SKIP_PREVIEW_KEY = 'bookleaf.skip-send-preview'
+const SKIP_PREVIEW_KEY = 'helpdesk.skip-send-preview'
 
 export function usePersistentText(key: string) {
   const [value, setValue] = useState(() => localStorage.getItem(key) ?? '')
@@ -38,10 +40,11 @@ export function usePersistentText(key: string) {
   return [value, setValue] as const
 }
 
-export function Composer({ ticket }: { ticket: AdminTicketDetail }) {
+export function Composer({ ticket }: { ticket: StaffTicketDetail }) {
   const { user } = useAuth()
+  const { slug, api } = useWorkspace()
   const queryClient = useQueryClient()
-  const [reply, setReply] = usePersistentText(`bookleaf.reply.${ticket.id}`)
+  const [reply, setReply] = usePersistentText(`helpdesk.reply.${slug}.${ticket.id}`)
   const [loadedDraft, setLoadedDraft] = useState<{ id: number; content: string } | null>(null)
   const [confirm, setConfirm] = useState<ConfirmOptions | null>(null)
   const [preview, setPreview] = useState<{ resolve: boolean } | null>(null)
@@ -54,11 +57,12 @@ export function Composer({ ticket }: { ticket: AdminTicketDetail }) {
 
   const closed = ticket.status === 'CLOSED'
   const draftQuery = useQuery({
-    queryKey: ['draft', ticket.id],
-    queryFn: () => ticketsApi.draft(ticket.id),
+    queryKey: ['draft', ticket.id, slug],
+    queryFn: () => api.tickets.draft(ticket.id),
     refetchInterval: (q) => (q.state.data?.status === 'generating' ? 3000 : false),
     enabled: !closed,
   })
+  const macros = useQuery({ queryKey: ['macros', slug], queryFn: api.macros, staleTime: 60_000 })
   const draft = draftQuery.data
 
   // A reply restored from localStorage that matches the draft still counts as AI-assisted.
@@ -81,7 +85,7 @@ export function Composer({ ticket }: { ticket: AdminTicketDetail }) {
 
   const send = useMutation({
     mutationFn: (vars: { resolve?: boolean }) =>
-      ticketsApi.postMessage(ticket.id, {
+      api.tickets.postMessage(ticket.id, {
         body: reply,
         kind: 'REPLY',
         resolve: vars.resolve,
@@ -91,8 +95,8 @@ export function Composer({ ticket }: { ticket: AdminTicketDetail }) {
       setReply('')
       setLoadedDraft(null)
       setNewActivity(false)
-      toast.success(vars.resolve ? 'Reply sent and ticket resolved' : 'Reply sent to author', {
-        description: 'The author sees it instantly.',
+      toast.success(vars.resolve ? 'Reply sent and ticket resolved' : 'Reply sent', {
+        description: 'The customer sees it instantly.',
       })
       queryClient.invalidateQueries({ queryKey: ['ticket', ticket.id] })
       queryClient.invalidateQueries({ queryKey: ['tickets'] })
@@ -102,10 +106,12 @@ export function Composer({ ticket }: { ticket: AdminTicketDetail }) {
   })
 
   const regenerate = useMutation({
-    mutationFn: () => ticketsApi.regenerateDraft(ticket.id),
-    onSuccess: (data) => queryClient.setQueryData(['draft', ticket.id], data),
+    mutationFn: () => api.tickets.regenerateDraft(ticket.id),
+    onSuccess: (data) => queryClient.setQueryData(['draft', ticket.id, slug], data),
     onError: (err) => toast.error(errorMessage(err)),
   })
+
+  const firstName = ticket.requester.name.split(' ')[0]
 
   const insertDraft = () => {
     if (!draft?.draft) return
@@ -127,6 +133,13 @@ export function Composer({ ticket }: { ticket: AdminTicketDetail }) {
     } else apply()
   }
 
+  const insertMacro = (m: Macro) => {
+    const body = m.body.replaceAll('{{name}}', firstName)
+    setReply((cur) => (cur.trim() ? `${cur.trimEnd()}\n\n${body}` : body))
+    setLoadedDraft(null)
+    requestAnimationFrame(() => textareaRef.current?.focus())
+  }
+
   const requestSend = (resolve: boolean) => {
     if (!reply.trim()) return
     if (skipPreview) send.mutate({ resolve })
@@ -134,7 +147,6 @@ export function Composer({ ticket }: { ticket: AdminTicketDetail }) {
   }
 
   const assignedElsewhere = ticket.assigned_to && ticket.assigned_to.id !== user?.id
-  const firstName = ticket.author.name.split(' ')[0]
 
   if (closed) {
     return (
@@ -145,7 +157,7 @@ export function Composer({ ticket }: { ticket: AdminTicketDetail }) {
   }
 
   return (
-    <div className="relative shrink-0 rounded-b-2xl border-t bg-card px-6 py-5">
+    <div className="relative shrink-0 rounded-b-2xl border-t bg-card px-4 py-4 sm:px-6 sm:py-5">
       {!draftQuery.isLoading && (
         <DraftDock
           draft={draft}
@@ -186,21 +198,39 @@ export function Composer({ ticket }: { ticket: AdminTicketDetail }) {
             if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) requestSend(false)
           }}
           placeholder={`Write your reply to ${firstName}…`}
+          aria-label={`Reply to ${firstName}`}
           className="max-h-72 min-h-24 resize-none rounded-none border-0 bg-transparent px-5 py-4 text-sm leading-relaxed shadow-none focus-visible:ring-0 dark:bg-transparent"
         />
-        <div className="flex items-center justify-between gap-3 border-t bg-muted/30 px-4 py-2.5">
-          {usingDraft ? (
-            <p className="flex items-center gap-1.5 text-xs font-medium text-violet-700">
-              <Sparkles className="size-3.5" />
-              {editedFromDraft ? 'From AI draft, edited by you' : 'From AI draft, review before sending'}
-            </p>
-          ) : (
-            <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <Kbd>⌘</Kbd>
-              <Kbd>Enter</Kbd>
-              <span className="ml-0.5">to send · {firstName} sees it instantly</span>
-            </p>
-          )}
+        <div className="flex flex-wrap items-center justify-between gap-2 border-t bg-muted/30 px-3 py-2.5 sm:px-4">
+          <div className="flex min-w-0 items-center gap-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" disabled={!macros.data?.length}>
+                  <MessageSquareText /> Macros
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-64">
+                <DropdownMenuLabel className="text-xs text-muted-foreground">Insert a canned reply</DropdownMenuLabel>
+                {macros.data?.map((m) => (
+                  <DropdownMenuItem key={m.id} onClick={() => insertMacro(m)}>
+                    {m.title}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+            {usingDraft ? (
+              <p className="hidden items-center gap-1.5 text-xs font-medium text-violet-700 sm:flex">
+                <Sparkles className="size-3.5" />
+                {editedFromDraft ? 'From AI draft, edited by you' : 'From AI draft, review before sending'}
+              </p>
+            ) : (
+              <p className="hidden items-center gap-1.5 text-xs text-muted-foreground md:flex">
+                <Kbd>⌘</Kbd>
+                <Kbd>Enter</Kbd>
+                <span className="ml-0.5">to send</span>
+              </p>
+            )}
+          </div>
           <Button onClick={() => requestSend(false)} disabled={!reply.trim() || send.isPending} className="shrink-0">
             {send.isPending ? <Loader2 className="animate-spin" /> : <Send />} {usingDraft && !skipPreview ? 'Review & send' : 'Send'}
           </Button>
@@ -216,7 +246,7 @@ export function Composer({ ticket }: { ticket: AdminTicketDetail }) {
               </span>
             </DialogTitle>
             <DialogDescription>
-              {preview?.resolve ? 'The ticket will be marked Resolved and the author asked to confirm.' : 'The ticket will move to In Progress.'}
+              {preview?.resolve ? 'The ticket will be marked Resolved and the customer asked to confirm.' : 'The ticket will move to In Progress.'}
             </DialogDescription>
           </DialogHeader>
           <div className="max-h-80 overflow-y-auto rounded-xl border border-primary/15 bg-primary/[0.05] p-4 text-sm leading-relaxed whitespace-pre-wrap">
@@ -268,7 +298,7 @@ function AiMark({ className }: { className?: string }) {
   )
 }
 
-/** Floating AI draft above the reply box: a chip when collapsed, a review card when expanded. */
+/** Floating AI draft above the reply box: a chip when collapsed, a review card (with citations) when expanded. */
 function DraftDock({
   draft,
   expanded,
@@ -287,9 +317,11 @@ function DraftDock({
   onUse: () => void
 }) {
   const [copied, setCopied] = useState(false)
+  const cardRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (!expanded) return
+    cardRef.current?.scrollIntoView({ block: 'center', behavior: 'smooth' })
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onToggle()
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
@@ -299,9 +331,10 @@ function DraftDock({
 
   if (draft.status === 'failed') {
     return (
-      <div className="absolute inset-x-6 bottom-full z-20 mb-3 flex">
+      <div className="absolute inset-x-4 bottom-full z-20 mb-3 flex sm:inset-x-6">
         <div className="flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 py-1 pr-1 pl-3 text-xs text-amber-900 shadow-md">
-          <AlertTriangle className="size-3.5 text-amber-600" /> AI draft unavailable
+          <AlertTriangle className="size-3.5 text-amber-600" />
+          <span className="max-w-[60vw] truncate">{draft.error || 'AI draft unavailable'}</span>
           <Button variant="ghost" size="xs" onClick={onRegenerate} disabled={regenerating} className="h-6 rounded-full px-2 text-amber-900 hover:bg-amber-100">
             <RefreshCw className={cn(regenerating && 'animate-spin')} /> Try again
           </Button>
@@ -311,8 +344,8 @@ function DraftDock({
   }
 
   const generating = draft.status === 'generating'
-  const sources = draft.draft?.kb_sections ?? []
-  const summary = generating ? 'Writing a reply…' : inEditor ? 'In your reply' : sources.length ? `Ready · ${sources[0].title}` : 'Ready to review'
+  const citations = draft.draft?.citations ?? []
+  const summary = generating ? 'Writing a reply…' : inEditor ? 'In your reply' : citations.length ? `Ready · ${citations.length} source${citations.length > 1 ? 's' : ''}` : 'Ready to review'
 
   const copy = async () => {
     if (!draft.draft) return
@@ -322,9 +355,9 @@ function DraftDock({
   }
 
   return (
-    <div className="pointer-events-none absolute inset-x-6 bottom-full z-20 mb-3 flex flex-col items-start">
+    <div className="pointer-events-none absolute inset-x-4 bottom-full z-20 mb-3 flex flex-col items-start sm:inset-x-6">
       {expanded ? (
-        <div className="ai-ring pointer-events-auto w-full animate-in rounded-2xl shadow-xl duration-200 fade-in slide-in-from-bottom-2">
+        <div ref={cardRef} className="ai-ring pointer-events-auto w-full animate-in rounded-2xl shadow-xl duration-200 fade-in slide-in-from-bottom-2">
           <div className="overflow-hidden rounded-[calc(var(--radius-2xl)-2px)] bg-card">
             <div className="flex items-center gap-3 border-b px-4 py-3">
               <AiMark className={cn('size-8 rounded-lg', generating && 'animate-pulse')} />
@@ -338,18 +371,18 @@ function DraftDock({
                 </p>
                 <p className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
                   {generating ? (
-                    'Reading the ticket, book details and knowledge base…'
-                  ) : sources.length ? (
+                    'Reading the ticket, customer facts and knowledge base…'
+                  ) : citations.length ? (
                     <>
-                      Based on
-                      {sources.map((s) => (
-                        <span key={s.key} className="inline-flex items-center gap-1 rounded-md bg-muted px-1.5 py-0.5 font-medium text-foreground/80">
-                          <BookMarked className="size-3" /> {s.title}
+                      Grounded in
+                      {citations.map((c) => (
+                        <span key={c.article_id} className="inline-flex items-center gap-1 rounded-md bg-muted px-1.5 py-0.5 font-medium text-foreground/80" title={`Relevance ${(c.score * 100).toFixed(0)}%`}>
+                          <BookMarked className="size-3" /> {c.title}
                         </span>
                       ))}
                     </>
                   ) : (
-                    'Check facts and tone before sending.'
+                    'No matching articles found. Check facts and tone before sending.'
                   )}
                 </p>
               </div>
@@ -366,7 +399,7 @@ function DraftDock({
                 <div className="ai-shimmer h-3 w-2/3 rounded-full" />
               </div>
             ) : (
-              <div className="max-h-[min(300px,40vh)] overflow-y-auto px-5 py-4 text-sm leading-relaxed whitespace-pre-wrap text-foreground/90">
+              <div className="max-h-[min(240px,32vh)] overflow-y-auto px-5 py-4 text-sm leading-relaxed whitespace-pre-wrap text-foreground/90">
                 {draft.draft?.content}
               </div>
             )}

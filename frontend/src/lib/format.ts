@@ -1,12 +1,6 @@
 import { format, formatDistanceToNowStrict, isValid, parseISO } from 'date-fns'
 
-const inr = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 })
-const num = new Intl.NumberFormat('en-IN')
-
-export function formatINR(value: string | number | null | undefined): string {
-  if (value === null || value === undefined || value === '') return '—'
-  return inr.format(Number(value))
-}
+const num = new Intl.NumberFormat('en-US')
 
 export function formatNumber(value: number | null | undefined): string {
   return value === null || value === undefined ? '—' : num.format(value)
@@ -58,4 +52,31 @@ export function initials(fullName: string | undefined): string {
     .slice(0, 2)
     .join('')
     .toUpperCase()
+}
+
+/** "next_renewal_date" -> "Next renewal date" */
+export function labelize(key: string): string {
+  const s = key.replace(/_/g, ' ').trim()
+  return s.charAt(0).toUpperCase() + s.slice(1)
+}
+
+export function formatValue(value: unknown): string {
+  if (value === null || value === undefined || value === '') return '—'
+  if (typeof value === 'boolean') return value ? 'Yes' : 'No'
+  if (Array.isArray(value)) return value.map(formatValue).join(', ')
+  if (typeof value === 'object')
+    return Object.entries(value as Record<string, unknown>)
+      .map(([k, v]) => `${labelize(k)}: ${formatValue(v)}`)
+      .join('; ')
+  return String(value)
+}
+
+export function timeUntil(value: string | null | undefined): string | null {
+  if (!value) return null
+  const ms = new Date(value).getTime() - Date.now()
+  if (ms <= 0) return 'expired'
+  const mins = Math.floor(ms / 60000)
+  if (mins < 60) return `${mins}m`
+  const hrs = Math.floor(mins / 60)
+  return `${hrs}h ${mins % 60}m`
 }
