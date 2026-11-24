@@ -6,34 +6,53 @@ import { Link } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 
 import { BRAND, GITHUB_URL } from './constants'
-import { EASE, Reveal, useParallax, WordReveal } from './motion'
+import { Drift, EASE, Reveal, useParallax, WordReveal } from './motion'
 import { GithubMark } from './Nav'
 
-const FAQS = [
-  ['Is the demo using real AI?', 'Yes. Tickets you create are triaged and drafted live by Gemini, grounded in the demo’s knowledge base. The seeded tickets already carry AI results so the demo looks complete even when the free AI quota runs out for the day.'],
-  ['Is my data safe in the demo?', 'Each demo is a private workspace made just for you and deleted after 24 hours. Use made-up details anyway: it is a sandbox, not a production service.'],
-  ['What happens if the AI goes down?', 'Rule-based triage keeps every ticket categorised and on the SLA clock, and agents write replies as usual. A banner tells them AI is unavailable. Nothing blocks.'],
-  ['Does AI ever reply to customers on its own?', 'Never. AI suggests, a human reviews, edits and sends. Internal notes stay internal and are never shown to customers or sent to the AI as reply context.'],
-  ['Can I bring my own knowledge base and categories?', 'Yes. Each workspace has its own articles, categories, SLA targets, tone of voice and team. Create a workspace in a minute and edit all of it in Settings.'],
-  ['Is it free and open source?', 'It is a portfolio project, open on GitHub, and runs entirely on free hosting tiers.'],
+const FAQ_GROUPS: { label: string; items: { q: string; a: string }[] }[] = [
+  {
+    label: 'About the demo',
+    items: [
+      { q: 'Is the demo using real AI?', a: 'Yes. Tickets you create are triaged and drafted live by Gemini, grounded in the demo’s knowledge base. The seeded tickets already carry AI results, so the demo looks complete even when the free AI quota runs out for the day.' },
+      { q: 'How long does my sandbox last?', a: 'Each demo is a private workspace made just for you. It is deleted automatically after 24 hours, and starting a new one takes about a second.' },
+      { q: 'Is my data safe in the demo?', a: 'Nobody else can see your sandbox. Use made-up details anyway: it is a demo environment, not a production service.' },
+    ],
+  },
+  {
+    label: 'AI & safety',
+    items: [
+      { q: 'Does AI ever reply to customers on its own?', a: 'Never. AI suggests, a human reviews, edits and sends. Internal notes stay internal and are never shown to customers or used as reply context.' },
+      { q: 'How do I know where an answer came from?', a: 'Every draft cites the knowledge-base articles it used, and account facts such as amounts and dates come from the customer’s real records, so the AI never has to guess a number.' },
+      { q: 'What happens if the AI goes down?', a: 'Rule-based triage keeps every ticket categorised and on the SLA clock, and agents write replies as usual. A banner says AI is unavailable and nothing blocks.' },
+    ],
+  },
+  {
+    label: 'Using it for real',
+    items: [
+      { q: 'Can I bring my own knowledge base and categories?', a: 'Yes. Each workspace has its own articles, categories, SLA targets, tone of voice and team. Create a workspace in a minute and edit all of it in Settings.' },
+      { q: 'Can my team and customers both log in?', a: 'Yes. Workspaces have owners, admins, agents and customers. Agents get the queue and AI tools; customers get a simple portal to raise and follow tickets.' },
+      { q: 'Is it free and open source?', a: 'It is a portfolio project, open on GitHub, and runs entirely on free hosting tiers.' },
+    ],
+  },
 ]
 
-function FaqItem({ q, a, open, onToggle }: { q: string; a: string; open: boolean; onToggle: () => void }) {
+function FaqItem({ n, q, a, open, onToggle }: { n: number; q: string; a: string; open: boolean; onToggle: () => void }) {
   const id = useId()
   return (
-    <div className="border-b border-black/15">
-      <h3>
-        <button type="button" aria-expanded={open} aria-controls={id} onClick={onToggle} className="lp-focus group flex w-full items-center gap-4 py-6 text-left sm:py-7">
-          <span className="flex-1 text-xl font-semibold tracking-[-0.025em] sm:text-3xl">{q}</span>
-          <motion.span animate={{ rotate: open ? 135 : 0 }} transition={{ duration: 0.35, ease: EASE }} className={cn('flex size-10 shrink-0 items-center justify-center rounded-full ring-1 transition-colors sm:size-12', open ? 'bg-(--lp-ink) text-(--lp-lime) ring-transparent' : 'ring-black/20 group-hover:bg-black/5')}>
-            <Plus className="size-5" />
+    <div className={cn('rounded-2xl bg-white ring-1 transition-all duration-300', open ? 'shadow-[0_20px_50px_-24px_rgba(91,61,245,0.45)] ring-(--lp-violet)/40' : 'ring-black/[0.07] hover:ring-black/20')}>
+      <h4>
+        <button type="button" id={`${id}-q`} aria-expanded={open} aria-controls={`${id}-a`} onClick={onToggle} className="lp-focus group flex w-full items-center gap-4 rounded-2xl px-5 py-5 text-left sm:gap-5 sm:px-6">
+          <span className={cn('w-7 shrink-0 text-sm font-bold tabular-nums transition-colors', open ? 'text-(--lp-violet)' : 'text-neutral-300')}>{String(n).padStart(2, '0')}</span>
+          <span className="flex-1 text-lg leading-snug font-semibold tracking-[-0.02em] sm:text-xl">{q}</span>
+          <motion.span animate={{ rotate: open ? 135 : 0 }} transition={{ duration: 0.35, ease: EASE }} className={cn('flex size-9 shrink-0 items-center justify-center rounded-full transition-colors', open ? 'bg-(--lp-violet) text-white' : 'bg-neutral-100 text-neutral-600 group-hover:bg-neutral-200')}>
+            <Plus className="size-4.5" />
           </motion.span>
         </button>
-      </h3>
+      </h4>
       <AnimatePresence initial={false}>
         {open && (
-          <motion.div id={id} role="region" initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.4, ease: EASE }} className="overflow-hidden">
-            <p className="max-w-3xl pb-7 text-base text-neutral-700 sm:text-lg">{a}</p>
+          <motion.div id={`${id}-a`} role="region" aria-labelledby={`${id}-q`} initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.4, ease: EASE }} className="overflow-hidden">
+            <p className="max-w-2xl px-5 pb-6 pl-[3.75rem] text-base leading-relaxed text-neutral-600 sm:px-6 sm:pb-7 sm:pl-[4.25rem]">{a}</p>
           </motion.div>
         )}
       </AnimatePresence>
@@ -42,24 +61,43 @@ function FaqItem({ q, a, open, onToggle }: { q: string; a: string; open: boolean
 }
 
 export function Faq() {
-  const [open, setOpen] = useState<number | null>(0)
+  const [open, setOpen] = useState<string | null>(FAQ_GROUPS[0].items[0].q)
+  let n = 0
   return (
-    <section id="faq" data-nav="light" className="relative -mt-10 rounded-t-[2.5rem] bg-(--lp-paper) pb-28 text-(--lp-ink)">
-      <div className="mx-auto grid max-w-6xl gap-10 px-5 pt-24 sm:px-8 sm:pt-32 lg:grid-cols-[0.8fr_1.4fr] lg:gap-16">
-        <div>
+    <section id="faq" data-nav="light" className="relative -mt-10 rounded-t-[2.5rem] bg-(--lp-paper) pb-32 text-(--lp-ink)">
+      <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-t-[2.5rem]" aria-hidden>
+        <Drift speed={0.8} rotate={30} className="top-[6%] right-[5%] size-24"><div className="size-full rounded-full border-[6px] border-(--lp-violet)/25" /></Drift>
+        <Drift speed={0.55} className="top-[40%] left-[2%] size-40"><div className="size-full rounded-full bg-(--lp-lime)/60 blur-xl" /></Drift>
+        <Drift speed={0.9} rotate={-30} className="top-[70%] right-[3%] size-14"><div className="size-full rounded-2xl bg-(--lp-coral)/60" /></Drift>
+      </div>
+      <div className="relative mx-auto grid max-w-6xl gap-12 px-5 pt-24 sm:px-8 sm:pt-32 lg:grid-cols-[0.8fr_1.35fr] lg:gap-16">
+        <div className="lg:sticky lg:top-28 lg:self-start">
           <p className="text-xs font-bold tracking-[0.2em] text-(--lp-violet) uppercase">FAQ</p>
           <h2 className="mt-4 text-[clamp(2.4rem,5.4vw,4.4rem)] leading-[0.98] font-semibold tracking-[-0.045em]">
             <WordReveal text="Fair questions." />
           </h2>
           <p className="mt-4 max-w-xs text-neutral-600">Short, honest answers about the AI, the demo and your data.</p>
-        </div>
-        <Reveal>
-          <div className="border-t border-black/15">
-            {FAQS.map(([q, a], i) => (
-              <FaqItem key={q} q={q} a={a} open={open === i} onToggle={() => setOpen(open === i ? null : i)} />
-            ))}
+          <div className="mt-8 max-w-sm rounded-3xl bg-(--lp-ink) p-6 text-white">
+            <p className="text-lg font-semibold tracking-tight">Still curious?</p>
+            <p className="mt-1.5 text-sm text-white/65">The fastest answer is two minutes in a live sandbox: answer a ticket with an AI draft, then see the customer’s side.</p>
+            <a href="#demo" className="lp-focus group mt-5 inline-flex h-11 items-center gap-2 rounded-full bg-(--lp-lime) px-5 text-sm font-semibold text-(--lp-ink) transition-transform hover:scale-[1.03]">
+              Try the demo <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
+            </a>
           </div>
-        </Reveal>
+        </div>
+
+        <div className="space-y-10">
+          {FAQ_GROUPS.map((g) => (
+            <Reveal key={g.label}>
+              <h3 className="mb-3 text-xs font-bold tracking-[0.18em] text-neutral-500 uppercase">{g.label}</h3>
+              <div className="space-y-3">
+                {g.items.map((it) => (
+                  <FaqItem key={it.q} n={++n} q={it.q} a={it.a} open={open === it.q} onToggle={() => setOpen(open === it.q ? null : it.q)} />
+                ))}
+              </div>
+            </Reveal>
+          ))}
+        </div>
       </div>
     </section>
   )
@@ -74,6 +112,9 @@ export function FinalCta() {
     <section ref={ref} data-nav="dark" className="relative -mt-10 overflow-hidden rounded-t-[2.5rem] bg-(--lp-ink) py-28 text-center text-white sm:py-40">
       <motion.div style={{ y: a }} aria-hidden className="pointer-events-none absolute -top-20 left-1/4 size-[32rem] rounded-full bg-(--lp-violet) opacity-50 blur-3xl" />
       <motion.div style={{ y: b }} aria-hidden className="pointer-events-none absolute right-1/4 -bottom-24 size-[30rem] rounded-full bg-(--lp-coral) opacity-35 blur-3xl" />
+      <Drift speed={0.9} rotate={30} className="top-[14%] left-[8%] size-20"><div className="size-full rounded-full border-[5px] border-white/25" /></Drift>
+      <Drift speed={0.7} rotate={-35} className="top-[60%] right-[8%] size-14"><div className="size-full rounded-2xl bg-(--lp-lime)/80" /></Drift>
+      <Drift speed={1} className="top-[70%] left-[5%] h-28 w-28"><div className="size-full [background-image:radial-gradient(circle,rgba(255,255,255,0.45)_2px,transparent_2.5px)] [background-size:14px_14px]" /></Drift>
       <div className="lp-noise pointer-events-none absolute inset-0" aria-hidden />
       <div className="relative mx-auto max-w-5xl px-5 sm:px-8">
         <h2 className="text-[clamp(2.8rem,8.6vw,7.4rem)] leading-[0.92] font-semibold tracking-[-0.05em] text-balance">

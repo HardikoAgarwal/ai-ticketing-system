@@ -1,4 +1,4 @@
-import { animate, motion, useInView, useMotionValue, useReducedMotion, useTransform, type MotionValue } from 'motion/react'
+import { animate, motion, useInView, useMotionValue, useReducedMotion, useScroll, useSpring, useTransform, type MotionValue } from 'motion/react'
 import { useEffect, useRef, useState, type CSSProperties, type MouseEvent, type ReactNode } from 'react'
 
 import { cn } from '@/lib/utils'
@@ -167,6 +167,42 @@ export function Marquee({ items, className, itemClassName }: { items: string[]; 
           </span>
         ))}
       </div>
+    </div>
+  )
+}
+
+
+/**
+ * Decorative parallax layer. `speed` is relative to the page: 0 = moves with the scroll, larger = drifts
+ * further against it (about +-260px * speed across the time the layer crosses the viewport). The outer
+ * wrapper is static (it is what we measure), only the inner element moves. Static under reduced-motion.
+ */
+export function Drift({ speed = 0.5, rotate = 0, className, innerClassName, children }: { speed?: number; rotate?: number; className?: string; innerClassName?: string; children?: ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null)
+  const reduce = useReducedMotion()
+  const { scrollYProgress } = useScroll({ target: ref, offset: ['start end', 'end start'] })
+  const raw = useTransform(scrollYProgress, [0, 1], reduce ? [0, 0] : [speed * 260, -speed * 260])
+  const y = useSpring(raw, { stiffness: 110, damping: 26, mass: 0.35 })
+  const rot = useTransform(scrollYProgress, [0, 1], reduce ? [0, 0] : [-rotate, rotate])
+  return (
+    <div ref={ref} aria-hidden className={cn('pointer-events-none absolute max-sm:hidden', className)}>
+      <motion.div data-drift={speed} style={{ y, rotate: rot }} className={cn('h-full w-full', innerClassName)}>
+        {children}
+      </motion.div>
+    </div>
+  )
+}
+
+/** In-flow wrapper that nudges its content (e.g. a section heading) against the scroll for depth. */
+export function Float({ speed = 0.25, className, children }: { speed?: number; className?: string; children: ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null)
+  const reduce = useReducedMotion()
+  const { scrollYProgress } = useScroll({ target: ref, offset: ['start end', 'end start'] })
+  const raw = useTransform(scrollYProgress, [0, 1], reduce ? [0, 0] : [speed * 220, -speed * 220])
+  const y = useSpring(raw, { stiffness: 110, damping: 26, mass: 0.35 })
+  return (
+    <div ref={ref} className={className}>
+      <motion.div style={{ y }}>{children}</motion.div>
     </div>
   )
 }

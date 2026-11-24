@@ -9,6 +9,9 @@ import { Nav } from '@/components/landing/Nav'
 import { Story } from '@/components/landing/Story'
 import { API_URL } from '@/lib/api'
 
+const LOADED_WITH_HASH = typeof location === 'undefined' ? '' : location.hash
+let deepLinkDone = false
+
 /** Public marketing page. Palette lives in index.css (.lp), brand copy in components/landing/constants.ts. */
 export function LandingPage() {
   const { hash } = useLocation()
@@ -28,8 +31,23 @@ export function LandingPage() {
     }
   }, [])
 
+  // Deep links such as /#faq: sections are still laying out (fonts, reveal animations) and the browser may
+  // restore scroll after first paint, so re-apply the jump a few times on the initial load only.
   useEffect(() => {
-    if (hash) document.getElementById(hash.slice(1))?.scrollIntoView()
+    if (!hash) return
+    const go = () => {
+      const el = document.getElementById(hash.slice(1))
+      // 'instant' beats the page-wide CSS smooth scroll, which a deep link must not animate across 10,000px
+      if (el) window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY, behavior: 'instant' })
+    }
+    if (hash !== LOADED_WITH_HASH || deepLinkDone) {
+      document.getElementById(hash.slice(1))?.scrollIntoView() // in-app navigation to a section
+      return
+    }
+    go()
+    const timers = [150, 500, 1200, 2500].map((ms) => window.setTimeout(go, ms))
+    timers.push(window.setTimeout(() => (deepLinkDone = true), 2600))
+    return () => timers.forEach(window.clearTimeout)
   }, [hash])
 
   return (

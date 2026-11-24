@@ -25,7 +25,7 @@ export function GithubMark({ className }: { className?: string }) {
 
 /** Which kind of section is under the nav: sections declare it with data-nav="dark" | "light". */
 function useNavTheme() {
-  const [theme, setTheme] = useState<'dark' | 'light'>('dark')
+  const [theme, setTheme] = useState<'dark' | 'light'>('light')
   useEffect(() => {
     const sections = Array.from(document.querySelectorAll<HTMLElement>('[data-nav]'))
     if (!sections.length) return
@@ -55,6 +55,7 @@ export function Nav() {
   }, [open])
 
   const pill = dark ? 'bg-white/10 text-white ring-white/15' : 'bg-white/80 text-(--lp-ink) ring-black/10'
+  const cta = dark ? 'bg-(--lp-lime) text-(--lp-ink)' : 'bg-(--lp-violet) text-white'
   const link = dark ? 'text-white/75 hover:bg-white/10 hover:text-white' : 'text-(--lp-ink)/70 hover:bg-black/5 hover:text-(--lp-ink)'
 
   return (
@@ -86,7 +87,7 @@ export function Nav() {
               <GithubMark className="size-[18px]" />
             </a>
             {user ? (
-              <Link to={homeFor(user)} className="lp-focus flex h-9 items-center gap-1.5 rounded-full bg-(--lp-lime) px-4 text-sm font-semibold text-(--lp-ink) transition-transform hover:scale-[1.03]">
+              <Link to={homeFor(user)} className={cn('lp-focus flex h-9 items-center gap-1.5 rounded-full px-4 text-sm font-semibold transition-all duration-500 hover:scale-[1.03]', cta)}>
                 Open workspace <ArrowRight className="size-4" />
               </Link>
             ) : (
@@ -94,7 +95,7 @@ export function Nav() {
                 <Link to="/login" className={cn('lp-focus hidden h-9 items-center rounded-full px-3.5 text-sm font-medium transition-colors sm:flex', link)}>
                   Log in
                 </Link>
-                <a href="#demo" className="lp-focus flex h-9 items-center gap-1.5 rounded-full bg-(--lp-lime) px-4 text-sm font-semibold text-(--lp-ink) transition-transform hover:scale-[1.03]">
+                <a href="#demo" className={cn('lp-focus flex h-9 items-center gap-1.5 rounded-full px-4 text-sm font-semibold transition-all duration-500 hover:scale-[1.03]', cta)}>
                   Try a demo <ArrowRight className="size-4" />
                 </a>
               </>

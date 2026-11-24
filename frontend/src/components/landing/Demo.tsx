@@ -9,8 +9,8 @@ import { ApiError, errorMessage } from '@/lib/api'
 import { demoApi } from '@/lib/endpoints'
 import { cn } from '@/lib/utils'
 
-import { DEMO_THEMES, FALLBACK_THEME, TEMPLATES, type TemplateMeta } from './constants'
-import { EASE, useParallax, WordReveal } from './motion'
+import { TEMPLATES, type TemplateMeta } from './constants'
+import { Drift, EASE, Float, useParallax, WordReveal } from './motion'
 
 type Role = 'agent' | 'customer'
 
@@ -19,71 +19,68 @@ const isColdStart = (err: unknown) => err instanceof ApiError && (err.status ===
 
 const PRIORITY_DOT: Record<string, string> = { Critical: '#ef4444', High: '#f97316', Medium: '#f59e0b', Low: '#38bdf8' }
 
-function DemoCard({ t, index, busy, onStart }: { t: TemplateMeta; index: number; busy: boolean; onStart: (t: TemplateMeta, role: Role) => void }) {
-  const theme = DEMO_THEMES[t.key] ?? FALLBACK_THEME
+/** All three cards share one structure and one colour treatment; only a small icon tint differs per company. */
+function DemoCard({ t, index, busy, active, onStart }: { t: TemplateMeta; index: number; busy: boolean; active: boolean; onStart: (t: TemplateMeta, role: Role) => void }) {
   const reduce = useReducedMotion()
   const Icon = t.icon
   return (
     <motion.article
-      initial={reduce ? false : { opacity: 0, y: 70 }}
+      initial={reduce ? false : { opacity: 0, y: 50 }}
       whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: '-80px' }}
-      transition={{ duration: 0.8, delay: index * 0.12, ease: EASE }}
-      whileHover={reduce ? undefined : { y: -10 }}
-      style={{ background: theme.bg, color: theme.fg }}
-      className="group relative flex min-h-[34rem] flex-col overflow-hidden rounded-[2rem] p-6 shadow-[0_40px_90px_-40px_rgba(60,15,0,0.65)] ring-1 ring-black/10 sm:p-7"
+      viewport={{ once: true, margin: '-60px' }}
+      transition={{ duration: 0.7, delay: index * 0.1, ease: EASE }}
+      whileHover={reduce || busy ? undefined : { y: -6 }}
+      className={cn(
+        'group flex h-full flex-col rounded-3xl bg-white p-6 text-(--lp-ink) shadow-[0_30px_70px_-34px_rgba(90,20,0,0.55)] ring-1 transition-shadow duration-300 hover:shadow-[0_40px_80px_-30px_rgba(90,20,0,0.6)] sm:p-7',
+        active ? 'ring-2 ring-(--lp-violet)' : 'ring-black/5 hover:ring-black/20',
+      )}
     >
-      <div className="pointer-events-none absolute -top-24 -right-20 size-72 rounded-full opacity-60 blur-3xl transition-transform duration-700 group-hover:scale-125" style={{ background: theme.accent }} aria-hidden />
-      <div className="lp-noise pointer-events-none absolute inset-0" aria-hidden />
-
-      <div className="relative flex items-start justify-between">
-        <span className="flex size-14 items-center justify-center rounded-2xl shadow-lg" style={{ background: theme.accent, color: theme.fg === '#ffffff' ? '#0b0a1d' : '#fff' }}>
-          <Icon className="size-7" />
+      {/* 1 · header */}
+      <div className="flex items-center justify-between">
+        <span className="flex size-12 items-center justify-center rounded-2xl" style={{ background: t.soft, color: t.hue }}>
+          <Icon className="size-6" />
         </span>
-        <span className="rounded-full px-3 py-1 text-[11px] font-bold tracking-wide uppercase" style={{ background: theme.chip }}>
-          {t.industry}
-        </span>
+        <span className="rounded-full bg-neutral-100 px-3 py-1 text-[11px] font-semibold tracking-wide text-neutral-600 uppercase">{t.industry}</span>
       </div>
 
-      <h3 className="relative mt-6 text-[2rem] leading-[1.02] font-semibold tracking-[-0.035em]">{t.name}</h3>
-      <p className="relative mt-2 text-[15px]" style={{ color: theme.muted }}>
-        {t.tagline}
-      </p>
+      {/* 2 · name + one-line description (fixed two-line height keeps every card aligned) */}
+      <h3 className="mt-5 text-2xl leading-tight font-semibold tracking-[-0.03em]">{t.name}</h3>
+      <p className="mt-1.5 line-clamp-2 min-h-[2.8rem] text-sm leading-snug text-neutral-600">{t.tagline}</p>
 
-      <ul className="relative mt-5 space-y-2">
+      <hr className="my-5 border-black/[0.07]" />
+
+      {/* 3 · highlights */}
+      <ul className="space-y-2.5">
         {t.highlights.map((h) => (
-          <li key={h} className="flex items-center gap-2.5 text-[14px] font-medium">
-            <span className="flex size-5 shrink-0 items-center justify-center rounded-full" style={{ background: theme.accent, color: theme.fg === '#ffffff' ? '#0b0a1d' : '#fff' }}>
+          <li key={h} className="flex items-start gap-2.5 text-sm font-medium">
+            <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-(--lp-violet)/10 text-(--lp-violet)">
               <Check className="size-3" strokeWidth={3} />
             </span>
-            {h}
+            <span className="min-h-[2.5rem] leading-snug sm:min-h-0">{h}</span>
           </li>
         ))}
       </ul>
 
-      {/* mini queue: always visible, nudges forward on hover */}
-      <div className="relative mt-6 space-y-1.5">
-        {t.tickets.slice(0, 3).map((k, i) => (
-          <div key={k.ref} className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-[12px] backdrop-blur transition-transform duration-500 group-hover:translate-x-1.5" style={{ background: theme.row, transitionDelay: `${i * 60}ms` }}>
+      {/* 4 · mini queue */}
+      <div className="mt-6 rounded-2xl bg-neutral-50 p-2 ring-1 ring-black/[0.05]">
+        <p className="px-2 pt-1 pb-1.5 text-[10.5px] font-bold tracking-wide text-neutral-400 uppercase">Inside the queue · 53 tickets</p>
+        {t.tickets.slice(0, 3).map((k) => (
+          <div key={k.ref} className="flex h-9 items-center gap-2.5 rounded-lg px-2 text-[12px]">
             <span className="size-2 shrink-0 rounded-full" style={{ background: PRIORITY_DOT[k.priority] }} />
             <span className="min-w-0 flex-1 truncate font-medium">{k.subject}</span>
-            <span className="shrink-0 text-[10.5px] font-semibold opacity-70">{k.priority}</span>
+            <span className="w-12 shrink-0 text-right text-[10.5px] font-semibold text-neutral-500">{k.priority}</span>
           </div>
         ))}
       </div>
 
-      <div className="relative mt-auto pt-6">
-        <p className="mb-3 text-[12px] font-semibold" style={{ color: theme.muted }}>
-          {theme.tickets} sample tickets · AI pre-loaded
-        </p>
-        <div className="grid gap-2">
-          <button type="button" disabled={busy} onClick={() => onStart(t, 'agent')} className="lp-focus group/btn flex h-12 items-center justify-center gap-2 rounded-full text-[15px] font-semibold transition-transform hover:scale-[1.02] active:scale-[0.99] disabled:opacity-60" style={{ background: theme.accent, color: theme.fg === '#ffffff' ? '#0b0a1d' : '#fff' }}>
-            <Headphones className="size-4" /> Enter as agent <ArrowRight className="size-4 transition-transform group-hover/btn:translate-x-1" />
-          </button>
-          <button type="button" disabled={busy} onClick={() => onStart(t, 'customer')} className="lp-focus flex h-11 items-center justify-center gap-2 rounded-full text-sm font-semibold ring-1 transition-colors hover:bg-white/15 disabled:opacity-60" style={{ boxShadow: `inset 0 0 0 1px ${theme.fg === '#ffffff' ? 'rgba(255,255,255,0.4)' : 'rgba(43,22,8,0.3)'}` }}>
-            <UserRound className="size-4" /> Enter as customer
-          </button>
-        </div>
+      {/* 5 · actions, pinned to the bottom so all cards line up */}
+      <div className="mt-auto grid gap-2 pt-6">
+        <button type="button" disabled={busy} onClick={() => onStart(t, 'agent')} className="lp-focus group/btn flex h-12 items-center justify-center gap-2 rounded-full bg-(--lp-violet) text-[15px] font-semibold text-white transition-all hover:bg-(--lp-violet-2) active:scale-[0.99] disabled:opacity-60">
+          {active ? <Loader2 className="size-4 animate-spin" /> : <Headphones className="size-4" />} Enter as agent <ArrowRight className="size-4 transition-transform group-hover/btn:translate-x-1" />
+        </button>
+        <button type="button" disabled={busy} onClick={() => onStart(t, 'customer')} className="lp-focus flex h-12 items-center justify-center gap-2 rounded-full bg-white text-[15px] font-semibold text-(--lp-ink) ring-1 ring-black/15 transition-colors hover:bg-neutral-50 disabled:opacity-60">
+          <UserRound className="size-4" /> Enter as customer
+        </button>
       </div>
     </motion.article>
   )
@@ -193,19 +190,24 @@ export function Demo({ notice }: { notice?: string | null }) {
   }
 
   return (
-    <section id="demo" ref={ref} data-nav="light" className="relative -mt-10 rounded-t-[2.5rem] bg-[linear-gradient(170deg,#ff6a4d_0%,#ff8a4c_45%,#ffb340_100%)] pb-28 text-(--lp-ink)">
+    <section id="demo" ref={ref} data-nav="light" className="relative -mt-10 rounded-t-[2.5rem] bg-[linear-gradient(170deg,#ff6a4d_0%,#ff8a4c_45%,#ffb340_100%)] pb-32 text-(--lp-ink)">
       <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-t-[2.5rem]" aria-hidden>
         <motion.div style={{ y: blobA }} className="absolute -top-24 left-[-6rem] size-[30rem] rounded-full bg-(--lp-violet) opacity-30 blur-3xl" />
         <motion.div style={{ y: blobB }} className="absolute -right-24 bottom-10 size-[28rem] rounded-full bg-(--lp-paper) opacity-50 blur-3xl" />
+        <Drift speed={0.9} rotate={30} className="top-[5%] right-[8%] size-24"><div className="size-full rounded-full border-[6px] border-white/45" /></Drift>
+        <Drift speed={0.6} rotate={-35} className="top-[40%] left-[3%] size-14"><div className="size-full rounded-2xl bg-(--lp-lime)/90" /></Drift>
+        <Drift speed={1} className="top-[62%] right-[2%] h-32 w-32"><div className="size-full [background-image:radial-gradient(circle,rgba(255,255,255,0.7)_2px,transparent_2.5px)] [background-size:15px_15px]" /></Drift>
         <div className="lp-noise absolute inset-0" />
       </div>
 
       <div className="relative mx-auto max-w-6xl px-5 pt-24 sm:px-8 sm:pt-32">
+        <Float speed={0.2}>
         <p className="text-xs font-bold tracking-[0.2em] uppercase opacity-70">Live demo</p>
         <h2 className="mt-4 max-w-4xl text-[clamp(2.6rem,7.4vw,6rem)] leading-[0.94] font-semibold tracking-[-0.05em] text-balance">
           <WordReveal text="Pick a desk. Run it yourself." />
         </h2>
         <p className="mt-5 max-w-xl text-lg font-medium opacity-80">Three ready-made companies, each with real-looking tickets, a knowledge base and AI already at work. Choose one and step inside as the agent or the customer.</p>
+        </Float>
 
         {notice && (
           <p role="status" className="mt-6 max-w-xl rounded-2xl bg-white/80 px-4 py-3 text-sm font-medium text-amber-900">
@@ -213,9 +215,11 @@ export function Demo({ notice }: { notice?: string | null }) {
           </p>
         )}
 
-        <div className="mt-14 grid gap-5 lg:grid-cols-3">
+        <div className="mt-14 grid items-stretch gap-5 md:grid-cols-2 lg:grid-cols-3">
           {templates.map((t, i) => (
-            <DemoCard key={t.key} t={t} index={i} busy={Boolean(busy)} onStart={launch} />
+            <div key={t.key} className={cn(i === 2 && 'md:col-span-2 md:mx-auto md:w-[calc(50%-0.625rem)] lg:col-span-1 lg:w-auto')}>
+              <DemoCard t={t} index={i} busy={Boolean(busy)} active={busy?.key === t.key} onStart={launch} />
+            </div>
           ))}
         </div>
         <p className="mt-8 text-center text-sm font-semibold opacity-80">No signup · private to you · wiped after 24 hours</p>

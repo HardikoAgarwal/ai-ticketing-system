@@ -1,10 +1,10 @@
 import { Check, Search, Send, Sparkles, Star } from 'lucide-react'
-import { AnimatePresence, motion, useMotionValueEvent, useReducedMotion, useScroll } from 'motion/react'
-import { useRef, useState, type ReactNode } from 'react'
+import { AnimatePresence, motion, useInView, useMotionValueEvent, useReducedMotion, useScroll, useSpring, useTransform } from 'motion/react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 
 import { cn } from '@/lib/utils'
 
-import { EASE, useTypewriter, WordReveal } from './motion'
+import { Drift, EASE, Float, useTypewriter, WordReveal } from './motion'
 
 const STEPS = [
   { n: '01', title: 'A customer asks', body: 'They describe the problem in the portal. While they type, matching help articles appear, so many questions never become tickets.', view: 'Customer portal' },
@@ -30,7 +30,7 @@ function Window({ label, children }: { label: string; children: ReactNode }) {
           </motion.span>
         </AnimatePresence>
       </div>
-      <div className="min-h-[21rem] p-4 text-neutral-900 sm:min-h-[24rem] sm:p-5">{children}</div>
+      <div className="min-h-[24rem] p-5 text-neutral-900 sm:min-h-[27rem] sm:p-7">{children}</div>
     </div>
   )
 }
@@ -158,78 +158,124 @@ function Panel({ step }: { step: number }) {
   )
 }
 
-function StoryStatic() {
+function useIsDesktop() {
+  const [yes, setYes] = useState(() => (typeof window === 'undefined' ? true : window.matchMedia('(min-width: 1024px)').matches))
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 1024px)')
+    const on = () => setYes(mq.matches)
+    mq.addEventListener('change', on)
+    return () => mq.removeEventListener('change', on)
+  }, [])
+  return yes
+}
+
+/** Stacked layout for phones, tablets and reduced-motion: text, then the mock, generous spacing, no pinning. */
+function StoryStacked() {
   return (
-    <div className="mx-auto grid max-w-5xl gap-6 px-5 py-20 sm:px-8 md:grid-cols-2">
+    <div className="relative mx-auto max-w-6xl space-y-24 px-5 pb-28 sm:space-y-32 sm:px-8">
       {STEPS.map((s, i) => (
-        <div key={s.n} className="rounded-3xl bg-white p-6 ring-1 ring-black/10">
-          <p className="text-sm font-semibold text-violet-600">{s.n}</p>
-          <h3 className="mt-1 text-2xl font-semibold tracking-tight">{s.title}</h3>
-          <p className="mt-2 text-neutral-600">{s.body}</p>
-          <div className="mt-4">
-            <Window label={s.view}>
-              <Panel step={i} />
-            </Window>
-          </div>
-        </div>
+        <StackedStep key={s.n} step={s} index={i} />
       ))}
     </div>
   )
 }
 
-export function Story() {
+function StackedStep({ step, index }: { step: (typeof STEPS)[number]; index: number }) {
   const ref = useRef<HTMLDivElement>(null)
-  const reduce = useReducedMotion()
+  const seen = useInView(ref, { once: true, margin: '-15% 0px' })
+  return (
+    <div ref={ref} className="grid items-center gap-8 md:grid-cols-2 md:gap-14">
+      <div className={cn(index % 2 && 'md:order-2')}>
+        <span className="inline-flex items-center gap-2 rounded-full bg-(--lp-violet)/10 px-3 py-1 text-xs font-bold tracking-wide text-(--lp-violet) uppercase">Step {step.n}</span>
+        <h3 className="mt-4 text-[clamp(1.9rem,4.4vw,3rem)] leading-[1.05] font-semibold tracking-[-0.035em]">{step.title}</h3>
+        <p className="mt-4 max-w-md text-base text-neutral-700 sm:text-lg">{step.body}</p>
+      </div>
+      <div className={cn(index % 2 && 'md:order-1')}>
+        <Window label={step.view}>{seen ? <Panel step={index} /> : <div className="min-h-[20rem]" />}</Window>
+      </div>
+    </div>
+  )
+}
+
+function StoryPinned() {
+  const ref = useRef<HTMLDivElement>(null)
   const { scrollYProgress } = useScroll({ target: ref, offset: ['start start', 'end end'] })
   const [step, setStep] = useState(0)
   useMotionValueEvent(scrollYProgress, 'change', (v) => setStep(Math.min(STEPS.length - 1, Math.max(0, Math.floor(v * STEPS.length * 0.999)))))
-  const current = STEPS[step]
+  const fill = useSpring(scrollYProgress, { stiffness: 120, damping: 28, mass: 0.3 })
+  const scaleY = useTransform(fill, [0, 1], [0, 1])
 
   return (
+    // 100vh of pinned time per step keeps every move calm and easy to scroll.
+    <div ref={ref} className="relative h-[460vh]">
+      <div className="sticky top-0 flex h-svh items-center">
+        <div className="mx-auto grid w-full max-w-6xl items-center gap-14 px-8 pt-16 lg:grid-cols-[0.85fr_1.15fr] xl:gap-20">
+          {/* left: all four steps listed, the active one opens */}
+          <div className="relative pl-8">
+            <span className="absolute top-1 bottom-1 left-0 w-1 overflow-hidden rounded-full bg-black/10" aria-hidden>
+              <motion.span style={{ scaleY, transformOrigin: 'top' }} className="block h-full w-full rounded-full bg-(--lp-violet)" />
+            </span>
+            <ol className="space-y-6">
+              {STEPS.map((s, i) => {
+                const active = i === step
+                return (
+                  <li key={s.n} aria-current={active ? 'step' : undefined}>
+                    <div className="flex items-baseline gap-4">
+                      <span className={cn('text-sm font-bold tabular-nums transition-colors duration-500', active ? 'text-(--lp-violet)' : 'text-neutral-400')}>{s.n}</span>
+                      <h3 className={cn('text-[clamp(1.6rem,3vw,2.5rem)] leading-[1.08] font-semibold tracking-[-0.03em] transition-colors duration-500', active ? 'text-(--lp-ink)' : 'text-neutral-300')}>{s.title}</h3>
+                    </div>
+                    <AnimatePresence initial={false}>
+                      {active && (
+                        <motion.p initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.45, ease: EASE }} className="overflow-hidden pl-9 text-base text-neutral-700 xl:text-lg">
+                          <span className="block max-w-md pt-3">{s.body}</span>
+                        </motion.p>
+                      )}
+                    </AnimatePresence>
+                  </li>
+                )
+              })}
+            </ol>
+          </div>
+
+          {/* right: one large, calm product mock; a soft tinted plate sits behind it (no rotation, no overlap with text) */}
+          <div className="relative">
+            <motion.div aria-hidden animate={{ backgroundColor: STEP_COLORS[step] }} transition={{ duration: 0.7, ease: EASE }} className="absolute inset-x-4 -inset-y-4 -z-10 rounded-[2.4rem] opacity-30 blur-2xl" />
+            <Window label={STEPS[step].view}>
+              <AnimatePresence mode="wait">
+                <motion.div key={step} initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.35 }}>
+                  <Panel step={step} />
+                </motion.div>
+              </AnimatePresence>
+            </Window>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export function Story() {
+  const reduce = useReducedMotion()
+  const desktop = useIsDesktop()
+  return (
     <section id="story" data-nav="light" className="relative -mt-10 rounded-t-[2.5rem] bg-(--lp-paper) text-(--lp-ink)">
-      <div className="mx-auto max-w-6xl px-5 pt-24 text-center sm:px-8 sm:pt-32">
+      <div className="pointer-events-none absolute inset-0 hidden overflow-hidden rounded-t-[2.5rem] lg:block" aria-hidden>
+        <Drift speed={0.8} rotate={30} className="top-[3%] left-[5%] size-28"><div className="size-full rounded-full border-[6px] border-(--lp-violet)/25" /></Drift>
+        <Drift speed={0.5} className="top-[2%] right-[6%] size-44"><div className="size-full rounded-full bg-(--lp-lime)/70 blur-xl" /></Drift>
+        <Drift speed={0.9} rotate={-35} className="top-[34%] right-[3%] size-16"><div className="size-full rounded-2xl bg-(--lp-coral)/60" /></Drift>
+        <Drift speed={0.6} className="top-[52%] left-[2%] h-36 w-36"><div className="size-full [background-image:radial-gradient(circle,rgba(91,61,245,0.4)_2px,transparent_2.5px)] [background-size:16px_16px]" /></Drift>
+        <Drift speed={0.7} rotate={20} className="top-[76%] right-[5%] size-24"><div className="size-full rounded-full border-[6px] border-(--lp-coral)/30" /></Drift>
+        <Drift speed={0.45} className="top-[86%] left-[8%] size-40"><div className="size-full rounded-full bg-(--lp-violet)/15 blur-2xl" /></Drift>
+      </div>
+      <Float speed={0.2} className="relative mx-auto max-w-6xl px-5 pt-24 pb-16 text-center sm:px-8 sm:pt-32 sm:pb-24">
         <p className="text-xs font-bold tracking-[0.2em] text-(--lp-violet) uppercase">How it works</p>
         <h2 className="mx-auto mt-4 max-w-4xl text-[clamp(2.2rem,6vw,4.6rem)] leading-[1] font-semibold tracking-[-0.04em] text-balance">
           <WordReveal text="From “help!” to “thank you” in four moves." />
         </h2>
-      </div>
-
-      {reduce ? (
-        <StoryStatic />
-      ) : (
-        <div ref={ref} className="relative -mt-14 h-[360vh] sm:-mt-24">
-          <div className="sticky top-0 flex h-svh items-center">
-            <div className="mx-auto grid w-full max-w-6xl items-center gap-8 px-5 sm:px-8 lg:grid-cols-[0.9fr_1.1fr] lg:gap-14">
-              <div>
-                <div className="mb-6 flex items-center gap-2" role="tablist" aria-label="Steps">
-                  {STEPS.map((s, i) => (
-                    <span key={s.n} role="tab" aria-selected={i === step} className="h-1.5 flex-1 overflow-hidden rounded-full bg-black/10">
-                      <motion.span className="block h-full rounded-full bg-(--lp-violet)" animate={{ width: i <= step ? '100%' : '0%' }} transition={{ duration: 0.5, ease: EASE }} />
-                    </span>
-                  ))}
-                </div>
-                <AnimatePresence mode="wait">
-                  <motion.div key={current.n} initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -24 }} transition={{ duration: 0.45, ease: EASE }}>
-                    <p className="text-[clamp(4.5rem,12vw,9rem)] leading-none font-semibold tracking-[-0.06em] text-(--lp-violet)/15">{current.n}</p>
-                    <h3 className="-mt-4 text-[clamp(1.9rem,4.4vw,3.3rem)] leading-[1.02] font-semibold tracking-[-0.035em] sm:-mt-8">{current.title}</h3>
-                    <p className="mt-4 max-w-md text-base text-neutral-700 sm:text-lg">{current.body}</p>
-                  </motion.div>
-                </AnimatePresence>
-              </div>
-              <motion.div animate={{ rotate: [-0.6, 0.6][step % 2] }} transition={{ duration: 0.8, ease: EASE }} className="relative">
-                <motion.div aria-hidden animate={{ backgroundColor: STEP_COLORS[step], rotate: step % 2 ? -3 : 3 }} transition={{ duration: 0.7, ease: EASE }} className="absolute -inset-3 -z-10 rounded-[2.4rem] opacity-90 sm:-inset-4" />
-                <Window label={current.view}>
-                  <AnimatePresence mode="wait">
-                    <motion.div key={step} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.35 }}>
-                      <Panel step={step} />
-                    </motion.div>
-                  </AnimatePresence>
-                </Window>
-              </motion.div>
-            </div>
-          </div>
-        </div>
-      )}
+        <p className="mx-auto mt-5 max-w-xl text-lg text-neutral-600">Scroll to follow one ticket from the customer’s first message to a rated, resolved reply.</p>
+      </Float>
+      {reduce || !desktop ? <StoryStacked /> : <StoryPinned />}
+      <div className="h-10 lg:h-16" aria-hidden />
     </section>
   )
 }
