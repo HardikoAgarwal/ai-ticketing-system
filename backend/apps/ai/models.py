@@ -7,7 +7,7 @@ class AIDraft(models.Model):
     content = models.TextField()
     model = models.CharField(max_length=60)
     prompt_version = models.CharField(max_length=30)
-    kb_sections = models.JSONField(default=list, blank=True)
+    citations = models.JSONField(default=list, blank=True, help_text="KB articles the draft was grounded in")
     input_hash = models.CharField(max_length=64, db_index=True)
     created_at = models.DateTimeField(default=timezone.now)
 
@@ -16,13 +16,17 @@ class AIDraft(models.Model):
 
 
 class AIFeature(models.TextChoices):
-    CLASSIFY = "CLASSIFY", "Classification"
+    CLASSIFY = "CLASSIFY", "Triage"
     DRAFT = "DRAFT", "Draft response"
+    EMBED = "EMBED", "Embedding"
+    SUMMARY = "SUMMARY", "Summary"
+    DEFLECT = "DEFLECT", "Deflection"
 
 
 class AIRequestLog(models.Model):
-    """One row per LLM call: the evidence trail for cost and reliability."""
+    """One row per LLM call: the evidence trail for cost, reliability and the free-tier budget."""
 
+    workspace = models.ForeignKey("workspaces.Workspace", on_delete=models.SET_NULL, null=True, blank=True)
     ticket = models.ForeignKey("tickets.Ticket", on_delete=models.SET_NULL, null=True, blank=True)
     feature = models.CharField(max_length=10, choices=AIFeature.choices)
     model = models.CharField(max_length=60)

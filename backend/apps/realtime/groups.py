@@ -1,5 +1,6 @@
-ADMINS_GROUP = "admins"
+def staff_group(workspace_id: int) -> str:
+    return f"ws{workspace_id}_staff"
 
 
-def author_group(user_id: int) -> str:
-    return f"author_{user_id}"
+def user_group(workspace_id: int, user_id: int) -> str:
+    return f"ws{workspace_id}_user{user_id}"

@@ -3,11 +3,13 @@ from types import SimpleNamespace
 
 import pytest
 from django.core.cache import cache
-from django.core.management import call_command
 from rest_framework.test import APIClient
 
 from apps.accounts.models import User
-from apps.catalog.models import Book
+from apps.kb.indexing import reindex_article
+from apps.kb.models import Article
+from apps.workspaces.models import Membership, Record, Role
+from apps.workspaces.services import create_workspace
 
 
 @pytest.fixture(autouse=True)
@@ -17,34 +19,65 @@ def _clear_cache():
     cache.clear()
 
 
-@pytest.fixture
-def seeded(db):
-    call_command("seed_bookleaf", verbosity=0)
+def make_user(email, name, ws=None, role=Role.REQUESTER, **membership):
+    user = User.objects.create_user(email=email, password="Passw0rd!", full_name=name)
+    if ws:
+        Membership.objects.create(workspace=ws, user=user, role=role, **membership)
+    return user
 
 
 @pytest.fixture
-def admin_user(seeded):
-    return User.objects.get(email="admin@bookleaf.com")
+def ws(db):
+    return create_workspace(name="Acme Support", agent_title="Acme Support", tone="Friendly and brief.")
 
 
 @pytest.fixture
-def other_admin(seeded):
-    return User.objects.get(email="neha@bookleaf.com")
+def other_ws(db):
+    return create_workspace(name="Other Co")
 
 
 @pytest.fixture
-def author(seeded):
-    return User.objects.get(email="priya.sharma@email.com")
+def owner(ws):
+    return make_user("owner@acme.test", "Olivia Owner", ws, Role.OWNER)
 
 
 @pytest.fixture
-def other_author(seeded):
-    return User.objects.get(email="rohit.kapoor@email.com")
+def agent(ws):
+    return make_user("agent@acme.test", "Adam Agent", ws, Role.AGENT)
 
 
 @pytest.fixture
-def author_book(author):
-    return Book.objects.filter(author__user=author).first()
+def customer(ws):
+    return make_user("cat@acme.test", "Cat Customer", ws, Role.REQUESTER, company="Cat Co", profile={"plan": "Pro"})
+
+
+@pytest.fixture
+def other_customer(ws):
+    return make_user("dan@acme.test", "Dan Customer", ws, Role.REQUESTER)
+
+
+@pytest.fixture
+def outsider(other_ws):
+    return make_user("out@other.test", "Olly Outsider", other_ws, Role.OWNER)
+
+
+@pytest.fixture
+def record(ws, customer):
+    return Record.objects.create(
+        workspace=ws, owner=customer, kind="Subscription", reference="SUB-1", title="Pro plan", status="Active",
+        data={"seats": 5, "renewal_date": "01 Jan 2027"},
+    )
+
+
+@pytest.fixture
+def article(ws):
+    cat = ws.categories.get(key="billing")
+    art = Article.objects.create(
+        workspace=ws, category=cat, title="Refund policy",
+        body="Annual plans can be refunded within 14 days of purchase. Refunds return to the original payment method in 5-10 business days.",
+    )
+    reindex_article(art, embed=False)
+    return art
 
 
 @pytest.fixture
@@ -58,27 +91,42 @@ def client_for():
     return make
 
 
+def url(ws, path):
+    return f"/api/v1/w/{ws.slug}/{path}"
+
+
 class FakeOpenAI:
     """Stands in for openai.OpenAI; returns queued responses or raises queued exceptions."""
 
     def __init__(self):
         self.queue = []
         self.calls = []
+        self.embed_calls = []
         self.chat = SimpleNamespace(completions=SimpleNamespace(create=self._create))
+        self.embeddings = SimpleNamespace(create=self._embed)
 
     def push(self, content=None, exc=None):
         self.queue.append((content, exc))
 
-    def push_classification(self, category, priority, confidence=0.9, reasoning="Test reasoning"):
-        self.push(json.dumps({"category": category, "priority": priority, "confidence": confidence, "reasoning": reasoning}))
+    def push_triage(self, category, priority, confidence=0.9, sentiment="NEUTRAL", reasoning="Test reasoning", summary="Test summary"):
+        self.push(json.dumps({
+            "category": category, "priority": priority, "sentiment": sentiment,
+            "confidence": confidence, "reasoning": reasoning, "summary": summary,
+        }))
 
     def _create(self, **kwargs):
         self.calls.append(kwargs)
-        content, exc = self.queue.pop(0) if self.queue else ("Default draft reply.\n\nWarm regards,\nBookLeaf Author Support", None)
+        content, exc = self.queue.pop(0) if self.queue else ("Default draft reply.\n\nWarm regards,\nAcme Support", None)
         if exc:
             raise exc
         usage = SimpleNamespace(prompt_tokens=500, completion_tokens=120, prompt_tokens_details=None)
         return SimpleNamespace(choices=[SimpleNamespace(message=SimpleNamespace(content=content))], usage=usage)
+
+    def _embed(self, **kwargs):
+        self.embed_calls.append(kwargs)
+        inputs = kwargs["input"]
+        data = [SimpleNamespace(embedding=[1.0, 0.0, 0.0, 0.5]) for _ in inputs]
+        return SimpleNamespace(data=data, usage=SimpleNamespace(prompt_tokens=10))
 
 
 @pytest.fixture

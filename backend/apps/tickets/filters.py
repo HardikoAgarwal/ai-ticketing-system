@@ -4,7 +4,7 @@ import django_filters
 from django.db.models import Q
 from django.utils import timezone
 
-from .models import SLA_AT_RISK_FRACTION, SLA_HOURS, Ticket, TicketPriority
+from .models import SLA_AT_RISK_FRACTION, Ticket, TicketPriority
 
 
 class CharInFilter(django_filters.BaseInFilter, django_filters.CharFilter):
@@ -13,14 +13,15 @@ class CharInFilter(django_filters.BaseInFilter, django_filters.CharFilter):
 
 class TicketFilter(django_filters.FilterSet):
     status = CharInFilter(field_name="status", help_text="Comma-separated, e.g. OPEN,IN_PROGRESS")
-    category = CharInFilter(field_name="category")
+    category = CharInFilter(field_name="category__key", help_text="Category keys, comma-separated")
     priority = CharInFilter(field_name="priority")
+    sentiment = CharInFilter(field_name="sentiment")
     assigned = django_filters.CharFilter(method="filter_assigned", help_text="me | unassigned | <user id>")
     created_after = django_filters.IsoDateTimeFilter(field_name="created_at", lookup_expr="gte")
     created_before = django_filters.IsoDateTimeFilter(field_name="created_at", lookup_expr="lte")
     sla = django_filters.CharFilter(method="filter_sla", help_text="overdue | at_risk")
-    book = django_filters.NumberFilter(field_name="book_id")
-    q = django_filters.CharFilter(method="filter_search", help_text="Search subject, description, author, TKT-0001")
+    record = django_filters.NumberFilter(field_name="record_id")
+    q = django_filters.CharFilter(method="filter_search", help_text="Search subject, description, requester, TKT-0001")
 
     class Meta:
         model = Ticket
@@ -43,7 +44,7 @@ class TicketFilter(django_filters.FilterSet):
         if value == "at_risk":
             at_risk = Q()
             for priority in TicketPriority.values:
-                window = timezone.timedelta(hours=SLA_HOURS[priority] * SLA_AT_RISK_FRACTION)
+                window = self.request.workspace.sla_for(priority) * SLA_AT_RISK_FRACTION
                 at_risk |= Q(priority=priority, sla_due_at__gte=now, sla_due_at__lte=now + window)
             return pending.filter(at_risk)
         return qs
@@ -52,11 +53,11 @@ class TicketFilter(django_filters.FilterSet):
         value = value.strip()
         match = re.fullmatch(r"(?i)tkt-?0*(\d+)", value)
         if match:
-            return qs.filter(pk=int(match.group(1)))
+            return qs.filter(number=int(match.group(1)))
         return qs.filter(
             Q(subject__icontains=value)
             | Q(description__icontains=value)
-            | Q(author__user__full_name__icontains=value)
-            | Q(author__user__email__icontains=value)
-            | Q(book__title__icontains=value)
+            | Q(requester__full_name__icontains=value)
+            | Q(requester__email__icontains=value)
+            | Q(record__title__icontains=value)
         )

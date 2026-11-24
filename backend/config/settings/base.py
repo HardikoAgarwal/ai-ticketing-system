@@ -39,11 +39,14 @@ INSTALLED_APPS = [
     "storages",
     # Local
     "apps.accounts",
-    "apps.catalog",
+    "apps.workspaces",
     "apps.tickets",
+    "apps.kb",
     "apps.ai",
+    "apps.jobs",
     "apps.realtime",
     "apps.analytics",
+    "apps.demo",
 ]
 
 MIDDLEWARE = [
@@ -80,7 +83,7 @@ ASGI_APPLICATION = "config.asgi.application"
 
 DATABASES = {
     "default": dj_database_url.config(
-        default=os.environ.get("DATABASE_URL", "postgres://localhost:5432/bookleaf"),
+        default=os.environ.get("DATABASE_URL", "postgres://localhost:5432/helpdesk"),
         conn_max_age=60,
     )
 }
@@ -92,7 +95,7 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 LANGUAGE_CODE = "en-us"
-TIME_ZONE = "Asia/Kolkata"
+TIME_ZONE = "UTC"
 USE_I18N = True
 USE_TZ = True
 
@@ -137,6 +140,11 @@ ATTACHMENT_ALLOWED_TYPES = {
 }
 ATTACHMENT_MAX_FILES = 3
 
+# --- Demo sandbox ---
+DEMO_TTL_HOURS = int(os.environ.get("DEMO_TTL_HOURS", "24"))
+DEMO_MAX_ACTIVE = int(os.environ.get("DEMO_MAX_ACTIVE", "200"))
+DEMO_START_THROTTLE = os.environ.get("DEMO_START_THROTTLE", "10/hour")
+
 # --- REST framework ---
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": ("rest_framework_simplejwt.authentication.JWTAuthentication",),
@@ -154,6 +162,8 @@ REST_FRAMEWORK = {
         "ticket_create": "20/hour",
         "ai_regenerate": "30/hour",
         "login": "20/min",
+        "demo_start": DEMO_START_THROTTLE,
+        "register": "10/hour",
     },
 }
 
@@ -165,21 +175,22 @@ SIMPLE_JWT = {
 }
 
 SPECTACULAR_SETTINGS = {
-    "TITLE": "BookLeaf Author Support API",
+    "TITLE": "Helpdesk AI API",
     "DESCRIPTION": (
-        "REST API for the BookLeaf Author Support & Communication Portal. "
-        "Authenticate via POST /api/v1/auth/login/ and pass `Authorization: Bearer <access>`."
+        "Multi-workspace helpdesk with AI triage and knowledge-grounded drafts. "
+        "Authenticate via POST /api/v1/auth/login/ (or start a sandbox with POST /api/v1/demo/start/) "
+        "and pass `Authorization: Bearer <access>`. Workspace resources live under /api/v1/w/<slug>/."
     ),
     "VERSION": "1.0.0",
     "SERVE_INCLUDE_SCHEMA": False,
     "COMPONENT_SPLIT_REQUEST": True,
     "ENUM_NAME_OVERRIDES": {
-        "TicketCategoryEnum": "apps.tickets.models.TicketCategory",
         "TicketPriorityEnum": "apps.tickets.models.TicketPriority",
         "TicketStatusEnum": "apps.tickets.models.TicketStatus",
         "AIStatusEnum": "apps.tickets.models.AIStatus",
         "ClassificationSourceEnum": "apps.tickets.models.ClassificationSource",
         "MessageKindEnum": "apps.tickets.models.MessageKind",
+        "RoleEnum": "apps.workspaces.models.Role",
     },
 }
 
@@ -189,30 +200,14 @@ CORS_ALLOWED_ORIGINS = [
 ]
 CSRF_TRUSTED_ORIGINS = CORS_ALLOWED_ORIGINS
 
-# --- Redis / Channels / Celery ---
-REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
-
-CHANNEL_LAYERS = {
-    "default": {
-        "BACKEND": "channels_redis.core.RedisChannelLayer",
-        "CONFIG": {"hosts": [REDIS_URL]},
-    }
-}
-
-CELERY_BROKER_URL = REDIS_URL
-CELERY_RESULT_BACKEND = None
-CELERY_TASK_IGNORE_RESULT = True
-CELERY_TASK_ACKS_LATE = True
-CELERY_WORKER_PREFETCH_MULTIPLIER = 1
-CELERY_TASK_ALWAYS_EAGER = env_bool("CELERY_TASK_ALWAYS_EAGER", False)
-CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
-
-CACHES = {
-    "default": {
-        "BACKEND": "django.core.cache.backends.redis.RedisCache",
-        "LOCATION": REDIS_URL,
-    }
-}
+# --- Realtime / jobs / cache ---
+# Single-process deployment: in-memory channel layer, a Postgres-backed job table with an
+# in-process thread pool, and a local-memory cache. No Redis, no Celery.
+CHANNEL_LAYERS = {"default": {"BACKEND": "channels.layers.InMemoryChannelLayer"}}
+CACHES = {"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}}
+JOBS_EAGER = env_bool("JOBS_EAGER", False)
+JOBS_MAX_WORKERS = int(os.environ.get("JOBS_MAX_WORKERS", "4"))
+JOBS_MAX_ATTEMPTS = 4
 
 # --- AI ---
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
@@ -228,6 +223,11 @@ AI_CIRCUIT_COOLDOWN_SECONDS = int(os.environ.get("AI_CIRCUIT_COOLDOWN_SECONDS", 
 # USD per 1M tokens, used for cost estimates in the AI usage log.
 AI_PRICE_INPUT_PER_M = float(os.environ.get("AI_PRICE_INPUT_PER_M", "0.15"))
 AI_PRICE_OUTPUT_PER_M = float(os.environ.get("AI_PRICE_OUTPUT_PER_M", "0.60"))
+AI_EMBED_MODEL = os.environ.get("AI_EMBED_MODEL", "gemini-embedding-001")
+AI_EMBED_DIMENSIONS = int(os.environ.get("AI_EMBED_DIMENSIONS", "768"))
+# Free-tier protection: hard daily caps on live LLM calls (successful + failed), globally and per workspace.
+AI_DAILY_CALL_CAP = int(os.environ.get("AI_DAILY_CALL_CAP", "400"))
+AI_WORKSPACE_DAILY_CAP = int(os.environ.get("AI_WORKSPACE_DAILY_CAP", "40"))
 
 LOGGING = {
     "version": 1,

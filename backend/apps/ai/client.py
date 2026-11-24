@@ -9,8 +9,8 @@ from functools import lru_cache
 import openai
 from django.conf import settings
 
-from . import circuit_breaker
-from .models import AIRequestLog
+from . import budget, circuit_breaker
+from .models import AIFeature, AIRequestLog
 
 logger = logging.getLogger(__name__)
 
@@ -25,6 +25,10 @@ class AIUnavailableError(AIError):
 
 class AIPermanentError(AIError):
     """Non-retryable failure (bad request, auth, invalid output, AI disabled)."""
+
+
+class AIBudgetError(AIPermanentError):
+    """The free-tier daily budget is used up; fall back to rules instead of retrying."""
 
 
 RETRYABLE_EXCEPTIONS = (
@@ -44,7 +48,7 @@ class LLMResult:
 
 @lru_cache(maxsize=1)
 def _client() -> openai.OpenAI:
-    # SDK-level retries are disabled; Celery owns retry/backoff so failures stay visible and logged.
+    # SDK-level retries are disabled; the job runner owns retry/backoff so failures stay visible and logged.
     return openai.OpenAI(
         api_key=settings.OPENAI_API_KEY,
         base_url=settings.AI_BASE_URL,
@@ -66,6 +70,7 @@ def chat(
     messages: list[dict],
     prompt_version: str,
     ticket_id: int | None = None,
+    workspace_id: int | None = None,
     max_tokens: int,
     temperature: float = 0.2,
     response_format: dict | None = None,
@@ -75,7 +80,12 @@ def chat(
     if circuit_breaker.is_open():
         raise AIUnavailableError("AI temporarily paused after repeated failures (circuit open)")
 
-    log = AIRequestLog(ticket_id=ticket_id, feature=feature, model=settings.AI_MODEL, prompt_version=prompt_version)
+    try:
+        budget.check(workspace_id, feature)
+    except budget.AIBudgetExceeded as exc:
+        raise AIBudgetError(str(exc)) from exc
+
+    log = AIRequestLog(workspace_id=workspace_id, ticket_id=ticket_id, feature=feature, model=settings.AI_MODEL, prompt_version=prompt_version)
     started = time.monotonic()
     kwargs = {
         "model": settings.AI_MODEL,
@@ -122,3 +132,29 @@ def _save_failure(log: AIRequestLog, started: float, exc: Exception) -> None:
     log.error_type = type(exc).__name__[:60]
     log.latency_ms = int((time.monotonic() - started) * 1000)
     log.save()
+
+
+def embed(texts: list[str], *, workspace_id: int | None = None, ticket_id: int | None = None) -> list[list[float]]:
+    """Embed texts with the configured embedding model (Gemini via its OpenAI-compatible endpoint)."""
+    if not settings.AI_ENABLED:
+        raise AIPermanentError("AI is disabled (no OPENAI_API_KEY configured)")
+    if circuit_breaker.is_open():
+        raise AIUnavailableError("AI temporarily paused after repeated failures (circuit open)")
+    log = AIRequestLog(
+        workspace_id=workspace_id, ticket_id=ticket_id, feature=AIFeature.EMBED, model=settings.AI_EMBED_MODEL, prompt_version="embed"
+    )
+    started = time.monotonic()
+    try:
+        response = _client().embeddings.create(
+            model=settings.AI_EMBED_MODEL, input=texts, dimensions=settings.AI_EMBED_DIMENSIONS
+        )
+    except RETRYABLE_EXCEPTIONS as exc:
+        _save_failure(log, started, exc)
+        raise AIUnavailableError(f"{type(exc).__name__}: {exc}") from exc
+    except openai.OpenAIError as exc:
+        _save_failure(log, started, exc)
+        raise AIPermanentError(f"{type(exc).__name__}: {exc}") from exc
+    log.prompt_tokens = getattr(getattr(response, "usage", None), "prompt_tokens", 0) or 0
+    log.latency_ms = int((time.monotonic() - started) * 1000)
+    log.save()
+    return [list(item.embedding) for item in response.data]

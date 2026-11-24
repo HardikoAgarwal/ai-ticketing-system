@@ -1,28 +1,17 @@
-"""Separate author-facing and admin-facing representations.
+"""Separate requester-facing and staff-facing representations.
 
-Authors never receive internal notes, triage data (category/priority/AI
-fields) or other authors' data; admins get the full picture.
+Requesters never receive internal notes, triage data (category/priority/AI fields) or other
+people's data; staff get the full picture.
 """
 
 from django.conf import settings
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
-from apps.accounts.models import User
-from apps.accounts.serializers import UserBriefSerializer
-from apps.catalog.models import Book
-from apps.catalog.serializers import BookBriefSerializer, BookSerializer
+from apps.workspaces.models import Category, Record
+from apps.workspaces.serializers import CategoryBriefSerializer, RecordBriefSerializer, RecordSerializer, UserBriefSerializer
 
-from .models import (
-    Attachment,
-    MessageKind,
-    Ticket,
-    TicketActivity,
-    TicketCategory,
-    TicketMessage,
-    TicketPriority,
-    TicketStatus,
-)
+from .models import Attachment, Macro, MessageKind, Ticket, TicketActivity, TicketMessage, TicketPriority, TicketStatus
 
 # --- Shared pieces -----------------------------------------------------------
 
@@ -35,23 +24,23 @@ class AttachmentSerializer(serializers.ModelSerializer):
 
 class MessageSerializer(serializers.ModelSerializer):
     sender_name = serializers.SerializerMethodField()
-    sender_role = serializers.SerializerMethodField()
+    sender_is_requester = serializers.SerializerMethodField()
     is_internal = serializers.BooleanField(read_only=True)
 
     class Meta:
         model = TicketMessage
-        fields = ("id", "kind", "is_internal", "body", "sender_name", "sender_role", "created_at")
+        fields = ("id", "kind", "is_internal", "body", "sender_name", "sender_is_requester", "created_at")
 
     def get_sender_name(self, obj) -> str:
         if not obj.sender:
-            return "BookLeaf"
+            return self.context.get("team_name", "Support")
         return obj.sender.full_name
 
-    def get_sender_role(self, obj) -> str:
-        return obj.sender.role if obj.sender else "SYSTEM"
+    def get_sender_is_requester(self, obj) -> bool:
+        return bool(obj.sender_id and obj.sender_id == obj.ticket.requester_id)
 
 
-class AdminMessageSerializer(MessageSerializer):
+class StaffMessageSerializer(MessageSerializer):
     class Meta(MessageSerializer.Meta):
         fields = MessageSerializer.Meta.fields + ("ai_draft_id", "ai_draft_edited")
 
@@ -65,151 +54,112 @@ class ActivitySerializer(serializers.ModelSerializer):
         fields = ("id", "action", "label", "from_value", "to_value", "actor_name", "created_at")
 
 
-# --- Author-facing -------------------------------------------------------------
+# --- Requester-facing ----------------------------------------------------------
 
 
-class AuthorTicketSerializer(serializers.ModelSerializer):
+class RequesterTicketSerializer(serializers.ModelSerializer):
     reference = serializers.CharField(read_only=True)
-    book = BookBriefSerializer(read_only=True)
+    record = RecordBriefSerializer(read_only=True)
     has_unread = serializers.SerializerMethodField()
     status_label = serializers.CharField(source="get_status_display", read_only=True)
 
     class Meta:
         model = Ticket
         fields = (
-            "id",
-            "reference",
-            "subject",
-            "description",
-            "status",
-            "status_label",
-            "book",
-            "has_unread",
-            "created_at",
-            "updated_at",
-            "first_response_at",
-            "resolved_at",
-            "last_admin_reply_at",
+            "id", "reference", "subject", "description", "status", "status_label", "record", "has_unread",
+            "created_at", "updated_at", "first_response_at", "resolved_at", "last_staff_reply_at", "csat_score",
         )
 
     def get_has_unread(self, obj) -> bool:
-        return bool(obj.last_admin_reply_at and (not obj.author_last_seen_at or obj.author_last_seen_at < obj.last_admin_reply_at))
+        return bool(
+            obj.last_staff_reply_at
+            and (not obj.requester_last_seen_at or obj.requester_last_seen_at < obj.last_staff_reply_at)
+        )
 
 
-class AuthorTicketDetailSerializer(AuthorTicketSerializer):
+class RequesterTicketDetailSerializer(RequesterTicketSerializer):
     messages = serializers.SerializerMethodField()
     attachments = AttachmentSerializer(many=True, read_only=True)
 
-    class Meta(AuthorTicketSerializer.Meta):
-        fields = AuthorTicketSerializer.Meta.fields + ("messages", "attachments")
+    class Meta(RequesterTicketSerializer.Meta):
+        fields = RequesterTicketSerializer.Meta.fields + ("messages", "attachments")
 
     @extend_schema_field(MessageSerializer(many=True))
     def get_messages(self, obj):
         visible = [m for m in obj.messages.all() if m.kind == MessageKind.REPLY]
-        return MessageSerializer(visible, many=True).data
+        return MessageSerializer(visible, many=True, context=self.context).data
 
 
-# --- Admin-facing --------------------------------------------------------------
+# --- Staff-facing --------------------------------------------------------------
 
 
-class AdminTicketSerializer(serializers.ModelSerializer):
+class StaffTicketSerializer(serializers.ModelSerializer):
     reference = serializers.CharField(read_only=True)
-    book = BookBriefSerializer(read_only=True)
-    author = serializers.SerializerMethodField()
+    record = RecordBriefSerializer(read_only=True)
+    category = CategoryBriefSerializer(read_only=True)
+    ai_category = CategoryBriefSerializer(read_only=True)
+    requester = serializers.SerializerMethodField()
     assigned_to = UserBriefSerializer(read_only=True)
     sla_state = serializers.CharField(read_only=True)
     has_unread = serializers.SerializerMethodField()
     unread_kind = serializers.SerializerMethodField()
     status_label = serializers.CharField(source="get_status_display", read_only=True)
-    category_label = serializers.CharField(source="get_category_display", read_only=True)
     priority_label = serializers.CharField(source="get_priority_display", read_only=True)
 
     class Meta:
         model = Ticket
         fields = (
-            "id",
-            "reference",
-            "subject",
-            "description",
-            "status",
-            "status_label",
-            "category",
-            "category_label",
-            "category_source",
-            "ai_category",
-            "priority",
-            "priority_label",
-            "priority_source",
-            "ai_priority",
-            "ai_confidence",
-            "ai_status",
-            "ai_draft_status",
-            "book",
-            "author",
-            "assigned_to",
-            "sla_due_at",
-            "sla_state",
-            "has_unread",
-            "unread_kind",
-            "first_response_at",
-            "resolved_at",
-            "created_at",
-            "updated_at",
+            "id", "reference", "subject", "description", "status", "status_label",
+            "category", "category_source", "ai_category",
+            "priority", "priority_label", "priority_source", "ai_priority", "ai_confidence",
+            "sentiment", "ai_summary", "ai_status", "ai_draft_status",
+            "record", "requester", "assigned_to", "sla_due_at", "sla_state",
+            "has_unread", "unread_kind", "first_response_at", "resolved_at", "csat_score",
+            "created_at", "updated_at",
         )
 
-    def get_author(self, obj) -> dict:
-        return {
-            "id": obj.author.user_id,
-            "name": obj.author.user.full_name,
-            "email": obj.author.user.email,
-            "author_code": obj.author.author_code,
-        }
+    def get_requester(self, obj) -> dict:
+        return {"id": obj.requester_id, "name": obj.requester.full_name, "email": obj.requester.email}
 
     def get_has_unread(self, obj) -> bool:
         return bool(
-            obj.last_author_activity_at
-            and (not obj.admin_last_seen_at or obj.admin_last_seen_at < obj.last_author_activity_at)
+            obj.last_requester_activity_at
+            and (not obj.staff_last_seen_at or obj.staff_last_seen_at < obj.last_requester_activity_at)
         )
 
-    @extend_schema_field(serializers.ChoiceField(choices=["new_ticket", "author_reply"], allow_null=True))
+    @extend_schema_field(serializers.ChoiceField(choices=["new_ticket", "requester_reply"], allow_null=True))
     def get_unread_kind(self, obj) -> str | None:
         if not self.get_has_unread(obj):
             return None
-        replied = getattr(obj, "author_replied", None)
+        replied = getattr(obj, "requester_replied", None)
         if replied is None:
-            replied = obj.messages.filter(kind=MessageKind.REPLY, sender__role=User.Role.AUTHOR).exists()
-        return "author_reply" if replied else "new_ticket"
+            replied = obj.messages.filter(kind=MessageKind.REPLY, sender_id=obj.requester_id).exists()
+        return "requester_reply" if replied else "new_ticket"
 
 
-class AdminTicketDetailSerializer(AdminTicketSerializer):
-    messages = AdminMessageSerializer(many=True, read_only=True)
+class StaffTicketDetailSerializer(StaffTicketSerializer):
+    messages = StaffMessageSerializer(many=True, read_only=True)
     attachments = AttachmentSerializer(many=True, read_only=True)
     activities = ActivitySerializer(many=True, read_only=True)
-    book_detail = BookSerializer(source="book", read_only=True)
-    author_profile = serializers.SerializerMethodField()
+    record_detail = RecordSerializer(source="record", read_only=True)
+    requester_profile = serializers.SerializerMethodField()
 
-    class Meta(AdminTicketSerializer.Meta):
-        fields = AdminTicketSerializer.Meta.fields + (
-            "ai_reasoning",
-            "ai_error",
-            "messages",
-            "attachments",
-            "activities",
-            "book_detail",
-            "author_profile",
+    class Meta(StaffTicketSerializer.Meta):
+        fields = StaffTicketSerializer.Meta.fields + (
+            "ai_reasoning", "ai_error", "csat_comment", "messages", "attachments", "activities", "record_detail",
+            "requester_profile",
         )
 
-    def get_author_profile(self, obj) -> dict:
-        profile = obj.author
+    def get_requester_profile(self, obj) -> dict:
+        membership = obj.requester.memberships.filter(workspace_id=obj.workspace_id).first()
         return {
-            "author_code": profile.author_code,
-            "name": profile.user.full_name,
-            "email": profile.user.email,
-            "phone": profile.phone,
-            "city": profile.city,
-            "joined_date": profile.joined_date,
-            "books_count": profile.books.count(),
-            "tickets_count": profile.tickets.count(),
+            "name": obj.requester.full_name,
+            "email": obj.requester.email,
+            "company": membership.company if membership else "",
+            "profile": membership.profile if membership else {},
+            "joined": membership.joined_at if membership else None,
+            "records_count": obj.requester.records.filter(workspace_id=obj.workspace_id).count(),
+            "tickets_count": obj.requester.tickets.filter(workspace_id=obj.workspace_id).count(),
         }
 
 
@@ -217,19 +167,19 @@ class AdminTicketDetailSerializer(AdminTicketSerializer):
 
 
 class TicketCreateSerializer(serializers.Serializer):
-    book_id = serializers.PrimaryKeyRelatedField(
-        queryset=Book.objects.all(), source="book", required=False, allow_null=True,
-        help_text="Omit or null for 'General / Account Level'.",
+    record_id = serializers.PrimaryKeyRelatedField(
+        queryset=Record.objects.all(), source="record", required=False, allow_null=True,
+        help_text="Omit or null for a general / account-level question.",
     )
     subject = serializers.CharField(min_length=5, max_length=150, trim_whitespace=True)
     description = serializers.CharField(min_length=20, max_length=5000, trim_whitespace=True)
     attachments = serializers.ListField(child=serializers.FileField(), required=False, allow_empty=True)
 
-    def validate_book_id(self, book):
+    def validate_record_id(self, record):
         request = self.context["request"]
-        if book is not None and book.author.user_id != request.user.id:
-            raise serializers.ValidationError("Select one of your own books, or 'General / Account Level'.")
-        return book
+        if record is not None and (record.owner_id != request.user.id or record.workspace_id != request.workspace.id):
+            raise serializers.ValidationError("Select one of your own items, or leave it blank.")
+        return record
 
     def validate_attachments(self, files):
         if len(files) > settings.ATTACHMENT_MAX_FILES:
@@ -242,13 +192,11 @@ class TicketCreateSerializer(serializers.Serializer):
         return files
 
 
-class AdminTicketUpdateSerializer(serializers.Serializer):
+class StaffTicketUpdateSerializer(serializers.Serializer):
     status = serializers.ChoiceField(choices=TicketStatus.choices, required=False)
-    category = serializers.ChoiceField(choices=TicketCategory.choices, required=False)
+    category = serializers.SlugRelatedField(slug_field="key", queryset=Category.objects.all(), required=False)
     priority = serializers.ChoiceField(choices=TicketPriority.choices, required=False)
-    assigned_to = serializers.PrimaryKeyRelatedField(
-        queryset=User.objects.filter(role=User.Role.ADMIN, is_active=True), required=False, allow_null=True
-    )
+    assigned_to = serializers.IntegerField(required=False, allow_null=True, help_text="User id of a staff member, or null")
 
     def validate(self, attrs):
         if not attrs:
@@ -268,6 +216,11 @@ class ConfirmResolutionSerializer(serializers.Serializer):
     message = serializers.CharField(required=False, allow_blank=True, max_length=5000)
 
 
+class CSATSerializer(serializers.Serializer):
+    score = serializers.IntegerField(min_value=1, max_value=5)
+    comment = serializers.CharField(required=False, allow_blank=True, max_length=500)
+
+
 class DraftSerializer(serializers.Serializer):
     status = serializers.CharField(help_text="ready | generating | failed | disabled")
     draft = serializers.DictField(allow_null=True)
@@ -276,17 +229,23 @@ class DraftSerializer(serializers.Serializer):
 
 class NotificationSerializer(serializers.Serializer):
     id = serializers.CharField()
-    kind = serializers.CharField(help_text="Authors: admin_reply | resolved. Admins: new_ticket | author_reply")
+    kind = serializers.CharField(help_text="Requesters: staff_reply | resolved. Staff: new_ticket | requester_reply")
     ticket_id = serializers.IntegerField()
     reference = serializers.CharField()
     subject = serializers.CharField()
     preview = serializers.CharField()
     actor_name = serializers.CharField()
     at = serializers.DateTimeField(allow_null=True)
-    priority = serializers.CharField(required=False, help_text="Admins only")
-    owner = serializers.CharField(required=False, help_text="Admins only: you | unassigned")
+    priority = serializers.CharField(required=False, help_text="Staff only")
+    owner = serializers.CharField(required=False, help_text="Staff only: you | unassigned")
 
 
 class NotificationFeedSerializer(serializers.Serializer):
     count = serializers.IntegerField(help_text="Total items needing attention (the list is capped at 20)")
     items = NotificationSerializer(many=True)
+
+
+class MacroSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Macro
+        fields = ("id", "title", "body")

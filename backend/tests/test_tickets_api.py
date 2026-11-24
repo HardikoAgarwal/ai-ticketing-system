@@ -1,163 +1,142 @@
-from datetime import timedelta
-
-import pytest
-from django.core.files.uploadedfile import SimpleUploadedFile
-
 from apps.tickets import services
-from apps.tickets.models import ClassificationSource, MessageKind, Ticket, TicketPriority, TicketStatus
-
-pytestmark = pytest.mark.django_db
-
-
-def create(client, **data):
-    payload = {"subject": "Royalty not received", "description": "My royalty for last quarter has not arrived yet."}
-    payload.update(data)
-    return client.post("/api/v1/tickets/", payload, format="multipart")
+from apps.tickets.models import AIStatus, ClassificationSource, TicketStatus
+from tests.conftest import url
 
 
-def test_author_creates_ticket_with_fallback_classification(author, author_book, client_for, settings):
-    settings.AI_ENABLED = False
-    res = create(client_for(author), book_id=author_book.id)
-    assert res.status_code == 201, res.data
-    ticket = Ticket.objects.get(pk=res.data["id"])
-    assert ticket.category == "ROYALTY_PAYMENTS"
-    assert ticket.category_source == ClassificationSource.FALLBACK
-    assert ticket.sla_due_at is not None
-    assert ticket.status == TicketStatus.OPEN
+def create(client, ws, **extra):
+    payload = {"subject": "Refund for annual plan", "description": "Please refund my annual plan, I was charged yesterday.", **extra}
+    return client.post(url(ws, "tickets/"), payload, format="multipart")
 
 
-def test_general_ticket_without_book(author, client_for, settings):
-    settings.AI_ENABLED = False
-    res = create(client_for(author), subject="Update my author bio", description="How can I update the bio on my author page?")
-    assert res.status_code == 201
-    assert res.data["book"] is None
+def test_requester_creates_ticket_with_provisional_triage(client_for, ws, customer, record, fake_openai, django_capture_on_commit_callbacks):
+    fake_openai.push_triage("billing", "MEDIUM")
+    with django_capture_on_commit_callbacks(execute=True):
+        resp = create(client_for(customer), ws, record_id=record.id)
+    assert resp.status_code == 201
+    assert resp.data["reference"] == "TKT-0001"
+    # requester payload never exposes triage fields
+    for hidden in ("priority", "category", "ai_reasoning", "activities", "sentiment"):
+        assert hidden not in resp.data
 
 
-def test_cannot_file_ticket_against_someone_elses_book(author, other_author, client_for):
-    foreign = other_author.author_profile.books.first()
-    res = create(client_for(author), book_id=foreign.id)
-    assert res.status_code == 400
-    assert res.data["error"]["code"] == "validation_error"
-    assert "book_id" in res.data["error"]["details"]
+def test_ticket_numbers_are_per_workspace(client_for, ws, other_ws, customer, outsider, db):
+    a = services.create_ticket(workspace=ws, requester=customer, subject="First one", description="First ticket description here.")
+    b = services.create_ticket(workspace=ws, requester=customer, subject="Second one", description="Second ticket description here.")
+    from tests.conftest import make_user
+
+    c = make_user("x@other.test", "X", other_ws)
+    d = services.create_ticket(workspace=other_ws, requester=c, subject="Other first", description="Other workspace first ticket.")
+    assert (a.number, b.number, d.number) == (1, 2, 1)
 
 
-def test_validation_errors_are_meaningful(author, client_for):
-    res = create(client_for(author), subject="Hi", description="short")
-    assert res.status_code == 400
-    assert {"subject", "description"} <= set(res.data["error"]["details"])
+def test_cannot_raise_ticket_about_someone_elses_record(client_for, ws, other_customer, record):
+    resp = create(client_for(other_customer), ws, record_id=record.id)
+    assert resp.status_code == 400
 
 
-def test_rejects_unsupported_attachment(author, client_for):
-    bad = SimpleUploadedFile("payload.exe", b"MZ...", content_type="application/x-msdownload")
-    res = create(client_for(author), attachments=[bad])
-    assert res.status_code == 400
+def test_requesters_only_see_own_tickets(client_for, ws, customer, other_customer):
+    mine = services.create_ticket(workspace=ws, requester=customer, subject="Mine mine", description="This is my own ticket text.")
+    theirs = services.create_ticket(workspace=ws, requester=other_customer, subject="Theirs", description="This belongs to somebody else.")
+    c = client_for(customer)
+    ids = {t["id"] for t in c.get(url(ws, "tickets/")).data["results"]}
+    assert ids == {mine.id}
+    assert c.get(url(ws, f"tickets/{theirs.id}/")).status_code == 404
 
 
-def test_accepts_pdf_attachment(author, client_for, settings):
-    settings.AI_ENABLED = False
-    pdf = SimpleUploadedFile("statement.pdf", b"%PDF-1.4 test", content_type="application/pdf")
-    res = create(client_for(author), attachments=[pdf])
-    assert res.status_code == 201
-    assert Ticket.objects.get(pk=res.data["id"]).attachments.count() == 1
+def test_internal_notes_never_reach_requester(client_for, ws, customer, agent):
+    t = services.create_ticket(workspace=ws, requester=customer, subject="Broken thing", description="Something is broken in the app.")
+    staff = client_for(agent)
+    assert staff.post(url(ws, f"tickets/{t.id}/messages/"), {"body": "secret internal note", "kind": "NOTE"}, format="json").status_code == 201
+    assert staff.post(url(ws, f"tickets/{t.id}/messages/"), {"body": "Hi, looking into it now."}, format="json").status_code == 201
+    detail = client_for(customer).get(url(ws, f"tickets/{t.id}/")).data
+    bodies = [m["body"] for m in detail["messages"]]
+    assert "secret internal note" not in bodies and "Hi, looking into it now." in bodies
+    listing = client_for(customer).get(url(ws, f"tickets/{t.id}/messages/")).data
+    assert all(m["kind"] == "REPLY" for m in listing)
 
 
-def test_admin_override_marks_source_and_recomputes_sla(author, admin_user, client_for, settings):
-    settings.AI_ENABLED = False
-    ticket = services.create_ticket(author_user=author, subject="Question about cover", description="c" * 30)
-    res = client_for(admin_user).patch(f"/api/v1/tickets/{ticket.id}/", {"priority": "CRITICAL", "category": "BOOK_STATUS"}, format="json")
-    assert res.status_code == 200
-    ticket.refresh_from_db()
-    assert ticket.priority == TicketPriority.CRITICAL and ticket.priority_source == ClassificationSource.ADMIN
-    assert ticket.category_source == ClassificationSource.ADMIN
-    assert ticket.sla_due_at - ticket.created_at == timedelta(hours=4)
+def test_requester_cannot_post_notes_or_update(client_for, ws, customer):
+    t = services.create_ticket(workspace=ws, requester=customer, subject="Hello there", description="A question about my plan details.")
+    c = client_for(customer)
+    assert c.post(url(ws, f"tickets/{t.id}/messages/"), {"body": "x", "kind": "NOTE"}, format="json").status_code == 403
+    assert c.patch(url(ws, f"tickets/{t.id}/"), {"priority": "LOW"}, format="json").status_code == 403
 
 
-def test_ai_never_overrides_admin_choice(author, admin_user, settings):
-    settings.AI_ENABLED = False
-    ticket = services.create_ticket(author_user=author, subject="Question about cover", description="c" * 30)
-    services.update_ticket(ticket, admin_user, priority=TicketPriority.LOW)
-    services.apply_ai_classification(ticket, category="GENERAL", priority="CRITICAL", confidence=0.9, reasoning="r")
-    ticket.refresh_from_db()
-    assert ticket.priority == TicketPriority.LOW
-    assert ticket.ai_priority == "CRITICAL"
+def test_status_machine_and_conflicts(client_for, ws, customer, agent):
+    t = services.create_ticket(workspace=ws, requester=customer, subject="Hello there", description="A question about my plan details.")
+    staff = client_for(agent)
+    assert staff.patch(url(ws, f"tickets/{t.id}/"), {"status": "RESOLVED"}, format="json").status_code == 200
+    assert staff.patch(url(ws, f"tickets/{t.id}/"), {"status": "CLOSED"}, format="json").status_code == 200
+    resp = staff.patch(url(ws, f"tickets/{t.id}/"), {"status": "RESOLVED"}, format="json")
+    assert resp.status_code == 409 and resp.data["error"]["code"] == "invalid_transition"
 
 
-def test_invalid_status_transition_is_rejected(author, admin_user, client_for, settings):
-    settings.AI_ENABLED = False
-    ticket = services.create_ticket(author_user=author, subject="Question", description="q" * 30)
-    services.update_ticket(ticket, admin_user, status=TicketStatus.CLOSED)
-    res = client_for(admin_user).patch(f"/api/v1/tickets/{ticket.id}/", {"status": "RESOLVED"}, format="json")
-    assert res.status_code == 409
-    assert res.data["error"]["code"]
+def test_first_reply_sets_sla_assignment_and_status(client_for, ws, customer, agent):
+    t = services.create_ticket(workspace=ws, requester=customer, subject="Hello there", description="A question about my plan details.")
+    client_for(agent).post(url(ws, f"tickets/{t.id}/messages/"), {"body": "On it."}, format="json")
+    t.refresh_from_db()
+    assert t.first_response_at and t.assigned_to == agent and t.status == TicketStatus.IN_PROGRESS
+    assert t.sla_state == "met"
 
 
-def test_admin_reply_sets_first_response_and_progresses(author, admin_user, client_for, settings):
-    settings.AI_ENABLED = False
-    ticket = services.create_ticket(author_user=author, subject="Distribution question", description="d" * 30)
-    res = client_for(admin_user).post(f"/api/v1/tickets/{ticket.id}/messages/", {"body": "Looking into it.", "kind": "REPLY"}, format="json")
-    assert res.status_code == 201
-    ticket.refresh_from_db()
-    assert ticket.first_response_at is not None
-    assert ticket.status == TicketStatus.IN_PROGRESS
-    assert ticket.assigned_to == admin_user
+def test_requester_reply_reopens_resolved_ticket(client_for, ws, customer, agent):
+    t = services.create_ticket(workspace=ws, requester=customer, subject="Hello there", description="A question about my plan details.")
+    services.update_ticket(t, agent, status="RESOLVED")
+    client_for(customer).post(url(ws, f"tickets/{t.id}/messages/"), {"body": "Still broken, sorry."}, format="json")
+    t.refresh_from_db()
+    assert t.status == TicketStatus.IN_PROGRESS
 
 
-def test_internal_note_does_not_count_as_first_response(author, admin_user, settings):
-    settings.AI_ENABLED = False
-    ticket = services.create_ticket(author_user=author, subject="Distribution question", description="d" * 30)
-    services.post_admin_message(ticket, admin_user, body="note", kind=MessageKind.NOTE)
-    ticket.refresh_from_db()
-    assert ticket.first_response_at is None
-    assert ticket.status == TicketStatus.OPEN
+def test_confirm_resolution_and_csat(client_for, ws, customer, agent):
+    t = services.create_ticket(workspace=ws, requester=customer, subject="Hello there", description="A question about my plan details.")
+    c = client_for(customer)
+    assert c.post(url(ws, f"tickets/{t.id}/csat/"), {"score": 5}, format="json").status_code == 409  # not resolved yet
+    services.update_ticket(t, agent, status="RESOLVED")
+    assert c.post(url(ws, f"tickets/{t.id}/confirm-resolution/"), {"resolved": True}, format="json").status_code == 200
+    assert c.post(url(ws, f"tickets/{t.id}/csat/"), {"score": 5, "comment": "Great"}, format="json").status_code == 200
+    t.refresh_from_db()
+    assert t.status == TicketStatus.CLOSED and t.csat_score == 5
 
 
-def test_author_reply_reopens_resolved_ticket(author, admin_user, client_for, settings):
-    settings.AI_ENABLED = False
-    ticket = services.create_ticket(author_user=author, subject="Printing issue", description="p" * 30)
-    services.post_admin_message(ticket, admin_user, body="Fixed!", kind=MessageKind.REPLY, resolve=True)
-    ticket.refresh_from_db()
-    assert ticket.status == TicketStatus.RESOLVED
-    res = client_for(author).post(f"/api/v1/tickets/{ticket.id}/messages/", {"body": "Still broken."}, format="json")
-    assert res.status_code == 201
-    ticket.refresh_from_db()
-    assert ticket.status == TicketStatus.IN_PROGRESS
+def test_assign_only_to_team_members(client_for, ws, customer, agent, other_customer):
+    t = services.create_ticket(workspace=ws, requester=customer, subject="Hello there", description="A question about my plan details.")
+    staff = client_for(agent)
+    assert staff.patch(url(ws, f"tickets/{t.id}/"), {"assigned_to": other_customer.id}, format="json").status_code == 400
+    assert staff.patch(url(ws, f"tickets/{t.id}/"), {"assigned_to": agent.id}, format="json").status_code == 200
+    assert staff.patch(url(ws, f"tickets/{t.id}/"), {"assigned_to": None}, format="json").data["assigned_to"] is None
 
 
-def test_queue_filters_and_ordering(author, admin_user, client_for, settings):
-    settings.AI_ENABLED = False
-    low = services.create_ticket(author_user=author, subject="Bio update", description="How do I update my author bio please?")
-    crit = services.create_ticket(author_user=author, subject="Royalty", description="royalty payment not received for 6 months, unacceptable")
-    services.update_ticket(low, admin_user, priority=TicketPriority.LOW)
-    services.update_ticket(crit, admin_user, priority=TicketPriority.CRITICAL)
-
-    client = client_for(admin_user)
-    ids = [t["id"] for t in client.get("/api/v1/tickets/").data["results"]]
-    assert ids.index(crit.id) < ids.index(low.id)
-
-    only_low = client.get("/api/v1/tickets/?priority=LOW").data["results"]
-    assert {t["id"] for t in only_low} == {low.id}
-    assert client.get(f"/api/v1/tickets/?q={crit.reference}").data["count"] == 1
+def test_filters_and_search(client_for, ws, customer, agent):
+    a = services.create_ticket(workspace=ws, requester=customer, subject="Invoice question", description="Why is my invoice higher this month?")
+    services.create_ticket(workspace=ws, requester=customer, subject="Login problem", description="I cannot log in with my password at all.")
+    staff = client_for(agent)
+    assert len(staff.get(url(ws, "tickets/?q=invoice")).data["results"]) == 1
+    assert staff.get(url(ws, "tickets/?q=TKT-0001")).data["results"][0]["id"] == a.id
+    assert len(staff.get(url(ws, "tickets/?category=billing")).data["results"]) >= 1
+    stats = staff.get(url(ws, "tickets/stats/")).data
+    assert stats["open"] == 2 and stats["unassigned"] == 2
 
 
-def test_analytics_summary(admin_user, client_for):
-    res = client_for(admin_user).get("/api/v1/admin/analytics/summary/?days=7")
-    assert res.status_code == 200
-    assert res.data["range_days"] == 7
-    assert len(res.data["volume"]) == 8
+def test_notifications_follow_read_state(client_for, ws, customer, agent):
+    t = services.create_ticket(workspace=ws, requester=customer, subject="Hello there", description="A question about my plan details.")
+    staff = client_for(agent)
+    feed = staff.get(url(ws, "tickets/notifications/")).data
+    assert feed["count"] == 1 and feed["items"][0]["kind"] == "new_ticket"
+    staff.post(url(ws, f"tickets/{t.id}/mark-seen/"))
+    assert staff.get(url(ws, "tickets/notifications/")).data["count"] == 0
+    staff.post(url(ws, f"tickets/{t.id}/messages/"), {"body": "Replying now."}, format="json")
+    cust = client_for(customer).get(url(ws, "tickets/notifications/")).data
+    assert cust["count"] == 1 and cust["items"][0]["kind"] == "staff_reply"
 
 
-def test_author_can_mark_open_ticket_resolved_but_not_reopen_it(author, client_for, settings):
-    settings.AI_ENABLED = False
-    client = client_for(author)
-    ticket_id = create(client).data["id"]
-
-    reopen = client.post(f"/api/v1/tickets/{ticket_id}/confirm-resolution/", {"resolved": False}, format="json")
-    assert reopen.status_code == 409
-    assert reopen.data["error"]["code"] == "invalid_transition"
-
-    close = client.post(f"/api/v1/tickets/{ticket_id}/confirm-resolution/", {"resolved": True}, format="json")
-    assert close.status_code == 200, close.data
-    assert close.data["status"] == TicketStatus.CLOSED
-
-    again = client.post(f"/api/v1/tickets/{ticket_id}/confirm-resolution/", {"resolved": True}, format="json")
-    assert again.status_code == 409
+def test_staff_override_beats_ai(client_for, ws, customer, agent, fake_openai, django_capture_on_commit_callbacks):
+    fake_openai.push_triage("technical", "LOW")
+    with django_capture_on_commit_callbacks(execute=True):
+        t = services.create_ticket(workspace=ws, requester=customer, subject="Hello there", description="A question about my plan details.")
+    t.refresh_from_db()
+    assert t.category.key == "technical" and t.category_source == ClassificationSource.AI and t.priority == "LOW"
+    billing = ws.categories.get(key="billing")
+    services.update_ticket(t, agent, category=billing, priority="CRITICAL")
+    services.apply_ai_classification(t, category=ws.categories.get(key="technical"), priority="LOW", confidence=0.5, reasoning="again")
+    t.refresh_from_db()
+    assert t.category_id == billing.id and t.priority == "CRITICAL" and t.ai_status == AIStatus.COMPLETED

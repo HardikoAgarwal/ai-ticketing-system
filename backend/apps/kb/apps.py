@@ -1,7 +1,7 @@
 from django.apps import AppConfig
 
 
-class CatalogConfig(AppConfig):
+class KBConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
-    name = "apps.catalog"
-    label = "catalog"
+    name = "apps.kb"
+    label = "kb"

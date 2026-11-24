@@ -5,7 +5,9 @@ from django.db import transaction
 from django.utils import timezone
 
 from apps.ai import fallback
+from apps.jobs import runner
 from apps.realtime.broadcast import ticket_event
+from apps.workspaces.models import Category, Workspace
 from common.exceptions import DomainError
 
 from .models import (
@@ -16,7 +18,6 @@ from .models import (
     MessageKind,
     Ticket,
     TicketActivity,
-    TicketCategory,
     TicketMessage,
     TicketPriority,
     TicketStatus,
@@ -30,43 +31,55 @@ ALLOWED_TRANSITIONS = {
 }
 
 
+def ai_active(workspace: Workspace) -> bool:
+    return bool(settings.AI_ENABLED and workspace.ai_enabled)
+
+
 def _log(ticket, action, actor=None, from_value="", to_value=""):
     TicketActivity.objects.create(
         ticket=ticket, actor=actor, action=action, from_value=str(from_value)[:100], to_value=str(to_value)[:100]
     )
 
 
-def _enqueue(fn_name: str, ticket: Ticket, **kwargs) -> None:
-    from apps.ai import tasks
+def _enqueue(name: str, ticket: Ticket, **kwargs) -> None:
+    runner.enqueue(name, ticket_id=ticket.pk, **kwargs)
 
-    transaction.on_commit(lambda: getattr(tasks, fn_name)(ticket.id, **kwargs))
+
+def _label(category) -> str:
+    return category.name if category else "Uncategorised"
 
 
 # --- Creation ---------------------------------------------------------------
 
 
 @transaction.atomic
-def create_ticket(*, author_user, subject: str, description: str, book=None, files=()) -> Ticket:
-    profile = author_user.author_profile
-    if book is not None and book.author_id != profile.id:
-        raise DomainError("You can only raise tickets about your own books.", code="invalid_book", status_code=400)
+def create_ticket(*, workspace: Workspace, requester, subject: str, description: str, record=None, files=()) -> Ticket:
+    if record is not None and (record.workspace_id != workspace.id or record.owner_id != requester.id):
+        raise DomainError("You can only raise tickets about your own items.", code="invalid_record", status_code=400)
 
-    guess = fallback.classify(subject, description)
+    workspace = Workspace.objects.select_for_update().get(pk=workspace.pk)
+    workspace.ticket_counter += 1
+    workspace.save(update_fields=["ticket_counter"])
+
+    guess = fallback.classify(workspace, subject, description)
     now = timezone.now()
+    active = ai_active(workspace)
     ticket = Ticket(
-        author=profile,
-        book=book,
+        workspace=workspace,
+        number=workspace.ticket_counter,
+        requester=requester,
+        record=record,
         subject=subject.strip(),
         description=description.strip(),
         category=guess.category,
         category_source=ClassificationSource.FALLBACK,
         priority_source=ClassificationSource.FALLBACK,
         ai_reasoning=guess.reasoning,
-        ai_status=AIStatus.PENDING if settings.AI_ENABLED else AIStatus.DISABLED,
-        ai_draft_status=AIStatus.PENDING if settings.AI_ENABLED else AIStatus.DISABLED,
+        ai_status=AIStatus.PENDING if active else AIStatus.DISABLED,
+        ai_draft_status=AIStatus.PENDING if active else AIStatus.DISABLED,
         created_at=now,
-        last_author_activity_at=now,
-        author_last_seen_at=now,
+        last_requester_activity_at=now,
+        requester_last_seen_at=now,
     )
     ticket.set_priority(guess.priority)
     ticket.save()
@@ -74,17 +87,17 @@ def create_ticket(*, author_user, subject: str, description: str, book=None, fil
     for f in files:
         Attachment.objects.create(
             ticket=ticket,
-            uploaded_by=author_user,
+            uploaded_by=requester,
             file=f,
             original_name=f.name[:255],
             content_type=getattr(f, "content_type", "") or "application/octet-stream",
             size=f.size,
         )
 
-    _log(ticket, ActivityAction.CREATED, actor=author_user)
-    if settings.AI_ENABLED:
-        _enqueue("enqueue_ticket_pipeline", ticket)
-    ticket_event(ticket, "ticket.created", actor_id=author_user.id)
+    _log(ticket, ActivityAction.CREATED, actor=requester)
+    if active:
+        _enqueue("ai.classify", ticket, then_draft=True)
+    ticket_event(ticket, "ticket.created", actor_id=requester.id)
     return ticket
 
 
@@ -92,28 +105,29 @@ def create_ticket(*, author_user, subject: str, description: str, book=None, fil
 
 
 @transaction.atomic
-def apply_ai_classification(ticket: Ticket, *, category: str, priority: str, confidence: float, reasoning: str) -> Ticket:
-    """Store the AI suggestion; never overwrite a value an admin has explicitly set."""
-    ticket = Ticket.objects.select_for_update().get(pk=ticket.pk)
+def apply_ai_classification(
+    ticket: Ticket, *, category: Category | None, priority: str, confidence: float, reasoning: str,
+    sentiment: str = "", summary: str = "",
+) -> Ticket:
+    """Store the AI suggestion; never overwrite a value staff have explicitly set."""
+    ticket = Ticket.objects.select_for_update(of=("self",)).select_related("workspace").get(pk=ticket.pk)
     ticket.ai_category = category
     ticket.ai_priority = priority
     ticket.ai_confidence = confidence
     ticket.ai_reasoning = reasoning
+    ticket.sentiment = sentiment
+    ticket.ai_summary = summary
     ticket.ai_status = AIStatus.COMPLETED
     ticket.ai_error = ""
-    if ticket.category_source != ClassificationSource.ADMIN:
+    if category and ticket.category_source != ClassificationSource.STAFF:
         ticket.category = category
         ticket.category_source = ClassificationSource.AI
-    if ticket.priority_source != ClassificationSource.ADMIN:
+    if ticket.priority_source != ClassificationSource.STAFF:
         ticket.set_priority(priority)
         ticket.priority_source = ClassificationSource.AI
     ticket.save()
-    _log(
-        ticket,
-        ActivityAction.AI_CLASSIFIED,
-        to_value=f"{TicketCategory(category).label} / {TicketPriority(priority).label}",
-    )
-    ticket_event(ticket, "ticket.updated", notify_author=False)
+    _log(ticket, ActivityAction.AI_CLASSIFIED, to_value=f"{_label(category)} / {TicketPriority(priority).label}")
+    ticket_event(ticket, "ticket.updated", notify_requester=False)
     return ticket
 
 
@@ -123,7 +137,7 @@ def mark_ai_failed(ticket: Ticket, error: str) -> None:
     )
     _log(ticket, ActivityAction.AI_FAILED, to_value=error[:100])
     ticket.refresh_from_db()
-    ticket_event(ticket, "ticket.updated", notify_author=False)
+    ticket_event(ticket, "ticket.updated", notify_requester=False)
 
 
 def set_draft_status(ticket: Ticket, status: str, error: str = "") -> None:
@@ -132,52 +146,52 @@ def set_draft_status(ticket: Ticket, status: str, error: str = "") -> None:
         fields["ai_error"] = error[:255]
     Ticket.objects.filter(pk=ticket.pk).update(**fields)
     ticket.refresh_from_db()
-    ticket_event(ticket, "ticket.updated", notify_author=False)
+    ticket_event(ticket, "ticket.updated", notify_requester=False)
 
 
 def request_reclassification(ticket: Ticket) -> Ticket:
-    if not settings.AI_ENABLED:
-        raise DomainError("AI is not configured on this server.", code="ai_disabled", status_code=503)
+    if not ai_active(ticket.workspace):
+        raise DomainError("AI is not enabled for this workspace.", code="ai_disabled", status_code=503)
     Ticket.objects.filter(pk=ticket.pk).update(ai_status=AIStatus.PENDING, ai_error="")
     ticket.refresh_from_db()
-    _enqueue("enqueue_classification", ticket)
-    ticket_event(ticket, "ticket.updated", notify_author=False)
+    _enqueue("ai.classify", ticket, then_draft=False)
+    ticket_event(ticket, "ticket.updated", notify_requester=False)
     return ticket
 
 
 def request_draft(ticket: Ticket, *, force: bool = False) -> Ticket:
-    if not settings.AI_ENABLED:
-        raise DomainError("AI is not configured on this server.", code="ai_disabled", status_code=503)
+    if not ai_active(ticket.workspace):
+        raise DomainError("AI is not enabled for this workspace.", code="ai_disabled", status_code=503)
     Ticket.objects.filter(pk=ticket.pk).update(ai_draft_status=AIStatus.PENDING)
     ticket.refresh_from_db()
-    _enqueue("enqueue_draft", ticket, force=force)
+    _enqueue("ai.draft", ticket, force=force)
     return ticket
 
 
-# --- Admin actions -----------------------------------------------------------
+# --- Staff actions -----------------------------------------------------------
 
 
 @transaction.atomic
-def update_ticket(ticket: Ticket, actor, *, status=None, category=None, priority=None, assigned_to=..., ) -> Ticket:
-    ticket = Ticket.objects.select_for_update().select_related("author__user").get(pk=ticket.pk)
+def update_ticket(
+    ticket: Ticket, actor, *, status=None, category=None, priority=None, assigned_to=...,
+) -> Ticket:
+    ticket = Ticket.objects.select_for_update(of=("self",)).select_related("requester", "workspace", "category").get(pk=ticket.pk)
     category_changed = False
 
-    if category and category != ticket.category:
-        _log(ticket, ActivityAction.CATEGORY_CHANGED, actor, TicketCategory(ticket.category).label, TicketCategory(category).label)
-        ticket.category = category
-        category_changed = True
-    if category:
-        ticket.category_source = ClassificationSource.ADMIN
+    if category is not None:
+        if category.pk != ticket.category_id:
+            _log(ticket, ActivityAction.CATEGORY_CHANGED, actor, _label(ticket.category), category.name)
+            ticket.category = category
+            category_changed = True
+        ticket.category_source = ClassificationSource.STAFF
 
-    if priority and priority != ticket.priority:
-        _log(ticket, ActivityAction.PRIORITY_CHANGED, actor, TicketPriority(ticket.priority).label, TicketPriority(priority).label)
-        ticket.set_priority(priority)
     if priority:
-        ticket.priority_source = ClassificationSource.ADMIN
+        if priority != ticket.priority:
+            _log(ticket, ActivityAction.PRIORITY_CHANGED, actor, TicketPriority(ticket.priority).label, TicketPriority(priority).label)
+            ticket.set_priority(priority)
+        ticket.priority_source = ClassificationSource.STAFF
 
     if assigned_to is not ...:
-        if assigned_to is not None and not assigned_to.is_admin:
-            raise DomainError("Tickets can only be assigned to BookLeaf team members.", code="invalid_assignee", status_code=400)
         if assigned_to != ticket.assigned_to:
             _log(
                 ticket,
@@ -192,10 +206,10 @@ def update_ticket(ticket: Ticket, actor, *, status=None, category=None, priority
         _transition(ticket, status, actor)
 
     ticket.save()
-    if category_changed and settings.AI_ENABLED:
+    if category_changed and ai_active(ticket.workspace):
         Ticket.objects.filter(pk=ticket.pk).update(ai_draft_status=AIStatus.PENDING)
         ticket.ai_draft_status = AIStatus.PENDING
-        _enqueue("enqueue_draft", ticket)
+        _enqueue("ai.draft", ticket)
     ticket_event(ticket, "ticket.updated", actor_id=actor.id)
     return ticket
 
@@ -220,15 +234,15 @@ def _transition(ticket: Ticket, new_status: str, actor) -> None:
 
 
 @transaction.atomic
-def post_admin_message(ticket: Ticket, admin, *, body: str, kind: str, ai_draft=None, resolve: bool = False) -> TicketMessage:
-    ticket = Ticket.objects.select_for_update().select_related("author__user").get(pk=ticket.pk)
+def post_staff_message(ticket: Ticket, staff, *, body: str, kind: str, ai_draft=None, resolve: bool = False) -> TicketMessage:
+    ticket = Ticket.objects.select_for_update(of=("self",)).select_related("requester", "workspace").get(pk=ticket.pk)
     now = timezone.now()
 
     if kind == MessageKind.NOTE:
-        message = TicketMessage.objects.create(ticket=ticket, sender=admin, kind=MessageKind.NOTE, body=body, created_at=now)
-        _log(ticket, ActivityAction.NOTE_ADDED, admin)
+        message = TicketMessage.objects.create(ticket=ticket, sender=staff, kind=MessageKind.NOTE, body=body, created_at=now)
+        _log(ticket, ActivityAction.NOTE_ADDED, staff)
         ticket.save(update_fields=["updated_at"])
-        ticket_event(ticket, "note.created", notify_author=False, actor_id=admin.id)
+        ticket_event(ticket, "note.created", notify_requester=False, actor_id=staff.id)
         return message
 
     if ticket.status == TicketStatus.CLOSED:
@@ -236,73 +250,85 @@ def post_admin_message(ticket: Ticket, admin, *, body: str, kind: str, ai_draft=
 
     message = TicketMessage.objects.create(
         ticket=ticket,
-        sender=admin,
+        sender=staff,
         kind=MessageKind.REPLY,
         body=body,
         ai_draft=ai_draft,
         ai_draft_edited=bool(ai_draft and ai_draft.content.strip() != body.strip()),
         created_at=now,
     )
-    _log(ticket, ActivityAction.REPLIED, admin)
+    _log(ticket, ActivityAction.REPLIED, staff)
     ticket.first_response_at = ticket.first_response_at or now
-    ticket.last_admin_reply_at = now
-    ticket.admin_last_seen_at = now
+    ticket.last_staff_reply_at = now
+    ticket.staff_last_seen_at = now
     if ticket.assigned_to_id is None:
-        _log(ticket, ActivityAction.ASSIGNED, admin, "Unassigned", admin.full_name)
-        ticket.assigned_to = admin
+        _log(ticket, ActivityAction.ASSIGNED, staff, "Unassigned", staff.full_name)
+        ticket.assigned_to = staff
     if resolve:
-        _transition(ticket, TicketStatus.RESOLVED, admin)
+        _transition(ticket, TicketStatus.RESOLVED, staff)
     elif ticket.status in (TicketStatus.OPEN, TicketStatus.RESOLVED):
-        _transition(ticket, TicketStatus.IN_PROGRESS, admin)
+        _transition(ticket, TicketStatus.IN_PROGRESS, staff)
     ticket.save()
-    ticket_event(ticket, "message.created", actor_id=admin.id)
+    ticket_event(ticket, "message.created", actor_id=staff.id)
     return message
 
 
-# --- Author actions ----------------------------------------------------------
+# --- Requester actions -------------------------------------------------------
 
 
 @transaction.atomic
-def post_author_message(ticket: Ticket, author_user, *, body: str) -> TicketMessage:
-    ticket = Ticket.objects.select_for_update().select_related("author__user").get(pk=ticket.pk)
+def post_requester_message(ticket: Ticket, requester, *, body: str) -> TicketMessage:
+    ticket = Ticket.objects.select_for_update(of=("self",)).select_related("requester", "workspace").get(pk=ticket.pk)
     now = timezone.now()
-    message = TicketMessage.objects.create(ticket=ticket, sender=author_user, kind=MessageKind.REPLY, body=body, created_at=now)
-    _log(ticket, ActivityAction.AUTHOR_REPLIED, author_user)
+    message = TicketMessage.objects.create(ticket=ticket, sender=requester, kind=MessageKind.REPLY, body=body, created_at=now)
+    _log(ticket, ActivityAction.REQUESTER_REPLIED, requester)
     if ticket.status in (TicketStatus.RESOLVED, TicketStatus.CLOSED):
-        _transition(ticket, TicketStatus.IN_PROGRESS, author_user)
-    ticket.last_author_activity_at = now
-    ticket.author_last_seen_at = now
-    if settings.AI_ENABLED:
+        _transition(ticket, TicketStatus.IN_PROGRESS, requester)
+    ticket.last_requester_activity_at = now
+    ticket.requester_last_seen_at = now
+    active = ai_active(ticket.workspace)
+    if active:
         ticket.ai_draft_status = AIStatus.PENDING
     ticket.save()
-    if settings.AI_ENABLED:
-        _enqueue("enqueue_draft", ticket)
-    ticket_event(ticket, "message.created", actor_id=author_user.id)
+    if active:
+        _enqueue("ai.draft", ticket)
+    ticket_event(ticket, "message.created", actor_id=requester.id)
     return message
 
 
 @transaction.atomic
-def confirm_resolution(ticket: Ticket, author_user, *, resolved: bool, message: str = "") -> Ticket:
-    ticket = Ticket.objects.select_for_update().select_related("author__user").get(pk=ticket.pk)
+def confirm_resolution(ticket: Ticket, requester, *, resolved: bool, message: str = "") -> Ticket:
+    ticket = Ticket.objects.select_for_update(of=("self",)).select_related("requester", "workspace").get(pk=ticket.pk)
     if resolved:
         if ticket.status == TicketStatus.CLOSED:
             raise DomainError("This ticket is already closed.", code="invalid_transition")
-        _log(ticket, ActivityAction.AUTHOR_CONFIRMED, author_user)
-        _transition(ticket, TicketStatus.CLOSED, author_user)
+        _log(ticket, ActivityAction.REQUESTER_CONFIRMED, requester)
+        _transition(ticket, TicketStatus.CLOSED, requester)
         ticket.save()
-        ticket_event(ticket, "ticket.updated", actor_id=author_user.id)
+        ticket_event(ticket, "ticket.updated", actor_id=requester.id)
         return ticket
 
     if ticket.status != TicketStatus.RESOLVED:
         raise DomainError("Only resolved tickets can be reopened.", code="invalid_transition")
-    _log(ticket, ActivityAction.AUTHOR_REOPENED, author_user)
+    _log(ticket, ActivityAction.REQUESTER_REOPENED, requester)
     ticket.save()
     body = message.strip() or "I still need help with this issue."
-    post_author_message(ticket, author_user, body=body)
+    post_requester_message(ticket, requester, body=body)
     ticket.refresh_from_db()
     return ticket
 
 
-def mark_seen(ticket: Ticket, user) -> None:
-    field = "admin_last_seen_at" if user.is_admin else "author_last_seen_at"
+@transaction.atomic
+def submit_csat(ticket: Ticket, requester, *, score: int, comment: str = "") -> Ticket:
+    if ticket.status not in (TicketStatus.RESOLVED, TicketStatus.CLOSED):
+        raise DomainError("You can rate a ticket once it is resolved.", code="invalid_transition")
+    Ticket.objects.filter(pk=ticket.pk).update(csat_score=score, csat_comment=comment[:500])
+    ticket.refresh_from_db()
+    _log(ticket, ActivityAction.CSAT_RECEIVED, requester, to_value=f"{score}/5")
+    ticket_event(ticket, "ticket.updated", actor_id=requester.id)
+    return ticket
+
+
+def mark_seen(ticket: Ticket, *, staff: bool) -> None:
+    field = "staff_last_seen_at" if staff else "requester_last_seen_at"
     Ticket.objects.filter(pk=ticket.pk).update(**{field: timezone.now()})
