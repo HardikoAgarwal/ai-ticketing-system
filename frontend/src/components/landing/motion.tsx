@@ -1,5 +1,5 @@
-import { animate, motion, useInView, useMotionValue, useReducedMotion, useTransform } from 'motion/react'
-import { useEffect, useRef, type ReactNode } from 'react'
+import { animate, motion, useInView, useMotionValue, useReducedMotion, useTransform, type MotionValue } from 'motion/react'
+import { useEffect, useRef, useState, type CSSProperties, type MouseEvent, type ReactNode } from 'react'
 
 import { cn } from '@/lib/utils'
 
@@ -80,3 +80,93 @@ export function SectionHeading({
 }
 
 export { EASE }
+
+
+/** Headline reveal: each word slides up out of a mask, staggered. */
+export function WordReveal({
+  text,
+  className,
+  delay = 0,
+  as: Tag = 'span',
+  onMount = false,
+}: {
+  text: string
+  className?: string
+  delay?: number
+  as?: 'span' | 'h1' | 'h2' | 'h3'
+  onMount?: boolean
+}) {
+  const reduce = useReducedMotion()
+  const words = text.split(' ')
+  const Wrapper = motion[Tag]
+  return (
+    <Wrapper
+      className={className}
+      initial={reduce ? false : 'hidden'}
+      {...(onMount ? { animate: 'show' } : { whileInView: 'show', viewport: { once: true, margin: '-60px' } })}
+      transition={{ staggerChildren: 0.06, delayChildren: delay }}
+      aria-label={text}
+    >
+      {words.map((w, i) => (
+        <span key={i} className="inline-block overflow-hidden pb-[0.08em] align-bottom" aria-hidden>
+          <motion.span className="inline-block" variants={{ hidden: { y: '110%' }, show: { y: 0 } }} transition={{ duration: 0.7, ease: EASE }}>
+            {w}
+            {i < words.length - 1 ? '\u00A0' : ''}
+          </motion.span>
+        </span>
+      ))}
+    </Wrapper>
+  )
+}
+
+/** Parallax offset: maps a scroll progress (0..1) to 0..range px. Static under reduced-motion. */
+export function useParallax(progress: MotionValue<number>, range: number): MotionValue<number> {
+  const reduce = useReducedMotion()
+  return useTransform(progress, [0, 1], reduce ? [0, 0] : [0, range])
+}
+
+/** Cursor-follow spotlight: sets --mx/--my on the element so a radial gradient can track the pointer. */
+export function useSpotlight() {
+  const onMouseMove = (e: MouseEvent<HTMLElement>) => {
+    const r = e.currentTarget.getBoundingClientRect()
+    e.currentTarget.style.setProperty('--mx', `${e.clientX - r.left}px`)
+    e.currentTarget.style.setProperty('--my', `${e.clientY - r.top}px`)
+  }
+  return { onMouseMove, style: { '--mx': '50%', '--my': '30%' } as CSSProperties }
+}
+
+/** Types `text` out once `active` is true; returns the visible slice. Instant under reduced-motion. */
+export function useTypewriter(text: string, active = true, speed = 22) {
+  const reduce = useReducedMotion()
+  const [n, setN] = useState(0)
+  useEffect(() => {
+    if (!active) {
+      setN(0)
+      return
+    }
+    if (reduce) {
+      setN(text.length)
+      return
+    }
+    setN(0)
+    const id = window.setInterval(() => setN((v) => (v >= text.length ? v : v + 1)), speed)
+    return () => window.clearInterval(id)
+  }, [text, active, reduce, speed])
+  return { shown: text.slice(0, n), done: n >= text.length }
+}
+
+/** Infinite horizontal marquee of text chips. */
+export function Marquee({ items, className, itemClassName }: { items: string[]; className?: string; itemClassName?: string }) {
+  const row = [...items, ...items]
+  return (
+    <div className={cn('relative flex overflow-hidden [mask-image:linear-gradient(90deg,transparent,#000_8%,#000_92%,transparent)]', className)} aria-hidden>
+      <div className="lp-marquee flex shrink-0 gap-3 pr-3">
+        {row.map((t, i) => (
+          <span key={i} className={cn('shrink-0 rounded-full px-5 py-2 text-sm font-medium whitespace-nowrap', itemClassName)}>
+            {t}
+          </span>
+        ))}
+      </div>
+    </div>
+  )
+}

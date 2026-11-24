@@ -301,3 +301,42 @@ html {
     scroll-behavior: auto;
   }
 }
+
+
+/* ---- Landing v2 palette: full-bleed colour sections ---- */
+.lp {
+  --lp-ink: #0b0a1d;
+  --lp-ink-2: #14122e;
+  --lp-paper: #f4efe6;
+  --lp-paper-2: #ebe4d6;
+  --lp-violet: #5b3df5;
+  --lp-violet-2: #3a1fc9;
+  --lp-coral: #ff6a4d;
+  --lp-amber: #ffb340;
+  --lp-lime: #c8f560;
+  --lp-teal: #14b8a6;
+}
+@keyframes lp-dash {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes lp-ring {
+  from {
+    stroke-dashoffset: 0;
+  }
+  to {
+    stroke-dashoffset: var(--ring-len);
+  }
+}
+@utility lp-noise {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.5'/%3E%3C/svg%3E");
+  mix-blend-mode: overlay;
+  opacity: 0.18;
+}
+@utility lp-focus {
+  &:focus-visible {
+    outline: 2px solid var(--lp-lime);
+    outline-offset: 3px;
+  }
+}

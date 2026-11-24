@@ -99,3 +99,56 @@ export const MOOD_STYLE: Record<NonNullable<PreviewTicket['mood']>, string> = {
   Neutral: 'bg-slate-50 text-slate-700 ring-slate-600/20',
   Happy: 'bg-emerald-50 text-emerald-700 ring-emerald-600/20',
 }
+
+/** Per-demo colour themes for the full-colour demo cards. Unknown template keys fall back to FALLBACK_THEME. */
+export interface DemoTheme {
+  bg: string
+  fg: string
+  muted: string
+  chip: string
+  accent: string
+  row: string
+  tickets: string
+}
+
+export const DEMO_THEMES: Record<string, DemoTheme> = {
+  saas: {
+    bg: 'linear-gradient(155deg,#7357ff 0%,#4326d6 55%,#2a1496 100%)',
+    fg: '#ffffff',
+    muted: 'rgba(255,255,255,0.74)',
+    chip: 'rgba(255,255,255,0.16)',
+    accent: '#c8f560',
+    row: 'rgba(255,255,255,0.14)',
+    tickets: '53',
+  },
+  helpdesk: {
+    bg: 'linear-gradient(155deg,#12a594 0%,#0b6a86 55%,#0a3558 100%)',
+    fg: '#ffffff',
+    muted: 'rgba(255,255,255,0.78)',
+    chip: 'rgba(255,255,255,0.16)',
+    accent: '#a5f3fc',
+    row: 'rgba(255,255,255,0.15)',
+    tickets: '53',
+  },
+  ecommerce: {
+    bg: 'linear-gradient(155deg,#fff8ee 0%,#ffe1bd 60%,#ffc994 100%)',
+    fg: '#2b1608',
+    muted: 'rgba(43,22,8,0.66)',
+    chip: 'rgba(43,22,8,0.08)',
+    accent: '#ea580c',
+    row: 'rgba(255,255,255,0.7)',
+    tickets: '53',
+  },
+}
+
+export const FALLBACK_THEME: DemoTheme = {
+  bg: 'linear-gradient(155deg,#2a2a45 0%,#14142b 100%)',
+  fg: '#ffffff',
+  muted: 'rgba(255,255,255,0.7)',
+  chip: 'rgba(255,255,255,0.14)',
+  accent: '#c8f560',
+  row: 'rgba(255,255,255,0.12)',
+  tickets: '50',
+}
+
+export const USE_CASES = ['SaaS support', 'IT helpdesks', 'E-commerce', 'Agencies', 'Clinics & care', 'Schools', 'Marketplaces', 'Property managers', 'Fintech ops', 'Community teams']
