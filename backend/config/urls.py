@@ -7,14 +7,21 @@ from apps.tickets.inbound import InboundEmailView
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
 
+_swept_at_boot = False
+
+
 def health(_request):
-    """Liveness probe. Also nudges the job sweeper (at most every 30s) so a restart never strands work."""
-    from django.core.cache import cache
+    """Liveness probe. Deliberately DB-free so keep-alive pings never wake the (scale-to-zero) database.
 
-    from apps.jobs import runner
-
-    if cache.add("jobs:sweep", 1, 30):
+    The first probe after a process start also re-dispatches background jobs a restart may have
+    stranded; that single sweep is the only database touch.
+    """
+    global _swept_at_boot
+    if not _swept_at_boot:
+        _swept_at_boot = True
         try:
+            from apps.jobs import runner
+
             runner.sweep()
         except Exception:  # noqa: BLE001 - a DB hiccup must not fail the probe
             pass

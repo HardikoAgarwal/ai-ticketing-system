@@ -1,7 +1,9 @@
 name: Keep API warm
-# Free hosts put idle services to sleep (and Neon scales its database to zero). Pinging /health/
-# every 10 minutes keeps the first visitor from waiting on a cold start. The health endpoint also
-# re-dispatches any background AI jobs left over after a restart. Set the repository VARIABLE
+# OPTIONAL. Free hosts put idle services to sleep. The landing page already wakes the API when a
+# visitor arrives, so you only need this if you want zero cold starts. /health/ never touches the
+# database, so Neon still scales to zero and stays inside its free compute hours. Note: Render's
+# free plan discourages artificial keep-alives and Koyeb's free instance sleeps after an hour
+# regardless. Set the repository VARIABLE
 # API_URL (Settings > Secrets and variables > Actions > Variables), e.g. https://helpdesk-api.onrender.com
 on:
   schedule:

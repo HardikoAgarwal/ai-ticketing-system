@@ -17,6 +17,7 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 import { useEffect, useState, type ReactNode } from 'react'
+import { API_URL } from '@/lib/api'
 import { Link, useLocation } from 'react-router-dom'
 
 import { homeFor, useAuth } from '@/auth/AuthContext'
@@ -127,6 +128,10 @@ export function LandingPage() {
   const { user } = useAuth()
   const { hash } = useLocation()
   const [notice, setNotice] = useState<string | null>(null)
+  // Free hosts sleep when idle: wake the API while the visitor reads the page so "Try the demo" is instant.
+  useEffect(() => {
+    fetch(`${API_URL}/health/`, { mode: 'cors' }).catch(() => {})
+  }, [])
   useEffect(() => {
     const n = sessionStorage.getItem('helpdesk.notice')
     if (n) {
