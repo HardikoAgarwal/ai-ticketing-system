@@ -5,6 +5,7 @@ services:
     name: helpdesk-api
     runtime: python
     plan: free
+    region: singapore # keep in the same region as the Neon database; cross-region round trips make every query slow
     rootDir: backend
     buildCommand: pip install -r requirements.txt && python manage.py collectstatic --noinput
     startCommand: bash start.sh
