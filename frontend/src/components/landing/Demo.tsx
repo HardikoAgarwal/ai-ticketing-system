@@ -31,7 +31,7 @@ function DemoCard({ t, index, busy, active, onStart }: { t: TemplateMeta; index:
       transition={{ duration: 0.7, delay: index * 0.1, ease: EASE }}
       whileHover={reduce || busy ? undefined : { y: -6 }}
       className={cn(
-        'group flex h-full flex-col rounded-3xl bg-white p-6 text-(--lp-ink) shadow-[0_30px_70px_-34px_rgba(90,20,0,0.55)] ring-1 transition-shadow duration-300 hover:shadow-[0_40px_80px_-30px_rgba(90,20,0,0.6)] sm:p-7',
+        'group flex h-full min-w-0 flex-col rounded-3xl bg-white p-6 text-(--lp-ink) shadow-[0_30px_70px_-34px_rgba(90,20,0,0.55)] ring-1 transition-shadow duration-300 hover:shadow-[0_40px_80px_-30px_rgba(90,20,0,0.6)] sm:p-7',
         active ? 'ring-2 ring-(--lp-violet)' : 'ring-black/5 hover:ring-black/20',
       )}
     >
@@ -44,19 +44,19 @@ function DemoCard({ t, index, busy, active, onStart }: { t: TemplateMeta; index:
       </div>
 
       {/* 2 · name + one-line description (fixed two-line height keeps every card aligned) */}
-      <h3 className="mt-5 text-2xl leading-tight font-semibold tracking-[-0.03em]">{t.name}</h3>
-      <p className="mt-1.5 line-clamp-2 min-h-[2.8rem] text-sm leading-snug text-neutral-600">{t.tagline}</p>
+      <h3 className="mt-5 line-clamp-2 min-h-[3.4rem] text-2xl leading-[1.15] font-semibold tracking-[-0.03em]">{t.name}</h3>
+      <p className="mt-2 line-clamp-2 min-h-[2.6rem] text-sm leading-snug text-neutral-600">{t.tagline}</p>
 
       <hr className="my-5 border-black/[0.07]" />
 
       {/* 3 · highlights */}
-      <ul className="space-y-2.5">
+      <ul className="space-y-1">
         {t.highlights.map((h) => (
-          <li key={h} className="flex items-start gap-2.5 text-sm font-medium">
-            <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-(--lp-violet)/10 text-(--lp-violet)">
+          <li key={h} className="flex h-10 items-center gap-2.5 text-sm font-medium">
+            <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-(--lp-violet)/10 text-(--lp-violet)">
               <Check className="size-3" strokeWidth={3} />
             </span>
-            <span className="min-h-[2.5rem] leading-snug sm:min-h-0">{h}</span>
+            <span className="line-clamp-2 min-w-0 leading-snug">{h}</span>
           </li>
         ))}
       </ul>
@@ -215,11 +215,10 @@ export function Demo({ notice }: { notice?: string | null }) {
           </p>
         )}
 
-        <div className="mt-14 grid items-stretch gap-5 md:grid-cols-2 lg:grid-cols-3">
+        {/* three equal columns on desktop; one equal-width column (centred) everywhere else, so cards never differ in size */}
+        <div className="mx-auto mt-14 grid max-w-md grid-cols-1 items-stretch gap-6 lg:max-w-none lg:grid-cols-3 lg:gap-7">
           {templates.map((t, i) => (
-            <div key={t.key} className={cn(i === 2 && 'md:col-span-2 md:mx-auto md:w-[calc(50%-0.625rem)] lg:col-span-1 lg:w-auto')}>
-              <DemoCard t={t} index={i} busy={Boolean(busy)} active={busy?.key === t.key} onStart={launch} />
-            </div>
+            <DemoCard key={t.key} t={t} index={i} busy={Boolean(busy)} active={busy?.key === t.key} onStart={launch} />
           ))}
         </div>
         <p className="mt-8 text-center text-sm font-semibold opacity-80">No signup · private to you · wiped after 24 hours</p>

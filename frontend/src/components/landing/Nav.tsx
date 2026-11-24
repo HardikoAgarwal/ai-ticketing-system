@@ -45,7 +45,7 @@ export function Nav() {
   const { user } = useAuth()
   const theme = useNavTheme()
   const [open, setOpen] = useState(false)
-  const dark = theme === 'dark'
+  const dark = theme === 'dark' || open
 
   useEffect(() => {
     document.body.style.overflow = open ? 'hidden' : ''
@@ -54,9 +54,13 @@ export function Nav() {
     }
   }, [open])
 
-  const pill = dark ? 'bg-white/10 text-white ring-white/15' : 'bg-white/80 text-(--lp-ink) ring-black/10'
-  const cta = dark ? 'bg-(--lp-lime) text-(--lp-ink)' : 'bg-(--lp-violet) text-white'
-  const link = dark ? 'text-white/75 hover:bg-white/10 hover:text-white' : 'text-(--lp-ink)/70 hover:bg-black/5 hover:text-(--lp-ink)'
+  // The pill is always the OPPOSITE of the section under it so it can never melt into the background:
+  // ink over light sections, white over dark/saturated ones. Opaque, ringed and heavily shadowed.
+  const pill = dark
+    ? 'bg-white text-(--lp-ink) ring-black/15 shadow-[0_0_0_4px_rgba(255,255,255,0.18),0_18px_44px_-10px_rgba(0,0,0,0.55),0_4px_10px_rgba(0,0,0,0.2)]'
+    : 'bg-(--lp-ink) text-white ring-white/20 shadow-[0_0_0_4px_rgba(11,10,29,0.10),0_18px_44px_-10px_rgba(11,10,29,0.6),0_4px_10px_rgba(11,10,29,0.25)]'
+  const cta = dark ? 'bg-(--lp-violet) text-white shadow-[0_8px_20px_-6px_rgba(91,61,245,0.7)]' : 'bg-(--lp-lime) text-(--lp-ink) shadow-[0_8px_20px_-6px_rgba(200,245,96,0.55)]'
+  const link = dark ? 'text-(--lp-ink)/75 hover:bg-black/[0.06] hover:text-(--lp-ink)' : 'text-white/80 hover:bg-white/10 hover:text-white'
 
   return (
     <>
@@ -64,44 +68,44 @@ export function Nav() {
         initial={{ y: -40, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-        className="fixed inset-x-0 top-3 z-50 flex justify-center px-3 sm:top-4"
+        className="fixed inset-x-0 top-3 z-50 flex justify-center px-3 sm:top-5"
       >
-        <div className={cn('flex w-full max-w-4xl items-center gap-1 rounded-full py-1.5 pr-1.5 pl-3 shadow-[0_12px_40px_-12px_rgba(0,0,0,0.35)] ring-1 backdrop-blur-xl transition-colors duration-500', pill)}>
+        <div className={cn('flex h-14 w-full max-w-5xl items-center gap-1 rounded-full pr-2 pl-3 ring-1 transition-[background-color,color,box-shadow] duration-500 sm:h-16 sm:pl-4', pill)}>
           <a href="#top" className="lp-focus flex items-center gap-2 rounded-full pr-2 font-semibold tracking-tight">
-            <span className="flex size-8 items-center justify-center rounded-full bg-(--lp-lime) text-(--lp-ink)">
-              <LifeBuoy className="size-4" />
+            <span className="flex size-10 items-center justify-center rounded-full bg-(--lp-lime) text-(--lp-ink) sm:size-11">
+              <LifeBuoy className="size-5" />
             </span>
-            <span className="hidden sm:inline">{BRAND}</span>
+            <span className="hidden text-lg whitespace-nowrap sm:inline">{BRAND}</span>
           </a>
 
           <nav className="ml-auto hidden items-center md:flex" aria-label="Sections">
             {LINKS.map((l) => (
-              <a key={l.href} href={l.href} className={cn('lp-focus rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors', link)}>
+              <a key={l.href} href={l.href} className={cn('lp-focus rounded-full px-3 py-2 text-[15px] font-medium transition-colors lg:px-4', link)}>
                 {l.label}
               </a>
             ))}
           </nav>
 
           <div className="ml-auto flex items-center gap-1 md:ml-2">
-            <a href={GITHUB_URL} target="_blank" rel="noreferrer" aria-label="GitHub repository" className={cn('lp-focus hidden size-9 items-center justify-center rounded-full transition-colors sm:flex', link)}>
-              <GithubMark className="size-[18px]" />
+            <a href={GITHUB_URL} target="_blank" rel="noreferrer" aria-label="GitHub repository" className={cn('lp-focus hidden size-11 items-center justify-center rounded-full transition-colors lg:flex', link)}>
+              <GithubMark className="size-5" />
             </a>
             {user ? (
-              <Link to={homeFor(user)} className={cn('lp-focus flex h-9 items-center gap-1.5 rounded-full px-4 text-sm font-semibold transition-all duration-500 hover:scale-[1.03]', cta)}>
+              <Link to={homeFor(user)} className={cn('lp-focus flex h-11 items-center gap-1.5 rounded-full px-5 text-[15px] font-semibold whitespace-nowrap transition-all duration-500 hover:scale-[1.04]', cta)}>
                 Open workspace <ArrowRight className="size-4" />
               </Link>
             ) : (
               <>
-                <Link to="/login" className={cn('lp-focus hidden h-9 items-center rounded-full px-3.5 text-sm font-medium transition-colors sm:flex', link)}>
+                <Link to="/login" className={cn('lp-focus hidden h-11 items-center rounded-full px-4 text-[15px] font-medium whitespace-nowrap transition-colors lg:flex', link)}>
                   Log in
                 </Link>
-                <a href="#demo" className={cn('lp-focus flex h-9 items-center gap-1.5 rounded-full px-4 text-sm font-semibold transition-all duration-500 hover:scale-[1.03]', cta)}>
+                <a href="#demo" className={cn('lp-focus flex h-11 items-center gap-1.5 rounded-full px-5 text-[15px] font-semibold whitespace-nowrap transition-all duration-500 hover:scale-[1.04]', cta)}>
                   Try a demo <ArrowRight className="size-4" />
                 </a>
               </>
             )}
-            <button type="button" aria-label={open ? 'Close menu' : 'Open menu'} aria-expanded={open} aria-controls="mobile-menu" onClick={() => setOpen((o) => !o)} className={cn('lp-focus flex size-9 items-center justify-center rounded-full md:hidden', link)}>
-              {open ? <X className="size-5" /> : <Menu className="size-5" />}
+            <button type="button" aria-label={open ? 'Close menu' : 'Open menu'} aria-expanded={open} aria-controls="mobile-menu" onClick={() => setOpen((o) => !o)} className={cn('lp-focus flex size-11 items-center justify-center rounded-full md:hidden', link)}>
+              {open ? <X className="size-6" /> : <Menu className="size-6" />}
             </button>
           </div>
         </div>

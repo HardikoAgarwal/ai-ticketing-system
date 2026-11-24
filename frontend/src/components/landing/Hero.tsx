@@ -1,6 +1,6 @@
-import { ArrowRight, Bell, Check, Play, Sparkles, Star } from 'lucide-react'
+import { ArrowRight, Play, Sparkles, Star } from 'lucide-react'
 import { motion, useReducedMotion, useScroll, useSpring, useTransform } from 'motion/react'
-import { useRef, type CSSProperties, type ReactNode } from 'react'
+import { useRef, type ReactNode } from 'react'
 
 import { cn } from '@/lib/utils'
 
@@ -10,145 +10,128 @@ import { Drift, EASE, Marquee, useParallax, useTypewriter, WordReveal } from './
 const DRAFT =
   'Hi Priya, I’m sorry about the timing. Your Segment pipeline is Degraded: the last sync was 3 hours ago and about 120,000 events are delayed. They backfill automatically for up to 72 hours, so nothing is lost.'
 
-function Chip({ children, tone }: { children: ReactNode; tone: 'red' | 'violet' | 'amber' | 'green' }) {
+function Chip({ children, tone, i = 0 }: { children: ReactNode; tone: 'red' | 'violet' | 'amber' | 'green'; i?: number }) {
   const t = {
     red: 'bg-red-50 text-red-700 ring-red-600/20',
     violet: 'bg-violet-50 text-violet-700 ring-violet-600/20',
     amber: 'bg-amber-50 text-amber-800 ring-amber-600/20',
     green: 'bg-emerald-50 text-emerald-700 ring-emerald-600/20',
   }[tone]
-  return <span className={cn('rounded-full px-2.5 py-1 text-[11px] font-medium ring-1 ring-inset', t)}>{children}</span>
+  return (
+    <motion.span
+      initial={{ opacity: 0, scale: 0.4 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ type: 'spring', stiffness: 420, damping: 16, delay: 1.3 + i * 0.22 }}
+      className={cn('rounded-full px-3 py-1 text-xs font-semibold ring-1 ring-inset', t)}
+    >
+      {children}
+    </motion.span>
+  )
 }
 
-function Glass({ className, children, style }: { className?: string; children: ReactNode; style?: CSSProperties }) {
-  return (
-    <div style={style} className={cn('rounded-2xl bg-white p-4 text-(--lp-ink) shadow-[0_30px_70px_-28px_rgba(60,40,140,0.38)] ring-1 ring-black/[0.06]', className)}>
-      {children}
-    </div>
-  )
+/** One consistent satellite-card look: same radius, border and shadow everywhere. */
+function Sat({ className, children }: { className?: string; children: ReactNode }) {
+  return <div className={cn('rounded-3xl bg-white p-5 text-(--lp-ink) shadow-[0_24px_60px_-24px_rgba(60,40,140,0.35)] ring-1 ring-black/[0.06]', className)}>{children}</div>
 }
 
 function SlaRing() {
   const r = 26
   const len = 2 * Math.PI * r
   return (
-    <svg viewBox="0 0 64 64" className="size-16 -rotate-90">
-      <circle cx="32" cy="32" r={r} fill="none" stroke="rgba(11,10,29,0.08)" strokeWidth="6" />
-      <circle cx="32" cy="32" r={r} fill="none" stroke="#5b3df5" strokeWidth="6" strokeLinecap="round" strokeDasharray={len} style={{ ['--ring-len' as string]: `${len * 0.72}px`, animation: 'lp-ring 6s ease-in-out infinite alternate' }} />
+    <svg viewBox="0 0 64 64" className="size-14 shrink-0 -rotate-90">
+      <circle cx="32" cy="32" r={r} fill="none" stroke="rgba(11,10,29,0.08)" strokeWidth="7" />
+      <circle cx="32" cy="32" r={r} fill="none" stroke="#5b3df5" strokeWidth="7" strokeLinecap="round" strokeDasharray={len} style={{ ['--ring-len' as string]: `${len * 0.72}px`, animation: 'lp-ring 6s ease-in-out infinite alternate' }} />
     </svg>
   )
 }
 
 function Scene({ progress }: { progress: ReturnType<typeof useScroll>['scrollYProgress'] }) {
-  const main = useParallax(progress, -110)
-  const left = useParallax(progress, -320)
-  const right = useParallax(progress, -420)
-  const low = useParallax(progress, -240)
-  const top = useParallax(progress, -380)
-  const rotL = useParallax(progress, -7)
-  const rotR = useParallax(progress, 6)
+  // Gentle parallax: the composition drifts a little, it never falls apart.
+  const main = useParallax(progress, 0)
+  const left = useParallax(progress, -110)
+  const right = useParallax(progress, -150)
+  const low = useParallax(progress, -90)
   const { shown, done } = useTypewriter(DRAFT, true, 18)
 
   return (
-    <div className="relative mx-auto mt-16 h-[34rem] w-full max-w-6xl text-left sm:h-[36rem]">
-      {/* main window */}
-      <motion.div style={{ y: main }} className="absolute inset-x-0 top-0 mx-auto w-[min(46rem,94%)]">
-        <motion.div initial={{ opacity: 0, y: 60 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.9, delay: 0.5, ease: EASE }} className="overflow-hidden rounded-3xl bg-white shadow-[0_50px_110px_-30px_rgba(91,61,245,0.42)] ring-1 ring-black/[0.07]">
-          <div className="flex items-center gap-2 border-b border-black/[0.06] bg-neutral-50/80 px-4 py-3">
-            <span className="size-2.5 rounded-full bg-red-300" />
-            <span className="size-2.5 rounded-full bg-amber-300" />
-            <span className="size-2.5 rounded-full bg-emerald-300" />
-            <span className="ml-3 truncate text-xs text-neutral-500">TKT-0001 · Segment events missing since this morning</span>
-          </div>
-          <div className="space-y-3.5 p-4 sm:p-5">
-            <div className="flex gap-3">
-              <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-orange-300/90 text-xs font-bold text-orange-950">PR</span>
-              <p className="rounded-2xl rounded-tl-sm bg-neutral-100 px-4 py-2.5 text-[13px] leading-relaxed text-neutral-800">None of our Segment events have shown up since about 6am UTC. We have a launch review in a few hours. Is this on your side?</p>
+    <div className="relative mx-auto mt-14 w-full max-w-6xl text-left sm:mt-16">
+      {/* focal card */}
+      <motion.div style={{ y: main }} className="relative z-10 mx-auto w-full max-w-[44rem]">
+        <motion.div initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.9, delay: 0.45, ease: EASE }} className="rounded-[2rem] bg-white p-3 shadow-[0_50px_110px_-34px_rgba(91,61,245,0.45)] ring-1 ring-black/[0.07] sm:p-4">
+          <div className="flex items-center gap-3 px-2 pt-1 pb-3 sm:px-3">
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-orange-300 text-xs font-bold text-orange-950">PR</span>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-semibold">Segment events missing since this morning</p>
+              <p className="text-xs text-neutral-500">TKT-0001 · Priya Raman · 5 min ago</p>
             </div>
-            <div className="rounded-2xl bg-linear-to-br from-violet-50 via-fuchsia-50/60 to-white p-4 ring-1 ring-violet-200">
-              <div className="mb-2 flex items-center gap-2 text-[11px] font-semibold tracking-wide text-violet-700 uppercase">
-                <Sparkles className="size-3.5" /> AI draft
-                <span className="ml-auto rounded-full bg-white px-2 py-0.5 text-[10px] font-medium text-neutral-500 ring-1 ring-violet-200 normal-case">2 sources cited</span>
-              </div>
-              <p className="min-h-[5.6rem] text-[13px] leading-relaxed text-neutral-800">
-                {shown}
-                {!done && <span className="lp-caret ml-0.5 inline-block h-3.5 w-[2px] translate-y-0.5 bg-(--lp-violet)" />}
-              </p>
-              <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                <span className="rounded-full bg-white px-2.5 py-1 text-[11px] text-violet-800 ring-1 ring-violet-200">Segment sync troubleshooting</span>
-                <span className="rounded-full bg-white px-2.5 py-1 text-[11px] text-violet-800 ring-1 ring-violet-200">Incident response and SLA</span>
-                <span className="ml-auto flex items-center gap-1.5 rounded-full bg-(--lp-ink) px-3 py-1 text-[11px] font-semibold text-white">
-                  Review &amp; send <ArrowRight className="size-3" />
-                </span>
-              </div>
+            <span className="rounded-full bg-red-50 px-2.5 py-1 text-[11px] font-semibold text-red-700 ring-1 ring-red-600/20 ring-inset">Critical</span>
+          </div>
+          <p className="mx-1 rounded-2xl bg-neutral-100 px-4 py-3 text-[13.5px] leading-relaxed text-neutral-800 sm:mx-2">None of our Segment events have shown up since about 6am UTC. We have a launch review in a few hours. Is this on your side?</p>
+          <div className="mx-1 mt-3 rounded-2xl bg-linear-to-br from-violet-50 via-fuchsia-50/70 to-white p-4 ring-1 ring-violet-200 sm:mx-2">
+            <div className="mb-2 flex items-center gap-2 text-[11px] font-bold tracking-wide text-violet-700 uppercase">
+              <Sparkles className="size-3.5" /> AI draft
+              <span className="ml-auto rounded-full bg-white px-2.5 py-0.5 text-[10px] font-semibold text-neutral-500 ring-1 ring-violet-200 normal-case">2 sources</span>
+            </div>
+            <p className="min-h-[6.6rem] text-[13.5px] leading-relaxed text-neutral-800 sm:min-h-[5.6rem]">
+              {shown}
+              {!done && <span className="lp-caret ml-0.5 inline-block h-3.5 w-[2px] translate-y-0.5 bg-(--lp-violet)" />}
+            </p>
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <span className="rounded-full bg-white px-2.5 py-1 text-[11px] font-medium text-violet-800 ring-1 ring-violet-200">Segment sync troubleshooting</span>
+              <span className="hidden rounded-full bg-white px-2.5 py-1 text-[11px] font-medium text-violet-800 ring-1 ring-violet-200 sm:inline">Incident response</span>
+              <span className="ml-auto flex items-center gap-1.5 rounded-full bg-(--lp-ink) px-3.5 py-1.5 text-[11px] font-semibold text-white">
+                Review &amp; send <ArrowRight className="size-3" />
+              </span>
             </div>
           </div>
         </motion.div>
       </motion.div>
 
-      {/* triage card */}
-      <motion.div style={{ y: left, rotate: rotL }} className="absolute top-24 left-0 hidden w-60 lg:block xl:-left-4">
-        <Glass className="lp-float">
-          <p className="mb-2.5 flex items-center gap-1.5 text-[11px] font-semibold tracking-wide text-neutral-500 uppercase">
-            <Sparkles className="size-3.5 text-(--lp-violet)" /> AI triage
-          </p>
-          <div className="flex flex-wrap gap-1.5">
-            <Chip tone="red">Critical</Chip>
-            <Chip tone="violet">Integrations</Chip>
-            <Chip tone="amber">Frustrated</Chip>
-          </div>
-          <p className="mt-3 text-[12px] leading-snug text-neutral-600">Customer’s Segment pipeline stopped delivering events; launch review today.</p>
-          <div className="mt-3 flex items-center gap-2 text-[11px] text-neutral-500">
-            <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-neutral-100">
-              <motion.span initial={{ width: 0 }} animate={{ width: '93%' }} transition={{ delay: 1.2, duration: 1.1, ease: EASE }} className="block h-full rounded-full bg-(--lp-violet)" />
-            </span>
-            93%
-          </div>
-        </Glass>
-      </motion.div>
+      {/* satellites: a tidy row below the card on small screens, floating beside it on xl */}
+      <div className="mx-auto mt-5 grid max-w-[44rem] grid-cols-2 gap-3 sm:grid-cols-3 xl:contents">
+        <motion.div style={{ y: left }} className="col-span-2 sm:col-span-1 xl:absolute xl:top-20 xl:left-0 xl:w-56">
+          <Sat className="lp-float">
+            <p className="mb-3 flex items-center gap-1.5 text-[11px] font-bold tracking-wide text-neutral-500 uppercase">
+              <Sparkles className="size-3.5 text-(--lp-violet)" /> Instant triage
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              <Chip tone="red" i={0}>Critical</Chip>
+              <Chip tone="violet" i={1}>Integrations</Chip>
+              <Chip tone="amber" i={2}>Frustrated</Chip>
+            </div>
+          </Sat>
+        </motion.div>
 
-      {/* SLA */}
-      <motion.div style={{ y: right, rotate: rotR }} className="absolute top-10 right-0 hidden w-52 md:block xl:-right-4">
-        <Glass className="lp-float [animation-delay:-2s]">
-          <div className="flex items-center gap-3">
+        <motion.div style={{ y: right }} className="xl:absolute xl:top-4 xl:right-0 xl:w-56">
+          <Sat className="lp-float flex items-center gap-3 [animation-delay:-2s]">
             <SlaRing />
             <div>
-              <p className="text-[11px] font-semibold tracking-wide text-neutral-500 uppercase">SLA</p>
+              <p className="text-[11px] font-bold tracking-wide text-neutral-500 uppercase">SLA</p>
               <p className="text-lg leading-tight font-semibold">Reply in 1h</p>
             </div>
-          </div>
-        </Glass>
-      </motion.div>
+          </Sat>
+        </motion.div>
 
-      {/* CSAT */}
-      <motion.div style={{ y: low }} className="absolute right-4 bottom-8 hidden w-56 md:block xl:right-0">
-        <Glass className="lp-float [animation-delay:-4s]">
-          <p className="text-[11px] font-semibold tracking-wide text-neutral-500 uppercase">Customer rating</p>
-          <div className="mt-1.5 flex items-center gap-1">
-            {[0, 1, 2, 3, 4].map((i) => (
-              <Star key={i} className="size-5 fill-(--lp-amber) text-(--lp-amber)" />
-            ))}
-            <span className="ml-2 text-sm font-semibold">4.8</span>
-          </div>
-          <p className="mt-1 flex items-center gap-1 text-[11px] text-emerald-600">
-            <Check className="size-3" /> Resolved in 38 min
-          </p>
-        </Glass>
-      </motion.div>
-
-      {/* realtime toast */}
-      <motion.div style={{ y: top }} className="absolute bottom-4 left-2 w-64 sm:left-10 lg:left-24">
-        <Glass className="lp-float flex items-center gap-3 !p-3 [animation-delay:-1s]">
-          <span className="relative flex size-9 shrink-0 items-center justify-center rounded-full bg-(--lp-coral) text-white">
-            <Bell className="size-4" />
-            <span className="lp-pulse-ring absolute inset-0 rounded-full bg-(--lp-coral)/60" />
-          </span>
-          <div className="min-w-0">
-            <p className="truncate text-[13px] font-semibold">New reply · Priya</p>
-            <p className="truncate text-[11px] text-neutral-500">“That fixed it, thank you!” · just now</p>
-          </div>
-        </Glass>
-      </motion.div>
+        <motion.div style={{ y: low }} className="xl:absolute xl:right-2 xl:bottom-10 xl:w-60">
+          <Sat className="lp-float [animation-delay:-4s]">
+            <div className="flex items-center gap-3">
+              <motion.span animate={{ rotate: [0, -14, 14, -8, 0], scale: [1, 1.2, 1] }} transition={{ duration: 1.6, repeat: Infinity, repeatDelay: 2.4 }} className="text-3xl leading-none" aria-hidden>
+                🎉
+              </motion.span>
+              <div>
+                <p className="text-sm font-semibold">Resolved in 38 min</p>
+                <div className="mt-1 flex gap-0.5">
+                  {[0, 1, 2, 3, 4].map((i) => (
+                    <motion.span key={i} initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 500, damping: 12, delay: 2 + i * 0.12 }}>
+                      <Star className="size-4 fill-(--lp-amber) text-(--lp-amber)" />
+                    </motion.span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </Sat>
+        </motion.div>
+      </div>
     </div>
   )
 }
@@ -161,7 +144,7 @@ export function Hero() {
   const blobA = useParallax(smooth, 340)
   const blobB = useParallax(smooth, -220)
   const blobC = useParallax(smooth, 260)
-  const titleY = useParallax(smooth, 160)
+  const titleY = useParallax(smooth, 70)
   const titleOpacity = useTransform(smooth, [0, 0.55], [1, reduce ? 1 : 0.15])
 
   return (
@@ -174,7 +157,6 @@ export function Hero() {
         <Drift speed={0.9} rotate={25} className="top-[16%] left-[7%] size-20"><div className="size-full rounded-full border-[5px] border-(--lp-violet)/35" /></Drift>
         <Drift speed={0.55} rotate={-30} className="top-[26%] right-[9%] size-14"><div className="size-full rounded-2xl bg-(--lp-coral)/70" /></Drift>
         <Drift speed={1.1} rotate={40} className="top-[58%] left-[3%] size-10"><div className="size-full rounded-lg bg-(--lp-lime)" /></Drift>
-        <Drift speed={0.7} className="top-[48%] right-[4%] h-28 w-28"><div className="size-full [background-image:radial-gradient(circle,rgba(91,61,245,0.55)_2px,transparent_2.5px)] [background-size:14px_14px]" /></Drift>
         <div className="absolute inset-0 [background-image:linear-gradient(to_right,rgba(11,10,29,0.05)_1px,transparent_1px),linear-gradient(to_bottom,rgba(11,10,29,0.05)_1px,transparent_1px)] [background-size:64px_64px] [mask-image:radial-gradient(ellipse_70%_55%_at_50%_22%,#000_25%,transparent_75%)]" />
       </div>
 
