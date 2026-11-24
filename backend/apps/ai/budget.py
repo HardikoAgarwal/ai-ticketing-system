@@ -19,7 +19,12 @@ def _today_start():
 
 
 def _chat_calls(**filters):
-    return AIRequestLog.objects.filter(created_at__gte=_today_start(), **filters).exclude(feature=AIFeature.EMBED)
+    # Seeded demo history ("seed" rows) is decoration, not real usage: it must not eat the live budget.
+    return (
+        AIRequestLog.objects.filter(created_at__gte=_today_start(), **filters)
+        .exclude(feature=AIFeature.EMBED)
+        .exclude(prompt_version="seed")
+    )
 
 
 def usage(workspace_id: int | None = None) -> dict:

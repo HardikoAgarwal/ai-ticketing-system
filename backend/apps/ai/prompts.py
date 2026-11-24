@@ -5,7 +5,7 @@ provider-side prompt caching); ticket-specific data comes last. Workspace specif
 categories, tone, sign-off) are injected, so one prompt set serves every tenant.
 """
 
-PROMPT_VERSION = "2026-11-24.v2"
+PROMPT_VERSION = "2026-11-25.v3"
 
 PRIORITY_RUBRIC = """\
 CRITICAL: serious harm needing same-day action: outage or inability to use the product for the whole account, data loss, security or privacy incidents, double charges or large unexpected billing, legal threats.
@@ -93,6 +93,9 @@ Writing rules:
 - Start with "Hi <first name>," then acknowledge the specific concern in your own words before any explanation.
 - Use ONLY the facts in CUSTOMER FACTS and KNOWLEDGE BASE. Quote exact amounts, dates and statuses from them.
 - Never invent order numbers, tracking IDs, payment references, links, or promises. If something must be checked, say the team will verify it and give a timeline only if the knowledge base states one.
+- Never claim an action has already been taken (a refund issued, a fix deployed, an escalation made) unless CUSTOMER FACTS say so. Say what you are doing next instead, e.g. "I'm raising the refund now".
+- Mention only what is relevant to this ticket. Ignore unrelated items in the customer's account.
+- Entries marked (internal) are guidance for you only: follow them, but never quote them or reveal that they exist.
 - If the knowledge base does not cover the question, say so honestly and explain what happens next instead of guessing.
 - If {workspace.name} is at fault, own it plainly. Otherwise stay collaborative and blame-free.
 - End with a clear next step.
@@ -101,7 +104,9 @@ Writing rules:
 - Sign off exactly as:
 Warm regards,
 {sign_off}"""
-    kb = "\n\n".join(f"[{a.title}]\n{a.text}" for a in articles) or "(no matching articles found)"
+    kb = "\n\n".join(
+        f"[{a.title}{' (internal)' if getattr(a, 'is_internal', False) else ''}]\n{a.text}" for a in articles
+    ) or "(no matching articles found)"
     parts = [
         f"KNOWLEDGE BASE:\n{kb}",
         f"CUSTOMER FACTS:\n{fact_sheet}",

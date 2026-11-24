@@ -195,3 +195,11 @@ def test_similar_tickets_use_embeddings(client_for, ws, customer, agent, fake_op
     assert a.embedding  # stored by the pipeline
     hits = client_for(agent).get(url(ws, f"tickets/{a.id}/similar/")).data
     assert [h["id"] for h in hits] == [b.id]
+
+
+def test_seeded_demo_logs_do_not_consume_live_budget(ws, settings):
+    settings.AI_WORKSPACE_DAILY_CAP = 2
+    for _ in range(5):
+        AIRequestLog.objects.create(workspace=ws, feature="DRAFT", model="m", prompt_version="seed")
+    assert budget.usage(ws.id)["workspace_used"] == 0
+    budget.check(ws.id, "DRAFT")  # does not raise

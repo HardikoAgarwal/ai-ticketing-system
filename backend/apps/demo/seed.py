@@ -274,7 +274,7 @@ def _log_ai(batch, ws, ticket, created, rng):
     """Plausible usage rows so the analytics page has history (sandbox data, flagged by the demo workspace)."""
     for feature, p_in, p_out, ms in ((AIFeature.CLASSIFY, 575, 70, 1900), (AIFeature.DRAFT, 880, 235, 4200)):
         batch.add("logs", AIRequestLog(
-            workspace=ws, feature=feature, model=settings.AI_MODEL, prompt_version=PROMPT_VERSION,
+            workspace=ws, feature=feature, model=settings.AI_MODEL, prompt_version="seed",
             prompt_tokens=int(p_in * rng.uniform(0.85, 1.2)), completion_tokens=int(p_out * rng.uniform(0.8, 1.3)),
             cost_usd=Decimal("0"), latency_ms=int(ms * rng.uniform(0.7, 1.5)), success=rng.random() > 0.03,
             created_at=created + timedelta(seconds=rng.randint(4, 40)),
