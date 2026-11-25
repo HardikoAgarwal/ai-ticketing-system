@@ -1,4 +1,4 @@
-import { BarChart3, Check, Copy, Lock, ShieldCheck, Sparkles, Star, Users, Zap } from 'lucide-react'
+import { BarChart3, Check, Copy, Sparkles, Star, Users, Zap } from 'lucide-react'
 import { AnimatePresence, LayoutGroup, motion, useReducedMotion } from 'motion/react'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 
@@ -310,41 +310,6 @@ function AnalyticsTile() {
   )
 }
 
-/* ------------------------------- Safe by design ------------------------------- */
-function SafeTile() {
-  const [down, setDown] = useState(false)
-  return (
-    <Tile className="lg:col-span-12" tone="bg-(--lp-ink-2) text-white" title="Humans stay in charge.">
-      <div className="grid items-start gap-6 lg:grid-cols-2">
-        <div>
-          <button type="button" role="switch" aria-checked={down} onClick={() => setDown((d) => !d)} className="lp-focus flex items-center gap-3 rounded-full bg-white/10 py-1.5 pr-4 pl-1.5 text-xs font-semibold ring-1 ring-white/15">
-            <span className={cn('flex h-7 w-12 items-center rounded-full p-1 transition-colors', down ? 'bg-amber-400' : 'bg-white/20')}>
-              <motion.span layout transition={{ type: 'spring', stiffness: 500, damping: 30 }} className={cn('size-5 rounded-full bg-white', down && 'ml-auto')} />
-            </span>
-            Simulate an AI outage
-          </button>
-          <AnimatePresence mode="wait">
-            <motion.div key={String(down)} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.25 }} className={cn('mt-4 rounded-2xl p-4 text-[14px]', down ? 'bg-amber-400/15 text-amber-100 ring-1 ring-amber-300/30' : 'bg-emerald-400/10 text-emerald-100 ring-1 ring-emerald-300/25')}>
-              {down ? (
-                <>
-                  <b>Fallback mode.</b> Rule-based triage keeps every ticket sorted and on the clock. Agents write replies as usual. Nothing is lost.
-                </>
-              ) : (
-                <>
-                  <b>AI online.</b> Triage and drafts are ready before an agent opens the ticket.
-                </>
-              )}
-            </motion.div>
-          </AnimatePresence>
-        </div>
-        <ul className="grid gap-2.5 text-[14px] text-white/85 sm:grid-cols-2 lg:grid-cols-1">
-          <li className="flex items-center gap-3 rounded-2xl bg-white/5 px-4 py-3"><ShieldCheck className="size-5 shrink-0 text-(--lp-lime)" /> A human approves every reply. AI never sends on its own.</li>
-          <li className="flex items-center gap-3 rounded-2xl bg-white/5 px-4 py-3"><Lock className="size-5 shrink-0 text-(--lp-lime)" /> Internal notes never reach customers or the AI’s reply context.</li>
-        </ul>
-      </div>
-    </Tile>
-  )
-}
 
 export function Bento() {
   return (
@@ -365,7 +330,6 @@ export function Bento() {
           <RealtimeTile />
           <TeamsTile />
           <AnalyticsTile />
-          <SafeTile />
         </div>
       </div>
     </section>

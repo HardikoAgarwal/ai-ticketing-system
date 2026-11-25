@@ -218,6 +218,9 @@ function StackedStep({ step, index }: { step: (typeof STEPS)[number]; index: num
   )
 }
 
+/** Viewport heights of scroll per step: enough to read, short enough that it never feels like a slog. */
+const STEP_SCROLL = 0.8
+
 const clamp01 = (n: number) => Math.min(1, Math.max(0, n))
 
 /** Desktop: a pinned stage. About 100vh of scroll per step. Left: ONLY the active step, swapped with a spring as you scroll, plus a compact progress bar.
@@ -225,14 +228,12 @@ const clamp01 = (n: number) => Math.min(1, Math.max(0, n))
 function StoryPinned() {
   const ref = useRef<HTMLDivElement>(null)
   const { scrollYProgress } = useScroll({ target: ref, offset: ['start start', 'end end'] })
-  const smooth = useSpring(scrollYProgress, { stiffness: 120, damping: 28, mass: 0.4 })
+  const smooth = useSpring(scrollYProgress, { stiffness: 140, damping: 30, mass: 0.35 })
   const [step, setStep] = useState(0)
-  const [dir, setDir] = useState(1)
   const last = useRef(0)
   useMotionValueEvent(scrollYProgress, 'change', (v) => {
     const next = Math.min(STEPS.length - 1, Math.max(0, Math.floor(v * STEPS.length * 0.999)))
     if (next === last.current) return
-    setDir(next > last.current ? 1 : -1)
     last.current = next
     setStep(next)
   })
@@ -242,40 +243,40 @@ function StoryPinned() {
     const el = ref.current
     if (!el) return
     const next = Math.min(STEPS.length - 1, Math.max(0, i))
-    // Each step owns one viewport of scroll; aim for the middle of that step's range.
-    window.scrollTo({ top: el.offsetTop + (next + 0.5) * window.innerHeight, behavior: 'smooth' })
+    // offsetTop is relative to the section, not the page, so use the bounding box. Aim for the middle of the step's range.
+    const top = el.getBoundingClientRect().top + window.scrollY
+    window.scrollTo({ top: top + (next + 0.5) * window.innerHeight * STEP_SCROLL, behavior: 'smooth' })
   }
 
   return (
-    <div ref={ref} className="relative" style={{ height: `${(STEPS.length + 1) * 100}svh` }}>
+    <div ref={ref} className="relative" style={{ height: `${(STEPS.length * STEP_SCROLL + 1) * 100}svh` }}>
       <div className="sticky top-0 flex h-svh items-center pt-24 pb-10">
         <div className="mx-auto grid w-full max-w-6xl items-center gap-14 px-8 lg:grid-cols-[0.9fr_1.1fr] xl:gap-24">
           {/* left: the ACTIVE step only (big number, heading, description), then progress */}
           <div>
-            <div className="relative min-h-[23rem] [@media(max-height:900px)]:min-h-[20rem]">
-              <AnimatePresence mode="wait" custom={dir} initial={false}>
-                <motion.div
-                  key={current.n}
-                  custom={dir}
-                  variants={{
-                    enter: (d: number) => ({ opacity: 0, y: 36 * d }),
-                    center: { opacity: 1, y: 0 },
-                    exit: (d: number) => ({ opacity: 0, y: -36 * d }),
-                  }}
-                  initial="enter"
-                  animate="center"
-                  exit="exit"
-                  transition={{ type: 'spring', stiffness: 260, damping: 28, mass: 0.7 }}
-                  className="relative"
-                  aria-live="polite"
-                >
-                  <span aria-hidden className="block text-[clamp(6rem,10vw,9.5rem)] leading-[0.82] font-semibold tracking-[-0.07em]" style={{ color: STEP_COLORS[step] === '#c8f560' ? '#9bc72e' : STEP_COLORS[step] }}>
-                    {current.n}
-                  </span>
-                  <h3 className="mt-6 max-w-lg text-[clamp(2.1rem,3.4vw,3.2rem)] leading-[1.04] font-semibold tracking-[-0.04em] text-balance [@media(max-height:900px)]:mt-4">{current.title}</h3>
-                  <p className="mt-5 max-w-md text-[1.2rem] leading-[1.65] text-(--lp-muted) [@media(max-height:900px)]:mt-4 xl:text-[1.3rem]">{current.body}</p>
-                </motion.div>
-              </AnimatePresence>
+            {/* every step lives in the same grid cell, so the column is always as tall as the tallest step: no layout shift */}
+            <div className="grid">
+              {STEPS.map((st, i) => {
+                const on = i === step
+                return (
+                  <motion.div
+                    key={st.n}
+                    className="col-start-1 row-start-1"
+                    initial={false}
+                    animate={{ opacity: on ? 1 : 0, y: on ? 0 : i < step ? -28 : 28 }}
+                    transition={{ type: 'spring', stiffness: 220, damping: 30, mass: 0.7 }}
+                    style={{ pointerEvents: on ? 'auto' : 'none' }}
+                    aria-hidden={!on}
+                    aria-live={on ? 'polite' : undefined}
+                  >
+                    <span aria-hidden className="block text-[clamp(6rem,10vw,9.5rem)] leading-[0.82] font-semibold tracking-[-0.07em]" style={{ color: STEP_COLORS[i] === '#c8f560' ? '#9bc72e' : STEP_COLORS[i] }}>
+                      {st.n}
+                    </span>
+                    <h3 className="mt-6 max-w-lg text-[clamp(2.1rem,3.4vw,3.2rem)] leading-[1.04] font-semibold tracking-[-0.04em] text-balance [@media(max-height:900px)]:mt-4">{st.title}</h3>
+                    <p className="mt-5 max-w-md text-[1.2rem] leading-[1.65] text-(--lp-muted) [@media(max-height:900px)]:mt-4 xl:text-[1.3rem]">{st.body}</p>
+                  </motion.div>
+                )
+              })}
             </div>
 
             {/* compact progress: four segments that fill with scroll, a counter and prev/next */}

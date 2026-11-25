@@ -68,7 +68,7 @@ function RoleToggle({ role, onChange }: { role: Role; onChange: (r: Role) => voi
     { key: 'customer', label: 'Customer', Icon: UserRound },
   ]
   return (
-    <div className="mt-9 flex flex-wrap items-center gap-3">
+    <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
       <span className="text-sm font-semibold">Enter as</span>
       <div role="radiogroup" aria-label="Enter the demo as" className="inline-flex rounded-full bg-white p-1 shadow-(--lp-shadow) ring-1 ring-black/[0.06]">
         {opts.map(({ key, label, Icon }) => (
@@ -209,10 +209,9 @@ export function Demo({ notice }: { notice?: string | null }) {
           ))}
         </div>
 
-        <p className="mt-6 text-sm font-medium text-(--lp-ink)/75">
-          Sandboxes are private and reset after 24 hours.
-          {live.isError && ' The demo server naps when idle, so the first start can take up to a minute.'}
-        </p>
+        {live.isError && (
+          <p className="mt-6 text-center text-sm font-medium text-(--lp-ink)/75">The demo server naps when idle, so the first start can take up to a minute.</p>
+        )}
       </div>
 
       <AnimatePresence>
