@@ -7,30 +7,31 @@ import { cn } from '@/lib/utils'
 import { Drift, EASE, Float, useTypewriter, WordReveal } from './motion'
 
 const STEPS = [
-  { n: '01', title: 'A customer asks', body: 'They describe the problem in the portal. While they type, matching help articles appear, so many questions never become tickets.', view: 'Customer portal' },
-  { n: '02', title: 'AI triages in seconds', body: 'Category, priority, sentiment and a one-line summary land before anyone opens the ticket. Urgent and unhappy customers rise to the top.', view: 'Agent queue' },
-  { n: '03', title: 'A draft, with receipts', body: 'The reply is written from your knowledge base and the customer’s real account facts, with citations showing exactly where each line came from.', view: 'Ticket workspace' },
-  { n: '04', title: 'You review and send', body: 'Your agent edits what they like and hits send. The customer sees the answer live, confirms the fix and rates the support.', view: 'Both sides, live' },
+  { n: '01', title: 'A customer asks', short: 'Help appears while they type', body: 'They describe the problem in the portal. While they type, matching help articles appear, so many questions never become tickets.', view: 'Customer portal' },
+  { n: '02', title: 'AI triages in seconds', short: 'Category, priority, mood, summary', body: 'Category, priority, sentiment and a one-line summary land before anyone opens the ticket. Urgent and unhappy customers rise to the top.', view: 'Agent queue' },
+  { n: '03', title: 'A draft, with receipts', short: 'Written from your own knowledge', body: 'The reply is written from your knowledge base and the customer’s real account facts, with citations showing exactly where each line came from.', view: 'Ticket workspace' },
+  { n: '04', title: 'You review and send', short: 'The customer sees it live', body: 'Your agent edits what they like and hits send. The customer sees the answer live, confirms the fix and rates the support.', view: 'Both sides, live' },
 ]
 
-const STEP_COLORS = ['#5b3df5', '#ff6a4d', '#c8f560', '#ffb340']
+/** One pastel plate per step, tilting behind the mock. */
+const STEP_COLORS = ['var(--lp-lav-2)', 'var(--lp-peach-2)', 'var(--lp-mint-2)', 'var(--lp-butter-2)']
 
 const DRAFT = 'Hi Marcus, thanks for getting in touch. Your latest invoice (INV-5120, $145) failed on the card ending 8821, and 2 automatic retries remain. Your workspace stays fully active in the meantime.'
 
 function Window({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div className="overflow-hidden rounded-3xl bg-white shadow-[0_40px_100px_-30px_rgba(40,20,120,0.45)] ring-1 ring-black/10">
-      <div className="flex items-center gap-2 border-b bg-neutral-50 px-4 py-3">
-        <span className="size-2.5 rounded-full bg-red-300" />
-        <span className="size-2.5 rounded-full bg-amber-300" />
-        <span className="size-2.5 rounded-full bg-emerald-300" />
+    <div className="overflow-hidden rounded-3xl bg-white shadow-[0_40px_90px_-34px_rgba(70,60,150,0.4)] ring-1 ring-black/[0.06]">
+      <div className="flex items-center gap-2 border-b bg-(--lp-paper)/60 px-4 py-3">
+        <span className="size-2.5 rounded-full bg-(--lp-rose-2)" />
+        <span className="size-2.5 rounded-full bg-(--lp-butter-2)" />
+        <span className="size-2.5 rounded-full bg-(--lp-mint-2)" />
         <AnimatePresence mode="wait">
-          <motion.span key={label} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} className="ml-3 text-xs font-medium text-neutral-500">
+          <motion.span key={label} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} className="ml-3 text-xs font-medium text-(--lp-ink-2)">
             {label}
           </motion.span>
         </AnimatePresence>
       </div>
-      <div className="min-h-[min(27rem,60svh)] p-5 text-neutral-900 sm:min-h-[min(31rem,58svh)] sm:p-8">{children}</div>
+      <div className="min-h-[min(27rem,60svh)] p-5 text-(--lp-ink) sm:min-h-[min(31rem,58svh)] sm:p-8">{children}</div>
     </div>
   )
 }
@@ -44,22 +45,22 @@ function Panel({ step }: { step: number }) {
     return (
       <div className="space-y-3">
         <p className="text-sm font-semibold">How can we help?</p>
-        <div className="rounded-2xl border bg-neutral-50 p-3.5 text-[13px] leading-relaxed">
-          <p className="text-[11px] font-medium text-neutral-400 uppercase">Subject</p>
+        <div className="rounded-2xl border bg-(--lp-paper) p-3.5 text-[13px] leading-relaxed">
+          <p className="text-[11px] font-medium text-(--lp-ink-2)/70 uppercase">Subject</p>
           <p className="min-h-[2.6rem]">
             {typedAsk.shown}
-            {!typedAsk.done && <span className="lp-caret ml-0.5 inline-block h-3.5 w-[2px] translate-y-0.5 bg-neutral-900" />}
+            {!typedAsk.done && <span className="lp-caret ml-0.5 inline-block h-3.5 w-[2px] translate-y-0.5 bg-(--lp-violet)" />}
           </p>
         </div>
-        <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1.6, duration: 0.5, ease: EASE }} className="rounded-2xl border border-emerald-200 bg-emerald-50 p-3.5">
-          <p className="flex items-center gap-1.5 text-[11px] font-semibold text-emerald-800">
+        <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1.6, duration: 0.5, ease: EASE }} className="rounded-2xl border border-(--lp-mint-2) bg-(--lp-mint) p-3.5">
+          <p className="flex items-center gap-1.5 text-[11px] font-semibold text-[#124a30]">
             <Search className="size-3.5" /> Does this answer your question?
           </p>
           <p className="mt-1 text-[13px] font-medium">Resolving failed payments</p>
-          <p className="text-[12px] text-neutral-600">Your workspace stays active during retries. Update the card in Billing to retry instantly.</p>
+          <p className="text-[12px] text-(--lp-ink-2)">Your workspace stays active during retries. Update the card in Billing to retry instantly.</p>
         </motion.div>
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 2.2 }} className="flex justify-end">
-          <span className="rounded-full bg-neutral-900 px-4 py-2 text-xs font-semibold text-white">Still need help? Submit</span>
+          <span className="rounded-full bg-(--lp-violet) px-4 py-2 text-xs font-semibold text-white">Still need help? Submit</span>
         </motion.div>
       </div>
     )
@@ -68,30 +69,30 @@ function Panel({ step }: { step: number }) {
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <p className="text-sm font-semibold">Queue</p>
-          <span className="rounded-full bg-neutral-100 px-2.5 py-0.5 text-[11px] text-neutral-500">just now</span>
+          <span className="rounded-full bg-(--lp-lav) px-2.5 py-0.5 text-[11px] text-(--lp-ink-2)">just now</span>
         </div>
-        <div className="rounded-2xl border border-l-4 border-l-red-400 p-3.5">
+        <div className="rounded-2xl border border-l-4 border-l-(--lp-rose-2) p-3.5">
           <p className="text-[13px] font-semibold">Payment failed and we’re worried about access</p>
-          <p className="text-[11px] text-neutral-500">TKT-0002 · Marcus Webb</p>
+          <p className="text-[11px] text-(--lp-ink-2)">TKT-0002 · Marcus Webb</p>
           <div className="mt-3 flex flex-wrap gap-1.5">
-            <motion.span {...pop(0)} className="rounded-full bg-orange-100 px-2.5 py-1 text-[11px] font-medium text-orange-800">High</motion.span>
-            <motion.span {...pop(1)} className="rounded-full bg-violet-100 px-2.5 py-1 text-[11px] font-medium text-violet-800">Billing &amp; Plans</motion.span>
-            <motion.span {...pop(2)} className="rounded-full bg-rose-100 px-2.5 py-1 text-[11px] font-medium text-rose-800">Concerned</motion.span>
+            <motion.span {...pop(0)} className="rounded-full bg-(--lp-peach-2) px-2.5 py-1 text-[11px] font-medium text-[#7a3414]">High</motion.span>
+            <motion.span {...pop(1)} className="rounded-full bg-(--lp-lav-2) px-2.5 py-1 text-[11px] font-medium text-[#2f2a7a]">Billing &amp; Plans</motion.span>
+            <motion.span {...pop(2)} className="rounded-full bg-(--lp-butter-2) px-2.5 py-1 text-[11px] font-medium text-[#6b4a00]">Concerned</motion.span>
           </div>
-          <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.2 }} className="mt-3 rounded-xl bg-violet-50 p-2.5 text-[12px] leading-snug text-violet-950">
-            <Sparkles className="mr-1 inline size-3.5 text-violet-600" /> Customer’s payment failed and they want to know if access will be locked after updating the card.
+          <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.2 }} className="mt-3 rounded-xl bg-(--lp-lav) p-2.5 text-[12px] leading-snug text-(--lp-ink)">
+            <Sparkles className="mr-1 inline size-3.5 text-(--lp-violet)" /> Customer’s payment failed and they want to know if access will be locked after updating the card.
           </motion.p>
-          <div className="mt-3 flex items-center gap-2 text-[11px] text-neutral-500">
+          <div className="mt-3 flex items-center gap-2 text-[11px] text-(--lp-ink-2)">
             Confidence
-            <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-neutral-100">
-              <motion.span initial={{ width: 0 }} animate={{ width: '90%' }} transition={{ delay: 1.4, duration: 1, ease: EASE }} className="block h-full rounded-full bg-violet-500" />
+            <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-(--lp-lav)">
+              <motion.span initial={{ width: 0 }} animate={{ width: '90%' }} transition={{ delay: 1.4, duration: 1, ease: EASE }} className="block h-full rounded-full bg-(--lp-violet)" />
             </span>
             90%
           </div>
         </div>
         {['Entire company locked out via Okta SSO', 'Getting 429 errors on the ingestion API'].map((t, i) => (
-          <div key={t} className={cn('flex items-center gap-2 rounded-xl border px-3 py-2.5 text-[12px] opacity-70', i === 0 && 'border-l-4 border-l-red-400')}>
-            <span className="rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-medium text-red-700">{i === 0 ? 'Critical' : 'High'}</span>
+          <div key={t} className={cn('flex items-center gap-2 rounded-xl border px-3 py-2.5 text-[12px] opacity-70', i === 0 && 'border-l-4 border-l-(--lp-rose-2)')}>
+            <span className="rounded-full bg-(--lp-rose-2) px-2 py-0.5 text-[10px] font-medium text-[#7a1636]">{i === 0 ? 'Critical' : 'High'}</span>
             <span className="truncate">{t}</span>
           </div>
         ))}
@@ -100,22 +101,22 @@ function Panel({ step }: { step: number }) {
   if (step === 2)
     return (
       <div className="space-y-3">
-        <div className="rounded-2xl bg-neutral-100 px-3.5 py-2.5 text-[13px]">Our card payment failed on the latest invoice. Will the workspace get locked?</div>
-        <div className="rounded-2xl bg-linear-to-br from-violet-50 to-fuchsia-50 p-3.5 ring-1 ring-violet-200">
-          <p className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold tracking-wide text-violet-700 uppercase">
+        <div className="rounded-2xl bg-(--lp-lav) px-3.5 py-2.5 text-[13px]">Our card payment failed on the latest invoice. Will the workspace get locked?</div>
+        <div className="rounded-2xl bg-linear-to-br from-(--lp-lav) to-(--lp-rose) p-3.5 ring-1 ring-(--lp-lav-2)">
+          <p className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold tracking-wide text-(--lp-violet) uppercase">
             <Sparkles className="size-3.5" /> AI draft
           </p>
           <p className="min-h-[5.4rem] text-[13px] leading-relaxed">
             {typed.shown}
-            {!typed.done && <span className="lp-caret ml-0.5 inline-block h-3.5 w-[2px] translate-y-0.5 bg-violet-700" />}
+            {!typed.done && <span className="lp-caret ml-0.5 inline-block h-3.5 w-[2px] translate-y-0.5 bg-(--lp-violet)" />}
           </p>
           <AnimatePresence>
             {typed.done && (
               <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mt-2 space-y-1.5">
-                <p className="text-[11px] font-semibold text-neutral-500">Sources</p>
+                <p className="text-[11px] font-semibold text-(--lp-ink-2)">Sources</p>
                 <div className="flex flex-wrap gap-1.5">
                   {['Resolving failed payments', 'Customer facts: INV-5120'].map((s) => (
-                    <span key={s} className="rounded-full bg-white px-2.5 py-1 text-[11px] font-medium text-violet-800 ring-1 ring-violet-200">
+                    <span key={s} className="rounded-full bg-white px-2.5 py-1 text-[11px] font-medium text-[#2f2a7a] ring-1 ring-(--lp-lav-2)">
                       {s}
                     </span>
                   ))}
@@ -129,26 +130,26 @@ function Panel({ step }: { step: number }) {
   return (
     <div className="grid gap-3 sm:grid-cols-2">
       <div className="space-y-2">
-        <p className="text-[11px] font-semibold tracking-wide text-neutral-400 uppercase">Agent</p>
+        <p className="text-[11px] font-semibold tracking-wide text-(--lp-ink-2)/70 uppercase">Agent</p>
         <div className="rounded-2xl border p-3 text-[12px] leading-relaxed">Hi Marcus, your workspace stays fully active during the retry window. Saving a new card triggers an instant retry.</div>
-        <motion.span initial={{ scale: 1 }} animate={{ scale: [1, 0.94, 1] }} transition={{ delay: 0.9, duration: 0.4 }} className="inline-flex items-center gap-1.5 rounded-full bg-neutral-900 px-4 py-2 text-xs font-semibold text-white">
+        <motion.span initial={{ scale: 1 }} animate={{ scale: [1, 0.94, 1] }} transition={{ delay: 0.9, duration: 0.4 }} className="inline-flex items-center gap-1.5 rounded-full bg-(--lp-violet) px-4 py-2 text-xs font-semibold text-white">
           <Send className="size-3.5" /> Sent
         </motion.span>
       </div>
       <div className="space-y-2">
-        <p className="text-[11px] font-semibold tracking-wide text-neutral-400 uppercase">Customer · live</p>
-        <motion.div initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 1.2, duration: 0.5, ease: EASE }} className="rounded-2xl bg-emerald-50 p-3 text-[12px] leading-relaxed ring-1 ring-emerald-200">
-          <span className="mb-1 flex items-center gap-1 font-semibold text-emerald-800">
+        <p className="text-[11px] font-semibold tracking-wide text-(--lp-ink-2)/70 uppercase">Customer · live</p>
+        <motion.div initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 1.2, duration: 0.5, ease: EASE }} className="rounded-2xl bg-(--lp-mint) p-3 text-[12px] leading-relaxed ring-1 ring-(--lp-mint-2)">
+          <span className="mb-1 flex items-center gap-1 font-semibold text-[#124a30]">
             <Check className="size-3.5" /> New reply
           </span>
           Hi Marcus, your workspace stays fully active during the retry window…
         </motion.div>
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 2 }} className="rounded-2xl border p-3">
-          <p className="mb-1 text-[11px] text-neutral-500">How did we do?</p>
+          <p className="mb-1 text-[11px] text-(--lp-ink-2)">How did we do?</p>
           <div className="flex gap-1">
             {[0, 1, 2, 3, 4].map((i) => (
               <motion.span key={i} initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 2.1 + i * 0.1, type: 'spring', stiffness: 500 }}>
-                <Star className="size-5 fill-amber-400 text-amber-400" />
+                <Star className="size-5 fill-(--lp-amber) text-(--lp-amber)" />
               </motion.span>
             ))}
           </div>
@@ -169,10 +170,33 @@ function useIsDesktop() {
   return yes
 }
 
-/** Stacked layout for phones, tablets and reduced-motion: text, then the mock on its tinted plate, huge gaps, no pinning. */
+function StepCard({ step, index, active = true, compact = false }: { step: (typeof STEPS)[number]; index: number; active?: boolean; compact?: boolean }) {
+  return (
+    <div className={cn('relative overflow-hidden rounded-3xl p-6 ring-1 transition-all duration-500 sm:p-7', active ? 'bg-white shadow-[0_24px_50px_-30px_rgba(70,60,150,0.5)] ring-2' : 'bg-white/45 ring-black/[0.04]')} style={active ? { ['--tw-ring-color' as string]: STEP_COLORS[index] } : undefined}>
+      <span aria-hidden className={cn('pointer-events-none absolute -top-3 right-4 text-[clamp(5rem,9vw,7.5rem)] leading-none font-semibold tracking-[-0.06em] transition-opacity duration-500', active ? 'text-(--lp-violet)/[0.12]' : 'text-(--lp-violet)/[0.05]')}>{step.n}</span>
+      <div className="relative flex items-center gap-3">
+        <span className={cn('flex size-9 shrink-0 items-center justify-center rounded-full text-[13px] font-bold transition-colors duration-500', active ? 'bg-(--lp-violet) text-white' : 'bg-white text-(--lp-ink-2) ring-1 ring-black/10')}>{index + 1}</span>
+        <div className="min-w-0">
+          <h3 className={cn('leading-tight font-semibold tracking-[-0.03em] transition-all duration-500', active ? 'text-[clamp(1.6rem,2.6vw,2.2rem)]' : 'text-lg text-(--lp-ink-2)')}>{step.title}</h3>
+          {(!active || compact) && <p className="text-[13px] text-(--lp-ink-2)">{step.short}</p>}
+        </div>
+      </div>
+      <AnimatePresence initial={false}>
+        {active && !compact && (
+          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.45, ease: EASE }} className="relative overflow-hidden">
+            <p className="mt-4 max-w-md text-base leading-relaxed text-(--lp-ink-2) sm:text-lg">{step.body}</p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      {active && compact && <p className="relative mt-4 max-w-md text-base leading-relaxed text-(--lp-ink-2) sm:text-lg">{step.body}</p>}
+    </div>
+  )
+}
+
+/** Stacked layout for phones, tablets and reduced-motion: a text card, then the mock on its tinted plate, equal rhythm, no pinning. */
 function StoryStacked() {
   return (
-    <div className="relative mx-auto max-w-2xl space-y-28 px-5 pb-32 sm:space-y-40 sm:px-8 lg:max-w-6xl">
+    <div className="relative mx-auto max-w-2xl space-y-24 px-5 pb-28 sm:space-y-32 sm:px-8 lg:max-w-5xl">
       {STEPS.map((s, i) => (
         <StackedStep key={s.n} step={s} index={i} />
       ))}
@@ -184,21 +208,17 @@ function StackedStep({ step, index }: { step: (typeof STEPS)[number]; index: num
   const ref = useRef<HTMLDivElement>(null)
   const seen = useInView(ref, { once: true, margin: '-15% 0px' })
   return (
-    <div ref={ref} className="grid items-center gap-12 lg:grid-cols-2 lg:gap-20">
-      <div className={cn(index % 2 && 'lg:order-2')}>
-        <p className="text-[clamp(4rem,14vw,7rem)] leading-none font-semibold tracking-[-0.06em] text-(--lp-violet)/15">{step.n}</p>
-        <h3 className="-mt-3 text-[clamp(2rem,4.6vw,3.2rem)] leading-[1.04] font-semibold tracking-[-0.035em]">{step.title}</h3>
-        <p className="mt-5 max-w-md text-base text-neutral-700 sm:text-lg">{step.body}</p>
-      </div>
-      <div className={cn('relative mx-2 sm:mx-4', index % 2 && 'lg:order-1')}>
-        <div aria-hidden className="absolute -inset-3 -z-10 rounded-[2.4rem] opacity-90 sm:-inset-5" style={{ backgroundColor: STEP_COLORS[index], transform: `rotate(${index % 2 ? -2.5 : 2.5}deg)` }} />
+    <div ref={ref} className="space-y-10">
+      <StepCard step={step} index={index} compact />
+      <div className="relative mx-2 sm:mx-4">
+        <div aria-hidden className="absolute -inset-3 -z-10 rounded-[2.4rem] sm:-inset-5" style={{ backgroundColor: STEP_COLORS[index], transform: `rotate(${index % 2 ? -2.5 : 2.5}deg)` }} />
         <Window label={step.view}>{seen ? <Panel step={index} /> : <div className="min-h-[20rem]" />}</Window>
       </div>
     </div>
   )
 }
 
-/** Desktop: a roomy pinned stage. 120vh of scroll per step, the text on the left, the mock on a tilting colour plate on the right. */
+/** Desktop: a roomy pinned stage. 120vh of scroll per step: the step rail on the left, the mock on a tilting pastel plate on the right. */
 function StoryPinned() {
   const ref = useRef<HTMLDivElement>(null)
   const { scrollYProgress } = useScroll({ target: ref, offset: ['start start', 'end end'] })
@@ -209,26 +229,22 @@ function StoryPinned() {
   return (
     <div ref={ref} className="relative h-[520vh]">
       <div className="sticky top-0 flex h-svh items-center pt-20">
-        <div className="mx-auto grid w-full max-w-6xl items-center gap-16 px-8 lg:grid-cols-[0.8fr_1.2fr] xl:gap-28">
-          <div className="min-h-[24rem]">
-            <div className="mb-10 flex items-center gap-2" role="tablist" aria-label="Steps">
-              {STEPS.map((s, i) => (
-                <span key={s.n} role="tab" aria-selected={i === step} aria-label={s.title} className="h-1.5 flex-1 overflow-hidden rounded-full bg-black/10">
-                  <motion.span className="block h-full rounded-full bg-(--lp-violet)" animate={{ width: i <= step ? '100%' : '0%' }} transition={{ duration: 0.5, ease: EASE }} />
-                </span>
-              ))}
+        <div className="mx-auto grid w-full max-w-6xl items-center gap-14 px-8 lg:grid-cols-[0.82fr_1.18fr] xl:gap-24">
+          {/* step rail */}
+          <div role="tablist" aria-label="Steps" className="relative space-y-3">
+            <div aria-hidden className="absolute top-6 bottom-6 left-[1.7rem] w-0.5 rounded-full bg-black/10">
+              <motion.span className="block w-full origin-top rounded-full bg-(--lp-violet)" animate={{ height: `${(step / (STEPS.length - 1)) * 100}%` }} transition={{ duration: 0.5, ease: EASE }} />
             </div>
-            <AnimatePresence mode="wait">
-              <motion.div key={current.n} initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -24 }} transition={{ duration: 0.45, ease: EASE }}>
-                <p className="text-[clamp(5rem,10vw,9rem)] leading-none font-semibold tracking-[-0.06em] text-(--lp-violet)/15">{current.n}</p>
-                <h3 className="-mt-3 text-[clamp(2rem,3.8vw,3.3rem)] leading-[1.04] font-semibold tracking-[-0.035em]">{current.title}</h3>
-                <p className="mt-6 max-w-md text-lg text-neutral-700">{current.body}</p>
-              </motion.div>
-            </AnimatePresence>
+            {STEPS.map((s, i) => (
+              <div key={s.n} role="tab" aria-selected={i === step} aria-label={s.title} className="relative">
+                <StepCard step={s} index={i} active={i === step} />
+              </div>
+            ))}
           </div>
 
+          {/* stage */}
           <div className="relative mx-4 xl:mx-8">
-            <motion.div aria-hidden animate={{ backgroundColor: STEP_COLORS[step], rotate: step % 2 ? -2.5 : 2.5 }} transition={{ duration: 0.7, ease: EASE }} className="absolute -inset-5 -z-10 rounded-[2.6rem] opacity-90 xl:-inset-7" />
+            <motion.div aria-hidden animate={{ backgroundColor: STEP_COLORS[step], rotate: step % 2 ? -2.5 : 2.5 }} transition={{ duration: 0.7, ease: EASE }} className="absolute -inset-5 -z-10 rounded-[2.6rem] xl:-inset-7" />
             <Window label={current.view}>
               <AnimatePresence mode="wait">
                 <motion.div key={step} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.35 }}>
@@ -236,6 +252,9 @@ function StoryPinned() {
                 </motion.div>
               </AnimatePresence>
             </Window>
+            <p className="mt-6 text-center text-[13px] font-semibold text-(--lp-ink-2)">
+              Step {step + 1} of {STEPS.length} · {current.view}
+            </p>
           </div>
         </div>
       </div>
@@ -247,18 +266,18 @@ export function Story() {
   const reduce = useReducedMotion()
   const desktop = useIsDesktop()
   return (
-    <section id="story" data-nav="light" className="relative -mt-10 rounded-t-[2.5rem] bg-(--lp-paper) text-(--lp-ink)">
+    <section id="story" data-nav="light" className="relative -mt-10 rounded-t-[2.5rem] bg-[linear-gradient(180deg,#f1edff_0%,#ebe6ff_60%,#f3efff_100%)] text-(--lp-ink)">
       <div className="pointer-events-none absolute inset-0 hidden overflow-hidden rounded-t-[2.5rem] lg:block" aria-hidden>
-        <Drift speed={0.8} rotate={30} className="top-[3%] left-[5%] size-28"><div className="size-full rounded-full border-[6px] border-(--lp-violet)/25" /></Drift>
-        <Drift speed={0.5} className="top-[2%] right-[6%] size-44"><div className="size-full rounded-full bg-(--lp-lime)/70 blur-xl" /></Drift>
-        <Drift speed={0.7} rotate={20} className="top-[88%] right-[5%] size-24"><div className="size-full rounded-full border-[6px] border-(--lp-coral)/30" /></Drift>
+        <Drift speed={0.8} rotate={30} className="top-[3%] left-[5%] size-28"><div className="size-full rounded-full border-[6px] border-(--lp-lav-2)" /></Drift>
+        <Drift speed={0.5} className="top-[2%] right-[6%] size-44"><div className="size-full rounded-full bg-(--lp-mint)/80 blur-xl" /></Drift>
+        <Drift speed={0.7} rotate={20} className="top-[88%] right-[5%] size-24"><div className="size-full rounded-full border-[6px] border-(--lp-peach-2)" /></Drift>
       </div>
-      <Float speed={0.2} className="relative mx-auto max-w-6xl px-5 pt-28 pb-24 text-center sm:px-8 sm:pt-40 sm:pb-36">
+      <Float speed={0.2} className="relative mx-auto max-w-6xl px-5 pt-28 pb-20 text-center sm:px-8 sm:pt-40 sm:pb-28">
         <p className="text-xs font-bold tracking-[0.2em] text-(--lp-violet) uppercase">How it works</p>
         <h2 className="mx-auto mt-4 max-w-4xl text-[clamp(2.2rem,6vw,4.6rem)] leading-[1] font-semibold tracking-[-0.04em] text-balance">
           <WordReveal text="From “help!” to “thank you” in four moves." />
         </h2>
-        <p className="mx-auto mt-6 max-w-xl text-lg text-neutral-600">Scroll to follow one ticket from the customer’s first message to a rated, resolved reply.</p>
+        <p className="mx-auto mt-6 max-w-xl text-lg text-(--lp-ink-2)">Scroll to follow one ticket from the customer’s first message to a rated, resolved reply.</p>
       </Float>
       {reduce || !desktop ? <StoryStacked /> : <StoryPinned />}
       <div className="h-12 lg:h-20" aria-hidden />

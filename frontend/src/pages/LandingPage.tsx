@@ -51,7 +51,7 @@ export function LandingPage() {
   }, [hash])
 
   return (
-    <div className="lp min-h-screen overflow-x-clip bg-(--lp-ink)">
+    <div className="lp min-h-screen overflow-x-clip bg-(--lp-paper)">
       <Nav />
       <main>
         <Hero />

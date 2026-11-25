@@ -31,7 +31,7 @@ function DemoCard({ t, index, busy, active, onStart }: { t: TemplateMeta; index:
       transition={{ duration: 0.7, delay: index * 0.1, ease: EASE }}
       whileHover={reduce || busy ? undefined : { y: -6 }}
       className={cn(
-        'group flex h-full min-w-0 flex-col rounded-3xl bg-white p-6 text-(--lp-ink) shadow-[0_30px_70px_-34px_rgba(90,20,0,0.55)] ring-1 transition-shadow duration-300 hover:shadow-[0_40px_80px_-30px_rgba(90,20,0,0.6)] sm:p-7',
+        'group flex h-full min-w-0 flex-col rounded-3xl bg-white p-6 text-(--lp-ink) shadow-[0_26px_60px_-34px_rgba(120,90,40,0.45)] ring-1 transition-shadow duration-300 hover:shadow-[0_36px_70px_-30px_rgba(120,90,40,0.5)] sm:p-7',
         active ? 'ring-2 ring-(--lp-violet)' : 'ring-black/5 hover:ring-black/20',
       )}
     >
@@ -40,12 +40,12 @@ function DemoCard({ t, index, busy, active, onStart }: { t: TemplateMeta; index:
         <span className="flex size-12 items-center justify-center rounded-2xl" style={{ background: t.soft, color: t.hue }}>
           <Icon className="size-6" />
         </span>
-        <span className="rounded-full bg-neutral-100 px-3 py-1 text-[11px] font-semibold tracking-wide text-neutral-600 uppercase">{t.industry}</span>
+        <span className="rounded-full bg-(--lp-lav) px-3 py-1 text-[11px] font-semibold tracking-wide text-(--lp-ink-2) uppercase">{t.industry}</span>
       </div>
 
       {/* 2 · name + one-line description (fixed two-line height keeps every card aligned) */}
       <h3 className="mt-5 line-clamp-2 min-h-[3.4rem] text-2xl leading-[1.15] font-semibold tracking-[-0.03em]">{t.name}</h3>
-      <p className="mt-2 line-clamp-2 min-h-[2.6rem] text-sm leading-snug text-neutral-600">{t.tagline}</p>
+      <p className="mt-2 line-clamp-2 min-h-[2.6rem] text-sm leading-snug text-(--lp-ink-2)">{t.tagline}</p>
 
       <hr className="my-5 border-black/[0.07]" />
 
@@ -62,13 +62,13 @@ function DemoCard({ t, index, busy, active, onStart }: { t: TemplateMeta; index:
       </ul>
 
       {/* 4 · mini queue */}
-      <div className="mt-6 rounded-2xl bg-neutral-50 p-2 ring-1 ring-black/[0.05]">
-        <p className="px-2 pt-1 pb-1.5 text-[10.5px] font-bold tracking-wide text-neutral-400 uppercase">Inside the queue · 53 tickets</p>
+      <div className="mt-6 rounded-2xl bg-(--lp-paper) p-2 ring-1 ring-black/[0.05]">
+        <p className="px-2 pt-1 pb-1.5 text-[10.5px] font-bold tracking-wide text-(--lp-ink-2) uppercase">Inside the queue · 53 tickets</p>
         {t.tickets.slice(0, 3).map((k) => (
           <div key={k.ref} className="flex h-9 items-center gap-2.5 rounded-lg px-2 text-[12px]">
             <span className="size-2 shrink-0 rounded-full" style={{ background: PRIORITY_DOT[k.priority] }} />
             <span className="min-w-0 flex-1 truncate font-medium">{k.subject}</span>
-            <span className="w-12 shrink-0 text-right text-[10.5px] font-semibold text-neutral-500">{k.priority}</span>
+            <span className="w-12 shrink-0 text-right text-[10.5px] font-semibold text-(--lp-ink-2)">{k.priority}</span>
           </div>
         ))}
       </div>
@@ -78,7 +78,7 @@ function DemoCard({ t, index, busy, active, onStart }: { t: TemplateMeta; index:
         <button type="button" disabled={busy} onClick={() => onStart(t, 'agent')} className="lp-focus group/btn flex h-12 items-center justify-center gap-2 rounded-full bg-(--lp-violet) text-[15px] font-semibold text-white transition-all hover:bg-(--lp-violet-2) active:scale-[0.99] disabled:opacity-60">
           {active ? <Loader2 className="size-4 animate-spin" /> : <Headphones className="size-4" />} Enter as agent <ArrowRight className="size-4 transition-transform group-hover/btn:translate-x-1" />
         </button>
-        <button type="button" disabled={busy} onClick={() => onStart(t, 'customer')} className="lp-focus flex h-12 items-center justify-center gap-2 rounded-full bg-white text-[15px] font-semibold text-(--lp-ink) ring-1 ring-black/15 transition-colors hover:bg-neutral-50 disabled:opacity-60">
+        <button type="button" disabled={busy} onClick={() => onStart(t, 'customer')} className="lp-focus flex h-12 items-center justify-center gap-2 rounded-full bg-white text-[15px] font-semibold text-(--lp-ink) ring-1 ring-(--lp-lav-2) transition-colors hover:bg-(--lp-lav) disabled:opacity-60">
           <UserRound className="size-4" /> Enter as customer
         </button>
       </div>
@@ -88,32 +88,32 @@ function DemoCard({ t, index, busy, active, onStart }: { t: TemplateMeta; index:
 
 function Overlay({ name, step, progress, waking, error, onClose }: { name: string; step: number; progress: number; waking: boolean; error: string | null; onClose: () => void }) {
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[60] flex items-center justify-center bg-(--lp-ink)/95 p-6 text-white backdrop-blur-xl" role="status" aria-live="polite">
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[60] flex items-center justify-center bg-(--lp-paper)/95 p-6 text-(--lp-ink) backdrop-blur-xl" role="status" aria-live="polite">
       <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
-        <div className="lp-drift absolute top-1/4 left-1/4 size-[30rem] rounded-full bg-(--lp-violet) opacity-40 blur-3xl" />
-        <div className="lp-drift absolute right-1/4 bottom-1/4 size-[26rem] rounded-full bg-(--lp-coral) opacity-30 blur-3xl [animation-delay:-8s]" />
+        <div className="lp-drift absolute top-1/4 left-1/4 size-[30rem] rounded-full bg-(--lp-lav-2) opacity-70 blur-3xl" />
+        <div className="lp-drift absolute right-1/4 bottom-1/4 size-[26rem] rounded-full bg-(--lp-peach-2) opacity-70 blur-3xl [animation-delay:-8s]" />
       </div>
       <div className="relative w-full max-w-md">
-        <p className="text-center text-xs font-bold tracking-[0.2em] text-(--lp-lime) uppercase">Building your sandbox</p>
+        <p className="text-center text-xs font-bold tracking-[0.2em] text-(--lp-violet) uppercase">Building your sandbox</p>
         <h3 className="mt-3 text-center text-4xl font-semibold tracking-[-0.04em]">{name}</h3>
         <ol className="mt-9 space-y-3.5">
           {STEPS.map((s, i) => (
-            <li key={s} className={cn('flex items-center gap-3 text-[15px] transition-colors', i <= step ? 'text-white' : 'text-white/35')}>
+            <li key={s} className={cn('flex items-center gap-3 text-[15px] transition-colors', i <= step ? 'text-(--lp-ink)' : 'text-(--lp-ink-2)/45')}>
               <span className="flex size-6 shrink-0 items-center justify-center">
-                {i < step ? <Check className="size-5 text-(--lp-lime)" /> : i === step ? <Loader2 className="size-5 animate-spin text-(--lp-lime)" /> : <CircleDot className="size-4" />}
+                {i < step ? <Check className="size-5 text-(--lp-violet)" /> : i === step ? <Loader2 className="size-5 animate-spin text-(--lp-violet)" /> : <CircleDot className="size-4" />}
               </span>
               {s}
             </li>
           ))}
         </ol>
-        <div className="mt-8 h-2 overflow-hidden rounded-full bg-white/10">
-          <motion.div className="h-full rounded-full bg-(--lp-lime)" animate={{ width: `${progress}%` }} transition={{ duration: 0.5, ease: 'easeOut' }} />
+        <div className="mt-8 h-2 overflow-hidden rounded-full bg-black/10">
+          <motion.div className="h-full rounded-full bg-(--lp-violet)" animate={{ width: `${progress}%` }} transition={{ duration: 0.5, ease: 'easeOut' }} />
         </div>
-        {waking && !error && <p className="mt-5 text-center text-sm text-white/60">The demo runs on a free server that naps when idle. Waking it up can take up to a minute the first time.</p>}
+        {waking && !error && <p className="mt-5 text-center text-sm text-(--lp-ink-2)">The demo runs on a free server that naps when idle. Waking it up can take up to a minute the first time.</p>}
         {error && (
-          <div className="mt-6 rounded-2xl bg-red-500/15 p-4 text-center ring-1 ring-red-400/30">
-            <p role="alert" className="text-sm text-red-100">{error}</p>
-            <button type="button" onClick={onClose} className="lp-focus mt-3 rounded-full bg-white px-5 py-2 text-sm font-semibold text-(--lp-ink)">
+          <div className="mt-6 rounded-2xl bg-(--lp-rose) p-4 text-center ring-1 ring-(--lp-rose-2)">
+            <p role="alert" className="text-sm text-[#7a1636]">{error}</p>
+            <button type="button" onClick={onClose} className="lp-focus mt-3 rounded-full bg-(--lp-violet) px-5 py-2 text-sm font-semibold text-white">
               Back to the demos
             </button>
           </div>
@@ -190,27 +190,26 @@ export function Demo({ notice }: { notice?: string | null }) {
   }
 
   return (
-    <section id="demo" ref={ref} data-nav="light" className="relative -mt-10 rounded-t-[2.5rem] bg-[linear-gradient(170deg,#ff6a4d_0%,#ff8a4c_45%,#ffb340_100%)] pb-32 text-(--lp-ink)">
+    <section id="demo" ref={ref} data-nav="light" className="relative -mt-10 rounded-t-[2.5rem] bg-[linear-gradient(170deg,#fff4c9_0%,#ffeadb_55%,#ffe3ec_100%)] pb-32 text-(--lp-ink)">
       <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-t-[2.5rem]" aria-hidden>
-        <motion.div style={{ y: blobA }} className="absolute -top-24 left-[-6rem] size-[30rem] rounded-full bg-(--lp-violet) opacity-30 blur-3xl" />
-        <motion.div style={{ y: blobB }} className="absolute -right-24 bottom-10 size-[28rem] rounded-full bg-(--lp-paper) opacity-50 blur-3xl" />
-        <Drift speed={0.9} rotate={30} className="top-[5%] right-[8%] size-24"><div className="size-full rounded-full border-[6px] border-white/45" /></Drift>
-        <Drift speed={0.6} rotate={-35} className="top-[40%] left-[3%] size-14"><div className="size-full rounded-2xl bg-(--lp-lime)/90" /></Drift>
-        <Drift speed={1} className="top-[62%] right-[2%] h-32 w-32"><div className="size-full [background-image:radial-gradient(circle,rgba(255,255,255,0.7)_2px,transparent_2.5px)] [background-size:15px_15px]" /></Drift>
-        <div className="lp-noise absolute inset-0" />
+        <motion.div style={{ y: blobA }} className="absolute -top-24 left-[-6rem] size-[30rem] rounded-full bg-(--lp-lav-2) opacity-60 blur-3xl" />
+        <motion.div style={{ y: blobB }} className="absolute -right-24 bottom-10 size-[28rem] rounded-full bg-(--lp-sky-2) opacity-50 blur-3xl" />
+        <Drift speed={0.9} rotate={30} className="top-[5%] right-[8%] size-24"><div className="size-full rounded-full border-[6px] border-(--lp-peach-2)" /></Drift>
+        <Drift speed={0.6} rotate={-35} className="top-[40%] left-[3%] size-14"><div className="size-full rounded-2xl bg-(--lp-mint-2)" /></Drift>
+        <Drift speed={1} className="top-[62%] right-[2%] h-32 w-32"><div className="size-full [background-image:radial-gradient(circle,rgba(94,91,217,0.22)_2px,transparent_2.5px)] [background-size:15px_15px]" /></Drift>
       </div>
 
       <div className="relative mx-auto max-w-6xl px-5 pt-24 sm:px-8 sm:pt-32">
         <Float speed={0.2}>
-        <p className="text-xs font-bold tracking-[0.2em] uppercase opacity-70">Live demo</p>
+        <p className="text-xs font-bold tracking-[0.2em] text-(--lp-violet) uppercase">Live demo</p>
         <h2 className="mt-4 max-w-4xl text-[clamp(2.6rem,7.4vw,6rem)] leading-[0.94] font-semibold tracking-[-0.05em] text-balance">
           <WordReveal text="Pick a desk. Run it yourself." />
         </h2>
-        <p className="mt-5 max-w-xl text-lg font-medium opacity-80">Three ready-made companies, each with real-looking tickets, a knowledge base and AI already at work. Choose one and step inside as the agent or the customer.</p>
+        <p className="mt-5 max-w-xl text-lg font-medium text-(--lp-ink-2)">Three ready-made companies, each with real-looking tickets, a knowledge base and AI already at work. Choose one and step inside as the agent or the customer.</p>
         </Float>
 
         {notice && (
-          <p role="status" className="mt-6 max-w-xl rounded-2xl bg-white/80 px-4 py-3 text-sm font-medium text-amber-900">
+          <p role="status" className="mt-6 max-w-xl rounded-2xl bg-white px-4 py-3 text-sm font-medium text-[#5a3d00] ring-1 ring-(--lp-butter-2)">
             {notice}
           </p>
         )}
@@ -221,7 +220,7 @@ export function Demo({ notice }: { notice?: string | null }) {
             <DemoCard key={t.key} t={t} index={i} busy={Boolean(busy)} active={busy?.key === t.key} onStart={launch} />
           ))}
         </div>
-        <p className="mt-8 text-center text-sm font-semibold opacity-80">No signup · private to you · wiped after 24 hours</p>
+        <p className="mt-8 text-center text-sm font-semibold text-(--lp-ink-2)">No signup · private to you · wiped after 24 hours</p>
       </div>
 
       <AnimatePresence>

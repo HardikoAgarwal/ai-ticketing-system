@@ -156,13 +156,13 @@ export function useTypewriter(text: string, active = true, speed = 22) {
 }
 
 /** Infinite horizontal marquee of text chips. */
-export function Marquee({ items, className, itemClassName }: { items: string[]; className?: string; itemClassName?: string }) {
+export function Marquee({ items, className, itemClassName }: { items: string[]; className?: string; itemClassName?: string | string[] }) {
   const row = [...items, ...items]
   return (
     <div className={cn('relative flex overflow-hidden [mask-image:linear-gradient(90deg,transparent,#000_8%,#000_92%,transparent)]', className)} aria-hidden>
       <div className="lp-marquee flex shrink-0 gap-3 pr-3">
         {row.map((t, i) => (
-          <span key={i} className={cn('shrink-0 rounded-full px-5 py-2 text-sm font-medium whitespace-nowrap', itemClassName)}>
+          <span key={i} className={cn('shrink-0 rounded-full px-5 py-2 text-sm font-medium whitespace-nowrap', Array.isArray(itemClassName) ? itemClassName[i % itemClassName.length] : itemClassName)}>
             {t}
           </span>
         ))}

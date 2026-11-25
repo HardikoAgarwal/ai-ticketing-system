@@ -303,18 +303,30 @@ html {
 }
 
 
-/* ---- Landing v2 palette: full-bleed colour sections ---- */
+/* ---- Landing palette: soft pastels, one friendly accent ---- */
 .lp {
-  --lp-ink: #0b0a1d;
-  --lp-ink-2: #14122e;
-  --lp-paper: #f4efe6;
-  --lp-paper-2: #ebe4d6;
-  --lp-violet: #5b3df5;
-  --lp-violet-2: #3a1fc9;
-  --lp-coral: #ff6a4d;
-  --lp-amber: #ffb340;
-  --lp-lime: #c8f560;
-  --lp-teal: #14b8a6;
+  --lp-ink: #2b2f4a; /* dark slate: TEXT only, never a surface */
+  --lp-ink-2: #454a6b;
+  --lp-paper: #fbf7ef;
+  --lp-paper-2: #f3ecdd;
+  --lp-violet: #5e5bd9; /* the one accent: buttons, active states, progress (white text passes AA) */
+  --lp-violet-2: #4a47c4;
+  --lp-coral: #ff9d86;
+  --lp-amber: #ffd27a;
+  --lp-lime: #d9f2b8;
+  --lp-teal: #7fd6c8;
+  --lp-lav: #ebe6ff;
+  --lp-lav-2: #d6cefb;
+  --lp-mint: #dff5e9;
+  --lp-mint-2: #bfe8d2;
+  --lp-peach: #ffe8da;
+  --lp-peach-2: #ffd2b8;
+  --lp-butter: #fff4c9;
+  --lp-butter-2: #ffe796;
+  --lp-sky: #def0ff;
+  --lp-sky-2: #bddcfa;
+  --lp-rose: #ffe3ec;
+  --lp-rose-2: #ffc7d8;
 }
 @keyframes lp-dash {
   to {
@@ -336,7 +348,7 @@ html {
 }
 @utility lp-focus {
   &:focus-visible {
-    outline: 2px solid var(--lp-lime);
+    outline: 2px solid var(--lp-violet);
     outline-offset: 3px;
   }
 }
