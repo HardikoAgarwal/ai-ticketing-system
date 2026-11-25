@@ -172,23 +172,23 @@ function useIsDesktop() {
 
 function StepCard({ step, index, active = true, compact = false }: { step: (typeof STEPS)[number]; index: number; active?: boolean; compact?: boolean }) {
   return (
-    <div className={cn('relative overflow-hidden rounded-3xl p-6 ring-1 transition-all duration-500 sm:p-7', active ? 'bg-white shadow-[0_24px_50px_-30px_rgba(70,60,150,0.5)] ring-2' : 'bg-white/45 ring-black/[0.04]')} style={active ? { ['--tw-ring-color' as string]: STEP_COLORS[index] } : undefined}>
+    <div className={cn('relative overflow-hidden rounded-3xl p-7 ring-1 transition-all duration-500 sm:p-9', active ? 'bg-white shadow-[0_24px_50px_-30px_rgba(70,60,150,0.5)] ring-2' : 'bg-white/45 ring-black/[0.04]')} style={active ? { ['--tw-ring-color' as string]: STEP_COLORS[index] } : undefined}>
       <span aria-hidden className={cn('pointer-events-none absolute -top-3 right-4 text-[clamp(5rem,9vw,7.5rem)] leading-none font-semibold tracking-[-0.06em] transition-opacity duration-500', active ? 'text-(--lp-violet)/[0.12]' : 'text-(--lp-violet)/[0.05]')}>{step.n}</span>
       <div className="relative flex items-center gap-3">
         <span className={cn('flex size-9 shrink-0 items-center justify-center rounded-full text-[13px] font-bold transition-colors duration-500', active ? 'bg-(--lp-violet) text-white' : 'bg-white text-(--lp-muted) ring-1 ring-black/10')}>{index + 1}</span>
         <div className="min-w-0">
-          <h3 className={cn('leading-tight font-semibold tracking-[-0.03em] transition-all duration-500', active ? 'text-[clamp(1.6rem,2.6vw,2.2rem)]' : 'text-lg text-(--lp-muted)')}>{step.title}</h3>
+          <h3 className={cn('leading-tight font-semibold tracking-[-0.03em] transition-all duration-500', active ? 'text-[clamp(1.9rem,4.4vw,2.6rem)]' : 'text-lg text-(--lp-muted)')}>{step.title}</h3>
           {(!active || compact) && <p className="text-[13px] text-(--lp-muted)">{step.short}</p>}
         </div>
       </div>
       <AnimatePresence initial={false}>
         {active && !compact && (
           <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.45, ease: EASE }} className="relative overflow-hidden">
-            <p className="mt-4 max-w-md text-base leading-relaxed text-(--lp-muted) sm:text-lg">{step.body}</p>
+            <p className="mt-5 max-w-md text-lg leading-[1.65] text-(--lp-muted) sm:text-xl">{step.body}</p>
           </motion.div>
         )}
       </AnimatePresence>
-      {active && compact && <p className="relative mt-4 max-w-md text-base leading-relaxed text-(--lp-muted) sm:text-lg">{step.body}</p>}
+      {active && compact && <p className="relative mt-5 max-w-md text-lg leading-[1.65] text-(--lp-muted) sm:text-xl">{step.body}</p>}
     </div>
   )
 }
@@ -248,13 +248,11 @@ function StoryPinned() {
 
   return (
     <div ref={ref} className="relative" style={{ height: `${(STEPS.length + 1) * 100}svh` }}>
-      <div className="sticky top-0 flex h-svh items-center pt-24 pb-8">
+      <div className="sticky top-0 flex h-svh items-center pt-24 pb-10">
         <div className="mx-auto grid w-full max-w-6xl items-center gap-14 px-8 lg:grid-cols-[0.9fr_1.1fr] xl:gap-24">
-          {/* left: heading, the ACTIVE step only, progress */}
+          {/* left: the ACTIVE step only (big number, heading, description), then progress */}
           <div>
-            <h2 className="max-w-xl text-[clamp(1.9rem,3vw,2.7rem)] leading-[1.04] font-semibold tracking-[-0.04em] text-balance">From “help!” to “thank you” in four moves.</h2>
-
-            <div className="relative mt-10 min-h-[17rem] [@media(max-height:900px)]:mt-6 [@media(max-height:900px)]:min-h-[14rem]">
+            <div className="relative min-h-[23rem] [@media(max-height:900px)]:min-h-[20rem]">
               <AnimatePresence mode="wait" custom={dir} initial={false}>
                 <motion.div
                   key={current.n}
@@ -271,17 +269,17 @@ function StoryPinned() {
                   className="relative"
                   aria-live="polite"
                 >
-                  <span aria-hidden className="block text-[clamp(5rem,9vw,8rem)] leading-[0.85] font-semibold tracking-[-0.06em]" style={{ color: STEP_COLORS[step] === '#c8f560' ? '#9bc72e' : STEP_COLORS[step] }}>
+                  <span aria-hidden className="block text-[clamp(6rem,10vw,9.5rem)] leading-[0.82] font-semibold tracking-[-0.07em]" style={{ color: STEP_COLORS[step] === '#c8f560' ? '#9bc72e' : STEP_COLORS[step] }}>
                     {current.n}
                   </span>
-                  <h3 className="mt-4 text-[clamp(1.9rem,3vw,2.7rem)] leading-[1.04] font-semibold tracking-[-0.035em]">{current.title}</h3>
-                  <p className="mt-4 max-w-md text-lg leading-relaxed text-(--lp-muted)">{current.body}</p>
+                  <h3 className="mt-6 max-w-lg text-[clamp(2.1rem,3.4vw,3.2rem)] leading-[1.04] font-semibold tracking-[-0.04em] text-balance [@media(max-height:900px)]:mt-4">{current.title}</h3>
+                  <p className="mt-5 max-w-md text-[1.2rem] leading-[1.65] text-(--lp-muted) [@media(max-height:900px)]:mt-4 xl:text-[1.3rem]">{current.body}</p>
                 </motion.div>
               </AnimatePresence>
             </div>
 
             {/* compact progress: four segments that fill with scroll, a counter and prev/next */}
-            <div className="mt-8 flex items-center gap-4 [@media(max-height:900px)]:mt-5">
+            <div className="mt-10 flex items-center gap-4 [@media(max-height:900px)]:mt-6">
               <ol className="flex flex-1 gap-2" aria-label="Steps">
                 {STEPS.map((s, i) => (
                   <Segment key={s.n} index={i} active={i === step} title={s.title} progress={smooth} onSelect={() => goTo(i)} />
@@ -338,14 +336,12 @@ export function Story() {
   const stacked = reduce || !desktop
   return (
     <section id="story" data-nav="light" className="relative -mt-10 rounded-t-[2.5rem] bg-(--lp-paper) text-(--lp-ink)">
-      {stacked && (
-        <div className="relative mx-auto max-w-6xl px-5 pt-28 pb-20 text-center sm:px-8 sm:pt-40 sm:pb-28">
-          <h2 className="mx-auto max-w-4xl text-[clamp(2.2rem,6vw,4.6rem)] leading-[1] font-semibold tracking-[-0.04em] text-balance">
-            <WordReveal text="From “help!” to “thank you” in four moves." />
-          </h2>
-          <p className="mx-auto mt-6 max-w-xl text-lg text-(--lp-muted)">Follow one ticket from the customer’s first message to a rated, resolved reply.</p>
-        </div>
-      )}
+      <div className={cn('relative mx-auto max-w-6xl px-5 pt-28 text-center sm:px-8 sm:pt-40', stacked ? 'pb-20 sm:pb-28' : 'pb-6')}>
+        <h2 className="mx-auto max-w-4xl text-[clamp(2.4rem,6vw,4.8rem)] leading-[1] font-semibold tracking-[-0.045em] text-balance">
+          <WordReveal text="From “help!” to “thank you” in four moves." />
+        </h2>
+        <p className="mx-auto mt-6 max-w-xl text-lg leading-relaxed text-(--lp-muted) sm:text-xl">Follow one ticket from the customer’s first message to a rated, resolved reply.</p>
+      </div>
       {stacked ? <StoryStacked /> : <StoryPinned />}
       <div className="h-12 lg:h-20" aria-hidden />
     </section>

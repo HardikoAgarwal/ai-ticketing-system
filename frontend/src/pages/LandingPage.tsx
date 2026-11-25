@@ -7,7 +7,6 @@ import { Demo } from '@/components/landing/Demo'
 import { Hero } from '@/components/landing/Hero'
 import { Nav } from '@/components/landing/Nav'
 import { Story } from '@/components/landing/Story'
-import { UseCases } from '@/components/landing/UseCases'
 import { API_URL } from '@/lib/api'
 
 const LOADED_WITH_HASH = typeof location === 'undefined' ? '' : location.hash
@@ -56,7 +55,6 @@ export function LandingPage() {
       <Nav />
       <main>
         <Hero />
-        <UseCases />
         <Story />
         <Bento />
         <Demo notice={notice} />

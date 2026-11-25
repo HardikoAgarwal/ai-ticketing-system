@@ -221,7 +221,7 @@ function Scene({ progress }: { progress: MotionValue<number> }) {
   }
 
   return (
-    <div className="relative mx-auto mt-12 w-full max-w-6xl text-left sm:mt-14" onMouseMove={onMove} onMouseLeave={onLeave}>
+    <div className="relative mx-auto mt-20 w-full max-w-6xl text-left sm:mt-24" onMouseMove={onMove} onMouseLeave={onLeave}>
       {/* the desk, centred under the headline */}
       <div className="relative z-10 mx-auto w-full max-w-[44rem]">
         <motion.div initial={reduce ? false : { opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.9, delay: 0.45, ease: EASE }}>
@@ -432,30 +432,37 @@ function Scene({ progress }: { progress: MotionValue<number> }) {
 
 export function Hero() {
   const ref = useRef<HTMLElement>(null)
+  const reduce = useReducedMotion()
   const { scrollYProgress } = useScroll({ target: ref, offset: ['start start', 'end start'] })
   const smooth = useSpring(scrollYProgress, { stiffness: 90, damping: 22, mass: 0.4 })
   const titleY = useParallax(smooth, 60)
 
   return (
-    <section id="top" ref={ref} data-nav="light" className="relative bg-(--lp-hero) pt-32 pb-24 text-(--lp-ink) sm:pt-40 sm:pb-28">
-      {/* one flat colour with a quiet dot texture */}
-      <div aria-hidden className="pointer-events-none absolute inset-0 [background-image:radial-gradient(rgba(11,10,29,0.13)_1.4px,transparent_1.4px)] [background-size:26px_26px]" />
-
+    <section id="top" ref={ref} data-nav="light" className="relative bg-(--lp-hero) pt-36 pb-32 text-(--lp-ink) sm:pt-44 sm:pb-40">
       <div className="relative mx-auto max-w-7xl px-5 text-center sm:px-8">
         <motion.div style={{ y: titleY }}>
-          <h1 className="mx-auto max-w-6xl text-[clamp(2.7rem,6.4vw,6rem)] leading-[0.95] font-semibold tracking-[-0.045em] text-balance">
-            <WordReveal text="Answer customers faster." onMount delay={0.15} />
-            <br />
-            <span className="text-(--lp-violet)">
+          <h1 className="mx-auto max-w-6xl text-[clamp(2.5rem,6.6vw,6.2rem)] leading-[1.02] tracking-[-0.05em] text-balance">
+            <span className="block font-medium text-(--lp-ink)/85">
+              <WordReveal text="Answer customers faster." onMount delay={0.15} />
+            </span>
+            {/* the key phrase sits on a solid, slightly tilted violet highlighter block */}
+            <span className="relative isolate mt-2 inline-block px-[0.3em] pt-[0.04em] pb-[0.1em] font-extrabold text-white sm:mt-3">
+              <motion.span
+                aria-hidden
+                initial={reduce ? false : { scaleX: 0 }}
+                animate={{ scaleX: 1 }}
+                transition={{ delay: 0.7, duration: 0.7, ease: EASE }}
+                className="absolute inset-0 -z-10 origin-left -rotate-[1.2deg] rounded-[0.2em] bg-(--lp-violet) shadow-[0_18px_40px_-18px_rgba(91,61,245,0.85)]"
+              />
               <WordReveal text="Show your sources." onMount delay={0.55} />
             </span>
           </h1>
 
-          <motion.p initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1, duration: 0.7 }} className="mx-auto mt-7 max-w-2xl text-lg text-(--lp-ink)/75 sm:text-xl">
+          <motion.p initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1, duration: 0.7 }} className="mx-auto mt-8 max-w-2xl text-lg leading-relaxed text-(--lp-ink)/75 sm:text-xl">
             Every ticket is triaged the second it lands, and your team opens it to a ready reply drafted from your own knowledge base. Review, edit, send.
           </motion.p>
 
-          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1.15, duration: 0.7 }} className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
+          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1.15, duration: 0.7 }} className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-4">
             <a href="#demo" className="lp-focus group flex h-14 items-center gap-2 rounded-full bg-(--lp-violet) px-8 text-base font-semibold text-white shadow-[0_14px_30px_-12px_rgba(91,61,245,0.7)] transition-transform hover:scale-[1.04]">
               Try the live demo <ArrowRight className="size-5 transition-transform group-hover:translate-x-1" />
             </a>

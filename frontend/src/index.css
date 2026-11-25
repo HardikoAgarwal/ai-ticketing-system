@@ -190,11 +190,6 @@
 }
 
 /* ---- Landing page motion + backgrounds ---- */
-@keyframes lp-marquee {
-  to {
-    transform: translateX(-50%);
-  }
-}
 @keyframes lp-float {
   0%, 100% {
     transform: translateY(0);
@@ -216,12 +211,6 @@
 @keyframes lp-blink {
   50% {
     opacity: 0;
-  }
-}
-@utility lp-marquee {
-  animation: lp-marquee 38s linear infinite;
-  @media (prefers-reduced-motion: reduce) {
-    animation: none;
   }
 }
 @utility lp-float {
@@ -280,7 +269,7 @@ html {
   --lp-sky: #def0ff;
   --lp-sky-2: #bfe0ff;
   /* one solid colour per full-bleed section */
-  --lp-hero: #ffe8a0;
+  --lp-hero: #cfe3ff;
   --lp-features: #6a4df4;
   --lp-demo: #ff9a6c;
   /* shared surface language: radii, border and shadow used by every card on the page */
