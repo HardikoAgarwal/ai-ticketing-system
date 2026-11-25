@@ -58,47 +58,91 @@ function OptionRow({ spec, option, active, onPick }: { spec: FilterSpec; option:
   )
 }
 
-/** A filter as a chip: neutral when unset, filled with the chosen value (and an ×) when set. */
-export function FilterChip({ spec, value, onChange }: { spec: FilterSpec; value: string | null; onChange: (v: string | null) => void }) {
+/** One filter in the toolbar grid: equal-sized, neutral when unset, filled with a count when active. Opens a pick list. */
+export function FilterButton({ spec, value, onChange }: { spec: FilterSpec; value: string | null; onChange: (v: string | null) => void }) {
   const [open, setOpen] = useState(false)
+  const vals = csv(value)
   const text = summary(spec, value)
-  const Icon = spec.icon
+  const Icon = spec.icon ?? ListFilter
   return (
-    <div className={cn('inline-flex items-center rounded-full border text-sm shadow-xs transition-colors', text ? 'border-primary/30 bg-primary/[0.07] text-primary' : 'bg-card hover:bg-muted')}>
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <button type="button" aria-label={`Filter by ${spec.label}`} className={cn('flex h-8 items-center gap-1.5 rounded-full pl-3 font-medium focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none', text ? 'pr-1.5' : 'pr-2.5')}>
-            {Icon && <Icon className="size-3.5 opacity-70" />}
-            <span>{spec.label}</span>
-            {text && <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold">{text}</span>}
-            {!text && <ChevronDown className="size-3.5 opacity-60" />}
-          </button>
-        </PopoverTrigger>
-        <PopoverContent align="start" className="w-60 gap-0.5 p-1.5">
-          <p className="px-2.5 pt-1.5 pb-1 text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
-            {spec.label} {spec.multi && <span className="font-normal normal-case">· pick any</span>}
-          </p>
-          <div role="menu" className="max-h-72 overflow-y-auto">
-            {spec.options.map((o) => (
-              <OptionRow
-                key={o.value}
-                spec={spec}
-                option={o}
-                active={csv(value).includes(o.value)}
-                onPick={() => {
-                  onChange(toggle(spec, value, o.value))
-                  if (!spec.multi) setOpen(false)
-                }}
-              />
-            ))}
-          </div>
-        </PopoverContent>
-      </Popover>
-      {text && (
-        <button type="button" onClick={() => onChange(null)} aria-label={`Clear ${spec.label} filter`} className="mr-1 flex size-6 items-center justify-center rounded-full hover:bg-primary/15 focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none">
-          <X className="size-3.5" />
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          aria-label={`Filter by ${spec.label}${text ? `, currently ${text}` : ''}`}
+          className={cn(
+            'group flex h-10 w-full min-w-0 items-center gap-2 rounded-xl border px-3 text-sm font-medium shadow-xs transition-all focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none',
+            text ? 'border-primary/40 bg-primary/[0.08] text-primary' : 'border-slate-200 bg-white text-foreground/80 hover:border-slate-300 hover:bg-slate-50',
+          )}
+        >
+          <Icon className={cn('size-4 shrink-0', text ? 'text-primary' : 'text-muted-foreground')} />
+          <span className="min-w-0 flex-1 truncate text-left">{vals.length > 1 ? spec.label : (text ?? spec.label)}</span>
+          {vals.length > 1 && <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-primary text-[11px] font-semibold text-primary-foreground">{vals.length}</span>}
+          <ChevronDown className={cn('size-4 shrink-0 transition-transform', open && 'rotate-180', text ? 'text-primary/70' : 'text-muted-foreground')} />
         </button>
-      )}
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-64 gap-0.5 p-1.5">
+        <p className="px-2.5 pt-1.5 pb-1 text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
+          {spec.label} {spec.multi && <span className="font-normal normal-case">· pick any</span>}
+        </p>
+        <div role="menu" className="max-h-72 overflow-y-auto">
+          {spec.options.map((o) => (
+            <OptionRow
+              key={o.value}
+              spec={spec}
+              option={o}
+              active={vals.includes(o.value)}
+              onPick={() => {
+                onChange(toggle(spec, value, o.value))
+                if (!spec.multi) setOpen(false)
+              }}
+            />
+          ))}
+        </div>
+        {vals.length > 0 && (
+          <button type="button" onClick={() => { onChange(null); setOpen(false) }} className="mt-1 rounded-md border-t px-2.5 py-2 text-left text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground">
+            Clear {spec.label.toLowerCase()}
+          </button>
+        )}
+      </PopoverContent>
+    </Popover>
+  )
+}
+
+/** Removable chips for every active filter value ("Priority: High ×"). */
+export function ActiveFilterChips({ specs, values, onChange, onClear, extra }: {
+  specs: FilterSpec[]
+  values: Record<string, string | null>
+  onChange: (key: string, v: string | null) => void
+  onClear: () => void
+  extra?: { label: string; onRemove: () => void }[]
+}) {
+  const chips = specs.flatMap((spec) =>
+    csv(values[spec.key]).map((v) => ({ spec, value: v, label: spec.options.find((o) => o.value === v)?.label ?? v })),
+  )
+  if (!chips.length && !extra?.length) return null
+  return (
+    <div className="flex flex-wrap items-center gap-2 border-t border-slate-200/80 pt-4">
+      <span className="mr-1 text-xs font-semibold tracking-wide text-muted-foreground uppercase">Active</span>
+      {extra?.map((e) => (
+        <button key={e.label} type="button" onClick={e.onRemove} className="inline-flex h-8 items-center gap-1.5 rounded-full bg-slate-900 pr-2 pl-3 text-[13px] font-medium text-white transition-colors hover:bg-slate-700 focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none">
+          {e.label} <X className="size-3.5 opacity-80" />
+        </button>
+      ))}
+      {chips.map(({ spec, value, label }) => (
+        <button
+          key={`${spec.key}:${value}`}
+          type="button"
+          onClick={() => onChange(spec.key, toggle(spec, values[spec.key], value))}
+          aria-label={`Remove ${spec.label} filter ${label}`}
+          className="inline-flex h-8 items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 pr-2 pl-3 text-[13px] font-medium text-primary transition-colors hover:bg-primary/15 focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none"
+        >
+          <span className="text-primary/70">{spec.label}:</span> {label} <X className="size-3.5" />
+        </button>
+      ))}
+      <Button variant="ghost" size="sm" onClick={onClear} className="ml-auto h-8 text-muted-foreground">
+        <X /> Clear all
+      </Button>
     </div>
   )
 }
@@ -114,8 +158,9 @@ export const SORT_OPTIONS = [
 export function SortSelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   return (
     <Select value={value} onValueChange={onChange}>
-      <SelectTrigger size="sm" aria-label="Sort tickets" className="w-full min-w-44 bg-card font-medium sm:w-auto">
-        <ListFilter className="size-3.5 text-muted-foreground" />
+      <SelectTrigger aria-label="Sort tickets" className="h-11 w-full min-w-48 rounded-xl border-slate-200 bg-white font-medium shadow-xs sm:w-auto">
+        <ListFilter className="size-4 text-muted-foreground" />
+        <span className="text-muted-foreground">Sort:</span>
         <SelectValue />
       </SelectTrigger>
       <SelectContent align="end">
@@ -130,14 +175,43 @@ export function SortSelect({ value, onChange }: { value: string; onChange: (v: s
 }
 
 export function SearchBox({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const ref = useRef<HTMLInputElement>(null)
+  const [focused, setFocused] = useState(false)
+  // "/" jumps to search, like most dashboards
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const el = e.target as HTMLElement
+      if (e.key !== '/' || e.metaKey || e.ctrlKey || e.altKey) return
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName) || el.isContentEditable) return
+      e.preventDefault()
+      ref.current?.focus()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
   return (
     <div className="relative min-w-0 flex-1">
-      <Search className="absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-muted-foreground" />
-      <Input value={value} onChange={(e) => onChange(e.target.value)} placeholder="Search subject, customer or TKT-0001" aria-label="Search tickets" className="h-11 rounded-xl bg-card pr-10 pl-10 shadow-xs" />
-      {value && (
-        <button type="button" onClick={() => onChange('')} aria-label="Clear search" className="absolute top-1/2 right-2.5 flex size-6 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground hover:bg-muted">
-          <X className="size-3.5" />
+      <Search className="pointer-events-none absolute top-1/2 left-4 size-[18px] -translate-y-1/2 text-muted-foreground" />
+      <Input
+        ref={ref}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+        placeholder="Search by subject, customer, company or TKT-0001"
+        aria-label="Search tickets"
+        className="h-11 rounded-xl border-slate-200 bg-white pr-14 pl-11 text-[15px] shadow-xs"
+      />
+      {value ? (
+        <button type="button" onClick={() => { onChange(''); ref.current?.focus() }} aria-label="Clear search" className="absolute top-1/2 right-3 flex size-6 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground hover:bg-muted">
+          <X className="size-4" />
         </button>
+      ) : (
+        !focused && (
+          <kbd aria-hidden className="pointer-events-none absolute top-1/2 right-3 hidden h-6 min-w-6 -translate-y-1/2 items-center justify-center rounded-md border bg-slate-50 px-1.5 font-mono text-xs text-muted-foreground sm:flex">
+            /
+          </kbd>
+        )
       )}
     </div>
   )
@@ -149,7 +223,7 @@ export interface QuickView {
   count?: number
 }
 
-/** Segmented pill views with live counts. Scrolls sideways on phones. */
+/** Segmented control for the quick views, each with a live count. Scrolls sideways on phones. */
 export function QuickViews({ views, value, onChange }: { views: QuickView[]; value: string; onChange: (key: string) => void }) {
   const ref = useRef<HTMLDivElement>(null)
   useEffect(() => {
@@ -157,7 +231,7 @@ export function QuickViews({ views, value, onChange }: { views: QuickView[]; val
     if (el && ref.current) ref.current.scrollTo({ left: el.offsetLeft - 24, behavior: 'smooth' })
   }, [value])
   return (
-    <div ref={ref} role="tablist" aria-label="Ticket views" className="relative -mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1 [&::-webkit-scrollbar]:hidden">
+    <div ref={ref} role="tablist" aria-label="Ticket views" className="flex max-w-full gap-1 overflow-x-auto rounded-xl bg-slate-100 p-1 ring-1 ring-slate-200/70 ring-inset [&::-webkit-scrollbar]:hidden">
       {views.map((v) => {
         const on = v.key === value
         return (
@@ -167,13 +241,13 @@ export function QuickViews({ views, value, onChange }: { views: QuickView[]; val
             aria-selected={on}
             onClick={() => onChange(v.key)}
             className={cn(
-              'flex h-10 shrink-0 items-center gap-2 rounded-full border px-4 text-sm font-medium whitespace-nowrap transition-all focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none',
-              on ? 'border-primary bg-primary text-primary-foreground shadow-sm shadow-primary/25' : 'bg-card text-muted-foreground hover:border-foreground/20 hover:text-foreground',
+              'flex h-9 shrink-0 items-center gap-2 rounded-lg px-3.5 text-sm font-medium whitespace-nowrap transition-all focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none',
+              on ? 'bg-white text-foreground shadow-sm ring-1 ring-slate-200' : 'text-muted-foreground hover:text-foreground',
             )}
           >
             {v.label}
             {v.count !== undefined && (
-              <span className={cn('rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums', on ? 'bg-white/20 text-primary-foreground' : 'bg-muted text-muted-foreground')}>{v.count}</span>
+              <span className={cn('rounded-full px-2 py-px text-xs font-semibold tabular-nums', on ? 'bg-primary text-primary-foreground' : 'bg-slate-200/80 text-slate-600')}>{v.count}</span>
             )}
           </button>
         )
@@ -194,7 +268,7 @@ export function FilterSheet({ specs, values, onChange, onClear, activeCount, chi
   const [open, setOpen] = useState(false)
   return (
     <>
-      <Button variant="outline" onClick={() => setOpen(true)} className="h-11 rounded-xl px-3.5">
+      <Button variant="outline" onClick={() => setOpen(true)} className="h-11 rounded-xl border-slate-200 bg-white px-3.5 shadow-xs">
         <SlidersHorizontal /> Filters
         {activeCount > 0 && <span className="rounded-full bg-primary px-1.5 text-xs font-semibold text-primary-foreground">{activeCount}</span>}
       </Button>

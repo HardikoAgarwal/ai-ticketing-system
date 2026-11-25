@@ -3,9 +3,11 @@ import { Lock, MessagesSquare } from 'lucide-react'
 import { Fragment, useEffect, useRef } from 'react'
 
 import { Composer } from '@/components/agent/Composer'
+import { surface } from '@/components/dashboard/surface'
 import { RelativeTime } from '@/components/common'
 import { AttachmentList, ChatBubble, DayDivider, MessageBubble, PersonAvatar } from '@/components/tickets/Thread'
 import { initials } from '@/lib/format'
+import { cn } from '@/lib/utils'
 import type { Message, StaffTicketDetail } from '@/lib/types'
 
 function dayLabel(iso: string): string {
@@ -19,7 +21,7 @@ function dayLabel(iso: string): string {
 function NoteBubble({ note }: { note: Message }) {
   return (
     <div className="mx-auto w-full max-w-[92%]">
-      <div className="rounded-2xl border border-amber-200 border-l-4 border-l-amber-400 bg-amber-50/70 px-4 py-3 shadow-xs">
+      <div className="rounded-2xl border border-amber-300/70 border-l-4 border-l-amber-400 bg-amber-50 px-4 py-3 shadow-sm">
         <div className="mb-1.5 flex flex-wrap items-center gap-2 text-xs">
           <span className="flex size-6 items-center justify-center rounded-full bg-amber-200/70 text-[10px] font-semibold text-amber-900">{initials(note.sender_name)}</span>
           <span className="font-semibold text-amber-950">{note.sender_name}</span>
@@ -51,10 +53,12 @@ export function Conversation({ ticket }: { ticket: StaffTicketDetail }) {
   let lastDay = dayLabel(ticket.created_at)
 
   return (
-    <section aria-label="Conversation" className="flex h-[max(38rem,calc(100svh-5rem))] min-h-0 flex-col overflow-hidden rounded-2xl border bg-card shadow-sm">
-      <header className="flex shrink-0 items-center gap-2.5 border-b px-5 py-3 text-sm">
-        <MessagesSquare className="size-4 text-muted-foreground" />
-        <h2 className="font-semibold">Conversation</h2>
+    <section aria-label="Conversation" className={cn(surface, 'flex h-[max(38rem,calc(100svh-5rem))] min-h-0 flex-col overflow-hidden')}>
+      <header className="flex min-h-12 shrink-0 items-center gap-2.5 border-b border-slate-200/80 bg-slate-50/80 px-4 py-2.5 text-sm sm:px-5">
+        <span className="flex size-7 items-center justify-center rounded-lg bg-blue-100 text-blue-700 ring-1 ring-blue-200 ring-inset">
+          <MessagesSquare className="size-4" />
+        </span>
+        <h2 className="font-semibold tracking-tight">Conversation</h2>
         <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
           {thread.filter((m) => !m.is_internal).length + 1} {thread.filter((m) => !m.is_internal).length === 0 ? 'message' : 'messages'}
         </span>

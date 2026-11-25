@@ -1,12 +1,13 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
-import { AlertOctagon, CalendarDays, ChevronLeft, ChevronRight, Clock, Inbox, Loader2, Search, Sparkles, UserRound, UserX, X } from 'lucide-react'
+import { AlertOctagon, CalendarDays, ChevronLeft, ChevronRight, Clock, Inbox, ListFilter, Loader2, Search, Sparkles, UserRound, UserX } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 
 import { useAuth } from '@/auth/AuthContext'
 import { useWorkspace } from '@/auth/workspace'
 import { PageHeader } from '@/components/common'
-import { FilterChip, FilterSheet, QuickViews, SearchBox, SortSelect, SORT_OPTIONS, type FilterSpec } from '@/components/dashboard/QueueFilters'
+import { ActiveFilterChips, FilterButton, FilterSheet, QuickViews, SearchBox, SortSelect, SORT_OPTIONS, type FilterSpec } from '@/components/dashboard/QueueFilters'
+import { surface } from '@/components/dashboard/surface'
 import { TicketCard, TicketCardSkeleton } from '@/components/dashboard/TicketCard'
 import { EmptyState, ErrorState } from '@/components/states'
 import { Button } from '@/components/ui/button'
@@ -47,16 +48,17 @@ function KpiCard({ label, value, icon: Icon, tile, ring, onClick, active }: {
       onClick={onClick}
       aria-pressed={active}
       className={cn(
-        'group flex items-center gap-3 rounded-2xl border bg-card p-3.5 text-left shadow-xs transition-all hover:-translate-y-px hover:shadow-md focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none sm:gap-4 sm:p-4',
+        surface,
+        'group flex items-center gap-3.5 p-4 text-left transition-all hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-lg focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none sm:gap-4 sm:p-5',
         active && cn('ring-2', ring),
       )}
     >
-      <div className={cn('flex size-10 shrink-0 items-center justify-center rounded-xl sm:size-11', tile)}>
-        <Icon className="size-5" />
+      <div className={cn('flex size-11 shrink-0 items-center justify-center rounded-xl ring-1 ring-inset ring-black/5 sm:size-12', tile)}>
+        <Icon className="size-5 sm:size-6" />
       </div>
       <div>
-        <p className="text-2xl leading-none font-semibold tracking-tight tabular-nums">{value ?? '–'}</p>
-        <p className="mt-1.5 text-xs font-medium text-muted-foreground">{label}</p>
+        <p className="text-[1.75rem] leading-none font-semibold tracking-tight tabular-nums">{value ?? '–'}</p>
+        <p className="mt-1.5 text-[13px] font-medium text-muted-foreground">{label}</p>
       </div>
     </button>
   )
@@ -203,8 +205,9 @@ export function QueuePage() {
         <KpiCard label="Critical open" value={stats.data?.critical} icon={AlertOctagon} tile="bg-orange-100 text-orange-700" ring="ring-orange-300" onClick={() => applyKpi({ priority: 'CRITICAL' })} active={params.get('priority') === 'CRITICAL'} />
       </div>
 
-      <section aria-label="Find and filter tickets" className="mb-5 flex flex-col gap-3 rounded-2xl border bg-card/60 p-3 shadow-xs sm:p-4">
-        <div className="flex flex-wrap items-center gap-2.5 sm:flex-nowrap">
+      <section aria-label="Find and filter tickets" className={cn(surface, 'mb-6 flex flex-col gap-4 p-4 sm:p-5')}>
+        {/* row 1: search + sort (+ filters button on phones) */}
+        <div className="flex flex-wrap items-center gap-3 sm:flex-nowrap">
           <SearchBox value={search} onChange={setSearch} />
           <div className="md:hidden">
             <FilterSheet specs={specs} values={values} onChange={setParam} onClear={clearAll} activeCount={activeCount}>
@@ -214,33 +217,42 @@ export function QueuePage() {
               </section>
             </FilterSheet>
           </div>
-          <div className="hidden w-52 shrink-0 md:block">
+          <div className="hidden shrink-0 md:block">
             <SortSelect value={sort} onChange={(v) => setParam('sort', v === 'default' ? null : v)} />
           </div>
         </div>
 
-        <QuickViews views={quickViews} value={view} onChange={(v) => applyKpi(v === 'attention' ? {} : { view: v })} />
-
-        <div className="hidden flex-wrap items-center gap-2 md:flex">
-          <span className="mr-0.5 text-xs font-semibold tracking-wide text-muted-foreground uppercase">Filter</span>
-          {specs.map((s) => (
-            <FilterChip key={s.key} spec={s} value={params.get(s.key)} onChange={(v) => setParam(s.key, v)} />
-          ))}
-          {hasAny && (
-            <Button variant="ghost" size="sm" onClick={clearAll} className="h-8 text-muted-foreground">
-              <X /> Clear all
-            </Button>
-          )}
+        {/* row 2: quick views + result count */}
+        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+          <QuickViews views={quickViews} value={view} onChange={(v) => applyKpi(v === 'attention' ? {} : { view: v })} />
+          <p className="flex items-center gap-2 text-[13px] text-muted-foreground" aria-live="polite">
+            {list.isFetching && !list.isLoading && <Loader2 className="size-3.5 animate-spin" />}
+            {list.data ? (list.data.count ? (
+              <>
+                Showing <span className="font-semibold text-foreground tabular-nums">{from}–{to}</span> of <span className="font-semibold text-foreground tabular-nums">{list.data.count}</span> tickets
+              </>
+            ) : '0 tickets') : 'Loading tickets…'}
+          </p>
         </div>
+
+        {/* row 3: the filters, one even grid (hidden on phones, where they live in the sheet) */}
+        <div className="hidden border-t border-slate-200/80 pt-4 md:block">
+          <p className="mb-2.5 flex items-center gap-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+            <ListFilter className="size-3.5" /> Filters
+          </p>
+          <div className="grid grid-cols-3 gap-2.5 lg:grid-cols-4 xl:grid-cols-7">
+            {specs.map((s) => (
+              <FilterButton key={s.key} spec={s} value={params.get(s.key)} onChange={(v) => setParam(s.key, v)} />
+            ))}
+          </div>
+        </div>
+
+        {/* row 4: active filters as removable chips (shown on every screen size) */}
+        <ActiveFilterChips specs={specs} values={values} onChange={setParam} onClear={clearAll} />
       </section>
 
-      <div className="mb-3 flex items-center justify-between px-1 text-sm text-muted-foreground" aria-live="polite">
-        <span>{list.data ? (list.data.count ? `Showing ${from}–${to} of ${list.data.count} tickets` : '0 tickets') : 'Loading tickets…'}</span>
-        {list.isFetching && !list.isLoading && <Loader2 className="size-4 animate-spin" />}
-      </div>
-
       {list.isLoading ? (
-        <div className="space-y-3">
+        <div className="space-y-3.5">
           {Array.from({ length: 5 }).map((_, i) => (
             <TicketCardSkeleton key={i} />
           ))}
@@ -255,7 +267,7 @@ export function QueuePage() {
           action={hasAny ? <Button variant="outline" size="sm" onClick={clearAll}>Clear all filters</Button> : undefined}
         />
       ) : (
-        <ul className="space-y-3">
+        <ul className="space-y-3.5">
           {tickets.map((t, i) => (
             <li key={t.id}>
               <TicketCard

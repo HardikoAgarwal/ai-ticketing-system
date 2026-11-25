@@ -1,160 +1,123 @@
-import { CheckCheck, Inbox, Loader2, MessageCircleReply, Sparkles, TriangleAlert, UserCheck, UserX } from 'lucide-react'
+import { CircleCheck, Clock, Loader2, Sparkles, UserCheck, UserX } from 'lucide-react'
 import { forwardRef } from 'react'
 import { Link } from 'react-router-dom'
 
-import { CategoryBadge, PriorityBadge, SentimentBadge, SlaBadge, StatusBadge } from '@/components/badges'
+import { CategoryBadge, Pill, PriorityBadge, SentimentBadge, slaLabel, StatusBadge } from '@/components/badges'
 import { RelativeTime } from '@/components/common'
+import { StateBadge, ticketStates } from '@/components/dashboard/badges'
+import { surface } from '@/components/dashboard/surface'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Skeleton } from '@/components/ui/skeleton'
 import { initials } from '@/lib/format'
 import type { StaffTicket } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
-type Theme = { edge: string; surface: string; label: string }
-
-/** State -> card theme. Order matters: closed work is muted, urgency beats unread, unread beats "due soon". */
-export function ticketTheme(t: StaffTicket): Theme {
-  if (t.status === 'RESOLVED' || t.status === 'CLOSED') {
-    return { edge: 'bg-emerald-300', surface: 'bg-emerald-50/40 hover:bg-emerald-50/70', label: 'Resolved' }
-  }
-  if (t.sla_state === 'overdue' || t.priority === 'CRITICAL') {
-    return { edge: 'bg-red-500', surface: 'bg-red-50/50 hover:bg-red-50/80', label: 'Urgent' }
-  }
-  if (t.unread_kind === 'requester_reply') {
-    return { edge: 'bg-blue-500', surface: 'bg-blue-50/60 hover:bg-blue-50/90', label: 'New message' }
-  }
-  if (t.unread_kind === 'new_ticket') {
-    return { edge: 'bg-indigo-500', surface: 'bg-indigo-50/50 hover:bg-indigo-50/80', label: 'New ticket' }
-  }
-  if (t.sla_state === 'at_risk') {
-    return { edge: 'bg-amber-400', surface: 'bg-amber-50/50 hover:bg-amber-50/80', label: 'Due soon' }
-  }
-  return { edge: 'bg-slate-300', surface: 'bg-card hover:bg-muted/40', label: '' }
-}
-
-function UnreadBadge({ kind }: { kind: StaffTicket['unread_kind'] }) {
-  if (kind === 'requester_reply') {
-    return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-blue-600 px-2.5 py-0.5 text-[11px] font-semibold text-white shadow-xs">
-        <MessageCircleReply className="size-3" /> New message from customer
-      </span>
-    )
-  }
-  if (kind === 'new_ticket') {
-    return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-indigo-600 px-2.5 py-0.5 text-[11px] font-semibold text-white shadow-xs">
-        <Inbox className="size-3" /> New ticket
-      </span>
-    )
-  }
-  return null
-}
-
-function AiState({ ticket }: { ticket: StaffTicket }) {
-  const triaging = ticket.ai_status === 'PENDING' && ticket.category_source !== 'STAFF'
-  if (triaging) {
-    return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-violet-50 px-2 py-0.5 text-[11px] font-medium text-violet-700 ring-1 ring-violet-600/20 ring-inset">
-        <Loader2 className="size-3 animate-spin" /> AI triaging
-      </span>
-    )
-  }
-  if (ticket.ai_status === 'FAILED') {
-    return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-800 ring-1 ring-amber-600/20 ring-inset">
-        <TriangleAlert className="size-3" /> Needs triage
-      </span>
-    )
-  }
-  if (ticket.ai_status === 'COMPLETED') {
-    return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-violet-50/70 px-2 py-0.5 text-[11px] font-medium text-violet-700 ring-1 ring-violet-600/15 ring-inset">
-        <Sparkles className="size-3" /> AI triaged{ticket.ai_confidence !== null ? ` · ${Math.round(ticket.ai_confidence * 100)}%` : ''}
-      </span>
-    )
-  }
-  return null
+/** Footer line for the SLA: plain text, because urgent SLA states are already shouted by the state badges up top. */
+function SlaText({ ticket }: { ticket: StaffTicket }) {
+  const { sla_state: s } = ticket
+  // overdue / at-risk are already shouted by the state badges in the header, so don't repeat them here
+  if (s === 'none' || s === 'overdue' || s === 'at_risk') return null
+  const label = slaLabel(s, ticket.sla_due_at)
+  const tone = s === 'breached' ? 'text-orange-700' : s === 'met' ? 'text-emerald-700' : 'text-muted-foreground'
+  const Icon = s === 'met' ? CircleCheck : Clock
+  return (
+    <span className={cn('inline-flex items-center gap-1.5 text-[13px] font-medium whitespace-nowrap', tone)}>
+      <Icon className="size-4" /> {label}
+    </span>
+  )
 }
 
 export const TicketCard = forwardRef<HTMLAnchorElement, { ticket: StaffTicket; to: string; selected?: boolean; meId?: number }>(function TicketCard(
   { ticket, to, selected, meId },
   ref,
 ) {
-  const theme = ticketTheme(ticket)
   const mine = !!meId && ticket.assigned_to?.id === meId
   const closed = ticket.status === 'RESOLVED' || ticket.status === 'CLOSED'
   const unread = ticket.has_unread
   const triaging = ticket.ai_status === 'PENDING' && ticket.category_source !== 'STAFF'
+  const states = ticketStates(ticket)
+  const hasCritical = states.some((s) => s.kind === 'critical')
+
   return (
     <Link
       ref={ref}
       to={to}
       aria-label={`${ticket.reference}: ${ticket.subject}`}
       className={cn(
-        'group relative block overflow-hidden rounded-2xl border pr-4 pl-5 transition-all duration-150 outline-none sm:pr-6 sm:pl-7',
-        'hover:-translate-y-0.5 hover:shadow-md focus-visible:ring-3 focus-visible:ring-ring/50',
-        theme.surface,
-        selected && 'ring-2 ring-primary/50',
-        closed && 'opacity-90',
+        surface,
+        'group block px-5 py-5 transition-all duration-150 outline-none sm:px-6',
+        'hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-lg focus-visible:ring-3 focus-visible:ring-ring/50',
+        unread && 'border-blue-200 bg-blue-50/60 hover:border-blue-300',
+        closed && 'bg-card/80',
+        selected && 'ring-2 ring-primary/60 ring-offset-2 ring-offset-slate-50',
       )}
     >
-      <span aria-hidden className={cn('absolute inset-y-0 left-0 w-1.5', theme.edge)} />
-
-      <div className="py-4 sm:py-5">
-        <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
-          <span className="font-mono text-xs font-semibold text-muted-foreground">{ticket.reference}</span>
-          <UnreadBadge kind={ticket.unread_kind} />
-          {closed && (
-            <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-700">
-              <CheckCheck className="size-3.5" /> {ticket.status === 'CLOSED' ? 'Closed' : 'Resolved, awaiting confirmation'}
-            </span>
-          )}
-          <span className="ml-auto text-xs text-muted-foreground">
-            <RelativeTime value={ticket.created_at} />
-          </span>
+      {/* header: reference + age on the left, the state that needs attention on the right */}
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+        <span className="rounded-md bg-slate-100 px-2 py-1 font-mono text-xs font-semibold text-slate-600">{ticket.reference}</span>
+        <RelativeTime value={ticket.created_at} className="text-[13px] text-muted-foreground" />
+        <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
+          {states.map((s) => (
+            <StateBadge key={s.kind} kind={s.kind} label={s.label} pulse={s.pulse} />
+          ))}
         </div>
+      </div>
 
-        <h3 className={cn('mt-2 line-clamp-1 text-base tracking-tight sm:text-[1.05rem]', unread ? 'font-bold' : 'font-semibold')}>{ticket.subject}</h3>
-        <p className="mt-1 line-clamp-2 max-w-4xl text-sm leading-relaxed text-muted-foreground">{ticket.description}</p>
+      <h3 className={cn('mt-3.5 line-clamp-1 text-lg tracking-tight sm:text-[1.1rem]', unread ? 'font-bold' : 'font-semibold')}>{ticket.subject}</h3>
+      <p className="mt-1.5 line-clamp-2 max-w-4xl text-[15px] leading-relaxed text-muted-foreground">{ticket.description}</p>
 
-        <div className="mt-3.5 flex flex-wrap items-center gap-1.5">
-          <StatusBadge status={ticket.status} size="sm" />
-          <PriorityBadge priority={ticket.priority} source={ticket.priority_source} size="sm" />
-          {triaging ? null : <CategoryBadge category={ticket.category} source={ticket.category_source} size="sm" />}
-          <SentimentBadge sentiment={ticket.sentiment} />
-          <SlaBadge state={ticket.sla_state} dueAt={ticket.sla_due_at} size="sm" />
-          <AiState ticket={ticket} />
-        </div>
+      {/* meta: calm info badges */}
+      <div className="mt-4 flex flex-wrap items-center gap-2">
+        <StatusBadge status={ticket.status} size="card" />
+        {!hasCritical && <PriorityBadge priority={ticket.priority} source={ticket.priority_source} size="card" />}
+        {!triaging && <CategoryBadge category={ticket.category} source={ticket.category_source} size="card" />}
+        <SentimentBadge sentiment={ticket.sentiment} size="card" />
+        {triaging && (
+          <Pill tone={{ label: 'AI triaging', icon: Loader2, pill: 'bg-violet-50 text-violet-700 ring-violet-600/20', tint: '', iconClass: '', dot: '' }} size="card" />
+        )}
+        {ticket.ai_status === 'COMPLETED' && (
+          <Pill
+            tone={{ label: `AI triaged${ticket.ai_confidence !== null ? ` · ${Math.round(ticket.ai_confidence * 100)}%` : ''}`, icon: Sparkles, pill: 'bg-violet-50 text-violet-700 ring-violet-600/20', tint: '', iconClass: '', dot: '' }}
+            size="card"
+          />
+        )}
+      </div>
 
-        <div className="mt-4 flex items-center gap-3 border-t border-black/[0.06] pt-3.5 text-sm">
-          <Avatar className="size-7">
-            <AvatarFallback className="bg-muted text-[10px] font-semibold">{initials(ticket.requester.name)}</AvatarFallback>
+      {/* footer: who it's from, who owns it, how long they have */}
+      <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2.5 border-t border-slate-200/80 pt-4">
+        <div className="flex min-w-0 items-center gap-3">
+          <Avatar className="size-9">
+            <AvatarFallback className="bg-slate-100 text-xs font-semibold text-slate-700">{initials(ticket.requester.name)}</AvatarFallback>
           </Avatar>
-          <p className="min-w-0 truncate">
-            <span className="font-medium">{ticket.requester.name}</span>
-            {ticket.record && <span className="text-muted-foreground"> · {ticket.record.title}</span>}
-          </p>
-          <div className="ml-auto flex shrink-0 items-center gap-2">
-            {ticket.assigned_to ? (
-              <>
-                {mine && (
-                  <span className="hidden items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary sm:inline-flex">
-                    <UserCheck className="size-3" /> You
-                  </span>
-                )}
-                <span className="hidden text-xs text-muted-foreground sm:inline">{mine ? '' : ticket.assigned_to.full_name.split(' ')[0]}</span>
-                <Avatar className="size-7">
-                  <AvatarFallback className={cn('text-[10px] font-semibold', mine ? 'bg-primary text-primary-foreground' : 'bg-accent text-accent-foreground')}>
-                    {initials(ticket.assigned_to.full_name)}
-                  </AvatarFallback>
-                </Avatar>
-              </>
-            ) : (
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-dashed px-2.5 py-1 text-xs text-muted-foreground">
-                <UserX className="size-3.5" /> Unassigned
+          <p className="min-w-0 truncate text-sm leading-tight">
+            <span className="font-semibold">{ticket.requester.name}</span>
+            {ticket.record && (
+              <span className="block truncate text-[13px] text-muted-foreground sm:inline">
+                <span className="hidden sm:inline"> · </span>
+                {ticket.record.title}
               </span>
             )}
-          </div>
+          </p>
+        </div>
+        <div className="ml-auto flex shrink-0 flex-wrap items-center justify-end gap-x-4 gap-y-2">
+          <SlaText ticket={ticket} />
+          {ticket.assigned_to ? (
+            <span className="inline-flex items-center gap-2">
+              {mine && (
+                <span className="hidden items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary sm:inline-flex">
+                  <UserCheck className="size-3.5" /> Yours
+                </span>
+              )}
+              {!mine && <span className="hidden text-[13px] text-muted-foreground sm:inline">{ticket.assigned_to.full_name.split(' ')[0]}</span>}
+              <Avatar className="size-8">
+                <AvatarFallback className={cn('text-[11px] font-semibold', mine ? 'bg-primary text-primary-foreground' : 'bg-accent text-accent-foreground')}>{initials(ticket.assigned_to.full_name)}</AvatarFallback>
+              </Avatar>
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-dashed border-slate-300 px-3 py-1 text-[13px] text-muted-foreground">
+              <UserX className="size-4" /> Unassigned
+            </span>
+          )}
         </div>
       </div>
     </Link>
@@ -163,19 +126,22 @@ export const TicketCard = forwardRef<HTMLAnchorElement, { ticket: StaffTicket; t
 
 export function TicketCardSkeleton() {
   return (
-    <div className="relative overflow-hidden rounded-2xl border bg-card p-5 pl-7">
-      <span className="absolute inset-y-0 left-0 w-1.5 bg-muted" />
-      <Skeleton className="h-3 w-24" />
-      <Skeleton className="mt-3 h-5 w-2/3" />
-      <Skeleton className="mt-2.5 h-3.5 w-full" />
-      <Skeleton className="mt-1.5 h-3.5 w-3/4" />
-      <div className="mt-4 flex gap-2">
-        <Skeleton className="h-5 w-16 rounded-full" />
-        <Skeleton className="h-5 w-16 rounded-full" />
-        <Skeleton className="h-5 w-24 rounded-full" />
-        <Skeleton className="h-5 w-20 rounded-full" />
+    <div className={cn(surface, 'p-6')}>
+      <div className="flex items-center gap-3">
+        <Skeleton className="h-6 w-20" />
+        <Skeleton className="h-4 w-16" />
+        <Skeleton className="ml-auto h-7 w-28 rounded-full" />
       </div>
-      <Skeleton className="mt-5 h-7 w-48" />
+      <Skeleton className="mt-4 h-5 w-2/3" />
+      <Skeleton className="mt-3 h-4 w-full" />
+      <Skeleton className="mt-2 h-4 w-3/4" />
+      <div className="mt-5 flex gap-2">
+        <Skeleton className="h-7 w-20 rounded-full" />
+        <Skeleton className="h-7 w-20 rounded-full" />
+        <Skeleton className="h-7 w-28 rounded-full" />
+        <Skeleton className="h-7 w-24 rounded-full" />
+      </div>
+      <Skeleton className="mt-6 h-9 w-52" />
     </div>
   )
 }

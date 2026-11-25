@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 
 import { CategoryBadge, PriorityBadge, SentimentBadge } from '@/components/badges'
 import { RelativeTime } from '@/components/common'
+import { Surface, SurfaceHeader } from '@/components/dashboard/surface'
 import { MetaSelect } from '@/components/MetaSelect'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -21,18 +22,17 @@ const TRANSITIONS: Record<TicketStatus, TicketStatus[]> = {
   CLOSED: ['CLOSED', 'IN_PROGRESS'],
 }
 
-function Section({ title, icon, hint, children }: { title: string; icon: ReactNode; hint?: string; children: ReactNode }) {
+const SECTION_TONE = { Workflow: 'emerald', Activity: 'slate', 'Possible duplicates': 'amber' } as const
+
+function Section({ title, icon, hint, children, tone }: { title: string; icon: ReactNode; hint?: string; children: ReactNode; tone?: 'slate' | 'violet' | 'blue' | 'emerald' | 'amber' }) {
   return (
-    <section className="rounded-xl border bg-card">
-      <header className="flex items-center gap-2 border-b px-4 py-3">
-        <span className="text-muted-foreground">{icon}</span>
-        <h3 className="text-sm font-semibold">{title}</h3>
-      </header>
-      <div className="p-4">
-        {hint && <p className="mb-3 text-xs leading-relaxed text-muted-foreground">{hint}</p>}
+    <Surface>
+      <SurfaceHeader icon={icon} title={title} tone={tone ?? (SECTION_TONE as Record<string, 'slate' | 'emerald' | 'amber'>)[title] ?? 'blue'} as="h3" />
+      <div className="p-4 sm:p-5">
+        {hint && <p className="mb-4 text-[13px] leading-relaxed text-muted-foreground">{hint}</p>}
         {children}
       </div>
-    </section>
+    </Surface>
   )
 }
 
@@ -110,7 +110,7 @@ export function TicketSidebar({
 
   return (
     <Tabs value={tab} onValueChange={(v) => onTab(v as SidebarTab)} className={cn('gap-4', className)}>
-      <TabsList className="grid w-full grid-cols-3">
+      <TabsList className="grid h-11 w-full grid-cols-3 rounded-xl bg-white p-1 shadow-sm ring-1 ring-slate-200">
         <TabsTrigger value="workflow">Workflow</TabsTrigger>
         <TabsTrigger value="ai">
           <Sparkles className="size-3.5" /> AI
@@ -159,7 +159,7 @@ export function TicketSidebar({
         </Section>
 
         {record && (
-          <Section title={record.kind} icon={<Package className="size-4" />}>
+          <Section title={record.kind} icon={<Package className="size-4" />} tone="blue">
             <p className="text-sm font-semibold">{record.title}</p>
             <p className="text-xs text-muted-foreground">
               {record.reference}
@@ -181,9 +181,9 @@ export function TicketSidebar({
       </TabsContent>
 
       <TabsContent value="ai" className="space-y-4">
-        <section className="ai-ring-still ai-ring rounded-2xl shadow-sm">
+        <section className="ai-ring-still ai-ring rounded-2xl shadow-md">
           <div className="rounded-[calc(var(--radius-2xl)-2px)] bg-card">
-            <header className="flex items-center justify-between gap-2 border-b px-4 py-3">
+            <header className="flex min-h-12 items-center justify-between gap-2 border-b border-violet-100 bg-violet-50/70 px-4 py-2.5">
               <h3 className="flex items-center gap-2 text-sm font-semibold">
                 <span className="flex size-6 items-center justify-center rounded-md bg-violet-600 text-white">
                   <Sparkles className="size-3.5" />
@@ -243,7 +243,7 @@ export function TicketSidebar({
           </div>
         </section>
 
-        <Section title="Possible duplicates" icon={<Copy className="size-4" />} hint="Tickets in this workspace with a very similar message.">
+        <Section title="Possible duplicates" icon={<Copy className="size-4" />} tone="amber" hint="Tickets in this workspace with a very similar message.">
           {similar.length === 0 ? (
             <p className="text-xs text-muted-foreground">No similar tickets found.</p>
           ) : (

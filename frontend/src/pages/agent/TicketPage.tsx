@@ -162,7 +162,7 @@ export function TicketPage() {
         onOpenAi={openAi}
       />
 
-      <div className={cn('grid items-start gap-5', isXl && sidebarOpen ? 'xl:grid-cols-[minmax(0,1fr)_380px]' : 'grid-cols-1')}>
+      <div className={cn('grid items-start gap-4 xl:gap-5', isXl && sidebarOpen ? 'xl:grid-cols-[minmax(0,1fr)_380px]' : 'grid-cols-1')}>
         <Conversation ticket={ticket} />
         {isXl && sidebarOpen && <aside aria-label="Ticket details" className="min-w-0">{sidebar}</aside>}
       </div>

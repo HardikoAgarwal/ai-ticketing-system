@@ -165,7 +165,7 @@ export function Composer({ ticket }: { ticket: StaffTicketDetail }) {
   const submitNote = () => note.trim() && !addNote.isPending && addNote.mutate()
 
   return (
-    <div className="shrink-0 border-t bg-muted/25 px-3 py-3 sm:px-5 sm:py-4">
+    <div className="shrink-0 border-t border-slate-200/80 bg-slate-50/80 px-3 py-3 sm:px-5 sm:py-4">
       {!noteMode && !closed && !draftQuery.isLoading && (
         <DraftDock
           draft={draft}
@@ -194,7 +194,7 @@ export function Composer({ ticket }: { ticket: StaffTicketDetail }) {
 
       <div
         className={cn(
-          'overflow-hidden rounded-2xl border bg-card shadow-sm transition-colors focus-within:ring-3',
+          'overflow-hidden rounded-2xl border border-slate-200 bg-card shadow-[0_1px_2px_rgba(15,23,42,0.06),0_6px_18px_-10px_rgba(15,23,42,0.18)] transition-colors focus-within:ring-3',
           noteMode ? 'border-amber-300 bg-amber-50/40 focus-within:ring-amber-400/20' : usingDraft ? 'border-violet-300 focus-within:ring-violet-500/15' : 'focus-within:border-ring focus-within:ring-ring/30',
         )}
       >
