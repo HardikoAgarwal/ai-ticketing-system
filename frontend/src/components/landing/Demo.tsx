@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { ArrowRight, Check, CircleDot, Headphones, Loader2, UserRound } from 'lucide-react'
-import { AnimatePresence, motion, useReducedMotion, useScroll } from 'motion/react'
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
@@ -10,7 +10,7 @@ import { demoApi } from '@/lib/endpoints'
 import { cn } from '@/lib/utils'
 
 import { TEMPLATES, type TemplateMeta } from './constants'
-import { Drift, EASE, Float, useParallax, WordReveal } from './motion'
+import { EASE, WordReveal } from './motion'
 
 type Role = 'agent' | 'customer'
 
@@ -89,10 +89,6 @@ function DemoCard({ t, index, busy, active, onStart }: { t: TemplateMeta; index:
 function Overlay({ name, step, progress, waking, error, onClose }: { name: string; step: number; progress: number; waking: boolean; error: string | null; onClose: () => void }) {
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[60] flex items-center justify-center bg-(--lp-paper)/95 p-6 text-(--lp-ink) backdrop-blur-xl" role="status" aria-live="polite">
-      <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
-        <div className="lp-drift absolute top-1/4 left-1/4 size-[30rem] rounded-full bg-(--lp-lav-2) opacity-70 blur-3xl" />
-        <div className="lp-drift absolute right-1/4 bottom-1/4 size-[26rem] rounded-full bg-(--lp-peach-2) opacity-70 blur-3xl [animation-delay:-8s]" />
-      </div>
       <div className="relative w-full max-w-md">
         <p className="text-center text-xs font-bold tracking-[0.2em] text-(--lp-violet) uppercase">Building your sandbox</p>
         <h3 className="mt-3 text-center text-4xl font-semibold tracking-[-0.04em]">{name}</h3>
@@ -127,9 +123,6 @@ export function Demo({ notice }: { notice?: string | null }) {
   const { startDemo, switchView } = useAuth()
   const navigate = useNavigate()
   const ref = useRef<HTMLElement>(null)
-  const { scrollYProgress } = useScroll({ target: ref, offset: ['start end', 'end start'] })
-  const blobA = useParallax(scrollYProgress, -160)
-  const blobB = useParallax(scrollYProgress, 120)
   const [busy, setBusy] = useState<TemplateMeta | null>(null)
   const [elapsed, setElapsed] = useState(0)
   const [error, setError] = useState<string | null>(null)
@@ -190,23 +183,18 @@ export function Demo({ notice }: { notice?: string | null }) {
   }
 
   return (
-    <section id="demo" ref={ref} data-nav="light" className="relative -mt-10 rounded-t-[2.5rem] bg-[linear-gradient(170deg,#fff4c9_0%,#ffeadb_55%,#ffe3ec_100%)] pb-32 text-(--lp-ink)">
+    <section id="demo" ref={ref} data-nav="light" className="relative -mt-10 rounded-t-[2.5rem] bg-(--lp-coral-soft) pb-32 text-(--lp-ink)">
       <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-t-[2.5rem]" aria-hidden>
-        <motion.div style={{ y: blobA }} className="absolute -top-24 left-[-6rem] size-[30rem] rounded-full bg-(--lp-lav-2) opacity-60 blur-3xl" />
-        <motion.div style={{ y: blobB }} className="absolute -right-24 bottom-10 size-[28rem] rounded-full bg-(--lp-sky-2) opacity-50 blur-3xl" />
-        <Drift speed={0.9} rotate={30} className="top-[5%] right-[8%] size-24"><div className="size-full rounded-full border-[6px] border-(--lp-peach-2)" /></Drift>
-        <Drift speed={0.6} rotate={-35} className="top-[40%] left-[3%] size-14"><div className="size-full rounded-2xl bg-(--lp-mint-2)" /></Drift>
-        <Drift speed={1} className="top-[62%] right-[2%] h-32 w-32"><div className="size-full [background-image:radial-gradient(circle,rgba(94,91,217,0.22)_2px,transparent_2.5px)] [background-size:15px_15px]" /></Drift>
       </div>
 
       <div className="relative mx-auto max-w-6xl px-5 pt-24 sm:px-8 sm:pt-32">
-        <Float speed={0.2}>
+        <div>
         <p className="text-xs font-bold tracking-[0.2em] text-(--lp-violet) uppercase">Live demo</p>
         <h2 className="mt-4 max-w-4xl text-[clamp(2.6rem,7.4vw,6rem)] leading-[0.94] font-semibold tracking-[-0.05em] text-balance">
           <WordReveal text="Pick a desk. Run it yourself." />
         </h2>
         <p className="mt-5 max-w-xl text-lg font-medium text-(--lp-ink-2)">Three ready-made companies, each with real-looking tickets, a knowledge base and AI already at work. Choose one and step inside as the agent or the customer.</p>
-        </Float>
+        </div>
 
         {notice && (
           <p role="status" className="mt-6 max-w-xl rounded-2xl bg-white px-4 py-3 text-sm font-medium text-[#5a3d00] ring-1 ring-(--lp-butter-2)">

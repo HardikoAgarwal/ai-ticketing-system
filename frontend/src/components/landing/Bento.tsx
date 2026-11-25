@@ -1,10 +1,10 @@
 import { BarChart3, Check, Copy, Lock, ShieldCheck, Sparkles, Star, Users, Zap } from 'lucide-react'
-import { AnimatePresence, LayoutGroup, motion, useReducedMotion, useScroll } from 'motion/react'
+import { AnimatePresence, LayoutGroup, motion, useReducedMotion } from 'motion/react'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 
 import { cn } from '@/lib/utils'
 
-import { Drift, EASE, Float, Reveal, useParallax, useSpotlight, useTypewriter, WordReveal } from './motion'
+import { EASE, Reveal, useSpotlight, useTypewriter, WordReveal } from './motion'
 
 /** Bento tile: tinted surface, hover lift, spotlight that follows the cursor. */
 function Tile({ className, tone, title, kicker, children }: { className?: string; tone: string; title: string; kicker: string; children: ReactNode }) {
@@ -351,27 +351,18 @@ function SafeTile() {
 
 export function Bento() {
   const ref = useRef<HTMLElement>(null)
-  const { scrollYProgress } = useScroll({ target: ref, offset: ['start end', 'end start'] })
-  const a = useParallax(scrollYProgress, -180)
-  const b = useParallax(scrollYProgress, 140)
   return (
-    <section id="features" ref={ref} data-nav="light" className="relative -mt-10 rounded-t-[2.5rem] bg-[linear-gradient(165deg,#e2f6ec_0%,#e3effd_55%,#efe9ff_100%)] pb-28 text-(--lp-ink)">
+    <section id="features" ref={ref} data-nav="light" className="relative -mt-10 rounded-t-[2.5rem] bg-(--lp-violet-soft) pb-28 text-(--lp-ink)">
       <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-t-[2.5rem]" aria-hidden>
-        <motion.div style={{ y: a }} className="absolute -top-20 -right-24 size-[28rem] rounded-full bg-(--lp-peach-2) opacity-60 blur-3xl" />
-        <Drift speed={0.9} rotate={30} className="top-[6%] left-[6%] size-24"><div className="size-full rounded-full border-[6px] border-(--lp-lav-2)" /></Drift>
-        <Drift speed={0.6} rotate={-40} className="top-[30%] right-[4%] size-16"><div className="size-full rounded-2xl bg-(--lp-butter-2)" /></Drift>
-        <Drift speed={1} className="top-[55%] left-[2%] h-32 w-32"><div className="size-full [background-image:radial-gradient(circle,rgba(94,91,217,0.25)_2px,transparent_2.5px)] [background-size:15px_15px]" /></Drift>
-        <Drift speed={0.7} rotate={25} className="top-[80%] right-[7%] size-20"><div className="size-full rounded-full border-[6px] border-(--lp-mint-2)" /></Drift>
-        <motion.div style={{ y: b }} className="absolute top-1/2 -left-32 size-[30rem] rounded-full bg-(--lp-sky-2) opacity-50 blur-3xl" />
               </div>
       <div className="relative mx-auto max-w-6xl px-5 pt-24 sm:px-8 sm:pt-32">
-        <Float speed={0.2}>
+        <div>
         <p className="text-xs font-bold tracking-[0.2em] text-(--lp-violet) uppercase">Features</p>
         <h2 className="mt-4 max-w-4xl text-[clamp(2.3rem,6.4vw,5rem)] leading-[0.98] font-semibold tracking-[-0.045em] text-balance">
           <WordReveal text="Everything a support desk needs. Nothing it doesn’t." />
         </h2>
         <p className="mt-5 max-w-xl text-lg text-(--lp-ink-2)">Poke the cards. They’re live.</p>
-        </Float>
+        </div>
         <div className="mt-12 grid gap-4 lg:grid-cols-12">
           <TriageTile />
           <DraftsTile />

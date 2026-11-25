@@ -1,12 +1,12 @@
 import { ArrowRight, ArrowUpRight, Plus } from 'lucide-react'
-import { AnimatePresence, motion, useScroll } from 'motion/react'
-import { useId, useRef, useState, type ReactNode } from 'react'
+import { AnimatePresence, motion } from 'motion/react'
+import { useId, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 
 import { cn } from '@/lib/utils'
 
 import { BRAND, GITHUB_URL } from './constants'
-import { Drift, EASE, Reveal, useParallax, WordReveal } from './motion'
+import { EASE, Reveal, WordReveal } from './motion'
 import { GithubMark } from './Nav'
 
 const FAQ_GROUPS: { label: string; items: { q: string; a: string }[] }[] = [
@@ -64,11 +64,8 @@ export function Faq() {
   const [open, setOpen] = useState<string | null>(FAQ_GROUPS[0].items[0].q)
   let n = 0
   return (
-    <section id="faq" data-nav="light" className="relative -mt-10 rounded-t-[2.5rem] bg-[linear-gradient(180deg,#ffe9f0_0%,#f4ecff_100%)] pb-32 text-(--lp-ink)">
+    <section id="faq" data-nav="light" className="relative -mt-10 rounded-t-[2.5rem] bg-(--lp-paper) pb-32 text-(--lp-ink)">
       <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-t-[2.5rem]" aria-hidden>
-        <Drift speed={0.8} rotate={30} className="top-[6%] right-[5%] size-24"><div className="size-full rounded-full border-[6px] border-(--lp-lav-2)" /></Drift>
-        <Drift speed={0.55} className="top-[40%] left-[2%] size-40"><div className="size-full rounded-full bg-(--lp-mint)/90 blur-xl" /></Drift>
-        <Drift speed={0.9} rotate={-30} className="top-[70%] right-[3%] size-14"><div className="size-full rounded-2xl bg-(--lp-peach-2)" /></Drift>
       </div>
       <div className="relative mx-auto grid max-w-6xl gap-12 px-5 pt-24 sm:px-8 sm:pt-32 lg:grid-cols-[0.8fr_1.35fr] lg:gap-16">
         <div className="lg:sticky lg:top-28 lg:self-start">
@@ -104,27 +101,18 @@ export function Faq() {
 }
 
 export function FinalCta() {
-  const ref = useRef<HTMLElement>(null)
-  const { scrollYProgress } = useScroll({ target: ref, offset: ['start end', 'end start'] })
-  const a = useParallax(scrollYProgress, -140)
-  const b = useParallax(scrollYProgress, 100)
   return (
-    <section ref={ref} data-nav="light" className="relative -mt-10 overflow-hidden rounded-t-[2.5rem] bg-[linear-gradient(160deg,#def0ff_0%,#e9e4ff_55%,#ffe9f0_100%)] py-28 text-center text-(--lp-ink) sm:py-40">
-      <motion.div style={{ y: a }} aria-hidden className="pointer-events-none absolute -top-20 left-1/4 size-[32rem] rounded-full bg-(--lp-lav-2) opacity-70 blur-3xl" />
-      <motion.div style={{ y: b }} aria-hidden className="pointer-events-none absolute right-1/4 -bottom-24 size-[30rem] rounded-full bg-(--lp-peach-2) opacity-70 blur-3xl" />
-      <Drift speed={0.9} rotate={30} className="top-[14%] left-[8%] size-20"><div className="size-full rounded-full border-[5px] border-white/80" /></Drift>
-      <Drift speed={0.7} rotate={-35} className="top-[60%] right-[8%] size-14"><div className="size-full rounded-2xl bg-(--lp-mint-2)" /></Drift>
-      <Drift speed={1} className="top-[70%] left-[5%] h-28 w-28"><div className="size-full [background-image:radial-gradient(circle,rgba(94,91,217,0.25)_2px,transparent_2.5px)] [background-size:14px_14px]" /></Drift>
+    <section data-nav="dark" className="lp-classic relative -mt-10 overflow-hidden rounded-t-[2.5rem] bg-(--lp-ink) py-28 text-center text-white sm:py-40">
       <div className="relative mx-auto max-w-5xl px-5 sm:px-8">
         <h2 className="text-[clamp(2.8rem,8.6vw,7.4rem)] leading-[0.92] font-semibold tracking-[-0.05em] text-balance">
           <WordReveal text="Your next ticket is already waiting." />
         </h2>
-        <p className="mx-auto mt-6 max-w-xl text-lg text-(--lp-ink-2)">Open a demo, answer one with an AI draft, and see the customer’s side live. It takes about two minutes.</p>
+        <p className="mx-auto mt-6 max-w-xl text-lg text-white/70">Open a demo, answer one with an AI draft, and see the customer’s side live. It takes about two minutes.</p>
         <Reveal delay={0.1} className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
-          <a href="#demo" className="lp-focus group flex h-14 items-center gap-2 rounded-full bg-(--lp-violet) px-9 text-base font-semibold text-white shadow-[0_14px_34px_-12px_rgba(94,91,217,0.7)] transition-transform hover:scale-[1.05] hover:bg-(--lp-violet-2)">
+          <a href="#demo" className="lp-focus group flex h-14 items-center gap-2 rounded-full bg-(--lp-lime) px-9 text-base font-semibold text-(--lp-ink) transition-transform hover:scale-[1.05]">
             Pick a demo <ArrowRight className="size-5 transition-transform group-hover:translate-x-1" />
           </a>
-          <Link to="/signup" className="lp-focus flex h-14 items-center rounded-full bg-white px-7 text-base font-semibold ring-1 ring-(--lp-lav-2) transition-colors hover:bg-(--lp-lav)">
+          <Link to="/signup" className="lp-focus flex h-14 items-center rounded-full px-7 text-base font-medium ring-1 ring-white/25 transition-colors hover:bg-white/10">
             Create your own workspace
           </Link>
         </Reveal>
@@ -145,12 +133,12 @@ function Col({ title, children }: { title: string; children: ReactNode }) {
 export function Footer() {
   const link = 'lp-focus inline-flex items-center gap-1 rounded underline-offset-4 hover:underline'
   return (
-    <footer data-nav="light" className="relative -mt-10 overflow-hidden rounded-t-[2.5rem] bg-(--lp-paper-2) text-(--lp-ink)">
+    <footer data-nav="light" className="lp-classic relative -mt-10 overflow-hidden rounded-t-[2.5rem] bg-(--lp-lime) text-(--lp-ink)">
       <div className="mx-auto max-w-6xl px-5 pt-16 sm:px-8 sm:pt-20">
         <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1fr]">
           <div>
             <p className="max-w-xs text-2xl leading-tight font-semibold tracking-[-0.03em]">Support that shows its work.</p>
-            <a href={GITHUB_URL} target="_blank" rel="noreferrer" className="lp-focus mt-6 inline-flex h-11 items-center gap-2 rounded-full bg-(--lp-violet) px-5 text-sm font-semibold text-white transition-transform hover:scale-[1.03] hover:bg-(--lp-violet-2)">
+            <a href={GITHUB_URL} target="_blank" rel="noreferrer" className="lp-focus mt-6 inline-flex h-11 items-center gap-2 rounded-full bg-(--lp-ink) px-5 text-sm font-semibold text-white transition-transform hover:scale-[1.03]">
               <GithubMark className="size-4" /> Star on GitHub
             </a>
           </div>
@@ -172,7 +160,7 @@ export function Footer() {
         <p className="mt-12 text-sm opacity-70">A portfolio project: the demo data is fictional and no real customer data is stored.</p>
       </div>
       <div className="pointer-events-none mt-8 overflow-hidden px-2 pb-2 select-none" aria-hidden>
-        <p className="text-center text-[clamp(3rem,13.4vw,15rem)] leading-[0.95] font-semibold tracking-[-0.07em] whitespace-nowrap text-(--lp-lav-2)">{BRAND}</p>
+        <p className="text-center text-[clamp(3rem,13.4vw,15rem)] leading-[0.95] font-semibold tracking-[-0.07em] whitespace-nowrap text-(--lp-ink)">{BRAND}</p>
       </div>
     </footer>
   )

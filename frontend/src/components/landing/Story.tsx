@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react'
 
 import { cn } from '@/lib/utils'
 
-import { Drift, EASE, Float, useTypewriter, WordReveal } from './motion'
+import { EASE, useTypewriter, WordReveal } from './motion'
 
 const STEPS = [
   { n: '01', title: 'A customer asks', short: 'Help appears while they type', body: 'They describe the problem in the portal. While they type, matching help articles appear, so many questions never become tickets.', view: 'Customer portal' },
@@ -266,19 +266,16 @@ export function Story() {
   const reduce = useReducedMotion()
   const desktop = useIsDesktop()
   return (
-    <section id="story" data-nav="light" className="relative -mt-10 rounded-t-[2.5rem] bg-[linear-gradient(180deg,#f1edff_0%,#ebe6ff_60%,#f3efff_100%)] text-(--lp-ink)">
+    <section id="story" data-nav="light" className="relative -mt-10 rounded-t-[2.5rem] bg-(--lp-lav) text-(--lp-ink)">
       <div className="pointer-events-none absolute inset-0 hidden overflow-hidden rounded-t-[2.5rem] lg:block" aria-hidden>
-        <Drift speed={0.8} rotate={30} className="top-[3%] left-[5%] size-28"><div className="size-full rounded-full border-[6px] border-(--lp-lav-2)" /></Drift>
-        <Drift speed={0.5} className="top-[2%] right-[6%] size-44"><div className="size-full rounded-full bg-(--lp-mint)/80 blur-xl" /></Drift>
-        <Drift speed={0.7} rotate={20} className="top-[88%] right-[5%] size-24"><div className="size-full rounded-full border-[6px] border-(--lp-peach-2)" /></Drift>
       </div>
-      <Float speed={0.2} className="relative mx-auto max-w-6xl px-5 pt-28 pb-20 text-center sm:px-8 sm:pt-40 sm:pb-28">
+      <div className="relative mx-auto max-w-6xl px-5 pt-28 pb-20 text-center sm:px-8 sm:pt-40 sm:pb-28">
         <p className="text-xs font-bold tracking-[0.2em] text-(--lp-violet) uppercase">How it works</p>
         <h2 className="mx-auto mt-4 max-w-4xl text-[clamp(2.2rem,6vw,4.6rem)] leading-[1] font-semibold tracking-[-0.04em] text-balance">
           <WordReveal text="From “help!” to “thank you” in four moves." />
         </h2>
         <p className="mx-auto mt-6 max-w-xl text-lg text-(--lp-ink-2)">Scroll to follow one ticket from the customer’s first message to a rated, resolved reply.</p>
-      </Float>
+      </div>
       {reduce || !desktop ? <StoryStacked /> : <StoryPinned />}
       <div className="h-12 lg:h-20" aria-hidden />
     </section>
