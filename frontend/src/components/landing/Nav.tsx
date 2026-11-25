@@ -23,9 +23,29 @@ export function GithubMark({ className }: { className?: string }) {
   )
 }
 
+/** Which kind of section is under the nav: sections declare it with data-nav="dark" | "light". */
+function useNavTheme() {
+  const [theme, setTheme] = useState<'dark' | 'light'>('light')
+  useEffect(() => {
+    const sections = Array.from(document.querySelectorAll<HTMLElement>('[data-nav]'))
+    if (!sections.length) return
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) if (e.isIntersecting) setTheme((e.target as HTMLElement).dataset.nav === 'light' ? 'light' : 'dark')
+      },
+      { rootMargin: '-44px 0px -92% 0px' },
+    )
+    sections.forEach((s) => io.observe(s))
+    return () => io.disconnect()
+  }, [])
+  return theme
+}
+
 export function Nav() {
   const { user } = useAuth()
+  const theme = useNavTheme()
   const [open, setOpen] = useState(false)
+  const dark = theme === 'dark' || open
 
   useEffect(() => {
     document.body.style.overflow = open ? 'hidden' : ''
@@ -34,10 +54,13 @@ export function Nav() {
     }
   }, [open])
 
-  // One opaque white pill with a visible lavender border and a layered shadow: it stands out from every pastel.
-  const pill = 'bg-white text-(--lp-ink) ring-(--lp-lav-2) shadow-[0_0_0_5px_rgba(255,255,255,0.55),0_18px_40px_-14px_rgba(70,60,150,0.45),0_3px_8px_rgba(70,60,150,0.12)]'
-  const cta = 'bg-(--lp-violet) text-white shadow-[0_8px_18px_-6px_rgba(94,91,217,0.7)] hover:bg-(--lp-violet-2)'
-  const link = 'text-(--lp-ink-2) hover:bg-(--lp-lav) hover:text-(--lp-ink)'
+  // The pill is always the OPPOSITE of the section under it so it can never melt into the background:
+  // ink over light sections, white over dark/saturated ones. Opaque, ringed and heavily shadowed.
+  const pill = dark
+    ? 'bg-white text-(--lp-ink) ring-black/15 shadow-[0_0_0_4px_rgba(255,255,255,0.18),0_18px_44px_-10px_rgba(0,0,0,0.55),0_4px_10px_rgba(0,0,0,0.2)]'
+    : 'bg-(--lp-ink) text-white ring-white/20 shadow-[0_0_0_4px_rgba(11,10,29,0.10),0_18px_44px_-10px_rgba(11,10,29,0.6),0_4px_10px_rgba(11,10,29,0.25)]'
+  const cta = dark ? 'bg-(--lp-violet) text-white shadow-[0_8px_20px_-6px_rgba(91,61,245,0.7)]' : 'bg-(--lp-lime) text-(--lp-ink) shadow-[0_8px_20px_-6px_rgba(200,245,96,0.55)]'
+  const link = dark ? 'text-(--lp-ink)/75 hover:bg-black/[0.06] hover:text-(--lp-ink)' : 'text-white/80 hover:bg-white/10 hover:text-white'
 
   return (
     <>
@@ -49,7 +72,7 @@ export function Nav() {
       >
         <div className={cn('flex h-14 w-full max-w-5xl items-center gap-1 rounded-full pr-2 pl-3 ring-1 transition-[background-color,color,box-shadow] duration-500 sm:h-16 sm:pl-4', pill)}>
           <a href="#top" className="lp-focus flex items-center gap-2 rounded-full pr-2 font-semibold tracking-tight">
-            <span className="flex size-10 items-center justify-center rounded-full bg-(--lp-lav) text-(--lp-violet) sm:size-11">
+            <span className="flex size-10 items-center justify-center rounded-full bg-(--lp-lime) text-(--lp-ink) sm:size-11">
               <LifeBuoy className="size-5" />
             </span>
             <span className="hidden text-lg whitespace-nowrap sm:inline">{BRAND}</span>
@@ -97,7 +120,7 @@ export function Nav() {
             animate={{ clipPath: 'circle(150% at calc(100% - 2.4rem) 2.6rem)' }}
             exit={{ clipPath: 'circle(0% at calc(100% - 2.4rem) 2.6rem)' }}
             transition={{ duration: 0.55, ease: [0.76, 0, 0.24, 1] }}
-            className="fixed inset-0 z-40 flex flex-col justify-center gap-2 bg-(--lp-paper) px-8 text-(--lp-ink) md:hidden"
+            className="fixed inset-0 z-40 flex flex-col justify-center gap-2 bg-(--lp-ink) px-8 text-white md:hidden"
           >
             {[...LINKS, { href: GITHUB_URL, label: 'GitHub' }].map((l, i) => (
               <motion.a
@@ -114,7 +137,7 @@ export function Nav() {
               </motion.a>
             ))}
             {!user && (
-              <Link to="/login" onClick={() => setOpen(false)} className="lp-focus mt-4 text-lg text-(--lp-ink-2)">
+              <Link to="/login" onClick={() => setOpen(false)} className="lp-focus mt-4 text-lg text-white/60">
                 Log in →
               </Link>
             )}

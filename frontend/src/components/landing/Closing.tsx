@@ -39,12 +39,12 @@ const FAQ_GROUPS: { label: string; items: { q: string; a: string }[] }[] = [
 function FaqItem({ n, q, a, open, onToggle }: { n: number; q: string; a: string; open: boolean; onToggle: () => void }) {
   const id = useId()
   return (
-    <div className={cn('rounded-2xl bg-white ring-1 transition-all duration-300', open ? 'shadow-[0_20px_50px_-26px_rgba(94,91,217,0.45)] ring-(--lp-violet)/40' : 'ring-black/[0.06] hover:ring-(--lp-lav-2)')}>
+    <div className={cn('rounded-2xl bg-white ring-1 transition-all duration-300', open ? 'shadow-[0_20px_50px_-24px_rgba(91,61,245,0.45)] ring-(--lp-violet)/40' : 'ring-black/[0.07] hover:ring-black/20')}>
       <h4>
         <button type="button" id={`${id}-q`} aria-expanded={open} aria-controls={`${id}-a`} onClick={onToggle} className="lp-focus group flex w-full items-center gap-4 rounded-2xl px-5 py-5 text-left sm:gap-5 sm:px-6">
-          <span className={cn('w-7 shrink-0 text-sm font-bold tabular-nums transition-colors', open ? 'text-(--lp-violet)' : 'text-(--lp-ink-2)/40')}>{String(n).padStart(2, '0')}</span>
+          <span className={cn('w-7 shrink-0 text-sm font-bold tabular-nums transition-colors', open ? 'text-(--lp-violet)' : 'text-neutral-300')}>{String(n).padStart(2, '0')}</span>
           <span className="flex-1 text-lg leading-snug font-semibold tracking-[-0.02em] sm:text-xl">{q}</span>
-          <motion.span animate={{ rotate: open ? 135 : 0 }} transition={{ duration: 0.35, ease: EASE }} className={cn('flex size-9 shrink-0 items-center justify-center rounded-full transition-colors', open ? 'bg-(--lp-violet) text-white' : 'bg-(--lp-lav) text-(--lp-ink-2) group-hover:bg-(--lp-lav-2)')}>
+          <motion.span animate={{ rotate: open ? 135 : 0 }} transition={{ duration: 0.35, ease: EASE }} className={cn('flex size-9 shrink-0 items-center justify-center rounded-full transition-colors', open ? 'bg-(--lp-violet) text-white' : 'bg-neutral-100 text-neutral-600 group-hover:bg-neutral-200')}>
             <Plus className="size-4.5" />
           </motion.span>
         </button>
@@ -52,7 +52,7 @@ function FaqItem({ n, q, a, open, onToggle }: { n: number; q: string; a: string;
       <AnimatePresence initial={false}>
         {open && (
           <motion.div id={`${id}-a`} role="region" aria-labelledby={`${id}-q`} initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.4, ease: EASE }} className="overflow-hidden">
-            <p className="max-w-2xl px-5 pb-6 pl-[3.75rem] text-base leading-relaxed text-(--lp-ink-2) sm:px-6 sm:pb-7 sm:pl-[4.25rem]">{a}</p>
+            <p className="max-w-2xl px-5 pb-6 pl-[3.75rem] text-base leading-relaxed text-neutral-600 sm:px-6 sm:pb-7 sm:pl-[4.25rem]">{a}</p>
           </motion.div>
         )}
       </AnimatePresence>
@@ -65,19 +65,17 @@ export function Faq() {
   let n = 0
   return (
     <section id="faq" data-nav="light" className="relative -mt-10 rounded-t-[2.5rem] bg-(--lp-paper) pb-32 text-(--lp-ink)">
-      <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-t-[2.5rem]" aria-hidden>
-      </div>
       <div className="relative mx-auto grid max-w-6xl gap-12 px-5 pt-24 sm:px-8 sm:pt-32 lg:grid-cols-[0.8fr_1.35fr] lg:gap-16">
         <div className="lg:sticky lg:top-28 lg:self-start">
           <p className="text-xs font-bold tracking-[0.2em] text-(--lp-violet) uppercase">FAQ</p>
           <h2 className="mt-4 text-[clamp(2.4rem,5.4vw,4.4rem)] leading-[0.98] font-semibold tracking-[-0.045em]">
             <WordReveal text="Fair questions." />
           </h2>
-          <p className="mt-4 max-w-xs text-(--lp-ink-2)">Short, honest answers about the AI, the demo and your data.</p>
-          <div className="mt-8 max-w-sm rounded-3xl bg-white p-6 text-(--lp-ink) ring-1 ring-(--lp-lav-2) shadow-[0_20px_44px_-26px_rgba(94,91,217,0.45)]">
+          <p className="mt-4 max-w-xs text-neutral-600">Short, honest answers about the AI, the demo and your data.</p>
+          <div className="mt-8 max-w-sm rounded-3xl bg-(--lp-ink) p-6 text-white">
             <p className="text-lg font-semibold tracking-tight">Still curious?</p>
-            <p className="mt-1.5 text-sm text-(--lp-ink-2)">The fastest answer is two minutes in a live sandbox: answer a ticket with an AI draft, then see the customer’s side.</p>
-            <a href="#demo" className="lp-focus group mt-5 inline-flex h-11 items-center gap-2 rounded-full bg-(--lp-violet) px-5 text-sm font-semibold text-white transition-transform hover:scale-[1.03] hover:bg-(--lp-violet-2)">
+            <p className="mt-1.5 text-sm text-white/65">The fastest answer is two minutes in a live sandbox: answer a ticket with an AI draft, then see the customer’s side.</p>
+            <a href="#demo" className="lp-focus group mt-5 inline-flex h-11 items-center gap-2 rounded-full bg-(--lp-lime) px-5 text-sm font-semibold text-(--lp-ink) transition-transform hover:scale-[1.03]">
               Try the demo <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
             </a>
           </div>
@@ -86,7 +84,7 @@ export function Faq() {
         <div className="space-y-10">
           {FAQ_GROUPS.map((g) => (
             <Reveal key={g.label}>
-              <h3 className="mb-3 text-xs font-bold tracking-[0.18em] text-(--lp-ink-2) uppercase">{g.label}</h3>
+              <h3 className="mb-3 text-xs font-bold tracking-[0.18em] text-neutral-500 uppercase">{g.label}</h3>
               <div className="space-y-3">
                 {g.items.map((it) => (
                   <FaqItem key={it.q} n={++n} q={it.q} a={it.a} open={open === it.q} onToggle={() => setOpen(open === it.q ? null : it.q)} />
@@ -102,7 +100,7 @@ export function Faq() {
 
 export function FinalCta() {
   return (
-    <section data-nav="dark" className="lp-classic relative -mt-10 overflow-hidden rounded-t-[2.5rem] bg-(--lp-ink) py-28 text-center text-white sm:py-40">
+    <section data-nav="dark" className="relative -mt-10 overflow-hidden rounded-t-[2.5rem] bg-(--lp-ink) py-28 text-center text-white sm:py-40">
       <div className="relative mx-auto max-w-5xl px-5 sm:px-8">
         <h2 className="text-[clamp(2.8rem,8.6vw,7.4rem)] leading-[0.92] font-semibold tracking-[-0.05em] text-balance">
           <WordReveal text="Your next ticket is already waiting." />
@@ -133,7 +131,7 @@ function Col({ title, children }: { title: string; children: ReactNode }) {
 export function Footer() {
   const link = 'lp-focus inline-flex items-center gap-1 rounded underline-offset-4 hover:underline'
   return (
-    <footer data-nav="light" className="lp-classic relative -mt-10 overflow-hidden rounded-t-[2.5rem] bg-(--lp-lime) text-(--lp-ink)">
+    <footer data-nav="light" className="relative -mt-10 overflow-hidden rounded-t-[2.5rem] bg-(--lp-lime) text-(--lp-ink)">
       <div className="mx-auto max-w-6xl px-5 pt-16 sm:px-8 sm:pt-20">
         <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1fr]">
           <div>

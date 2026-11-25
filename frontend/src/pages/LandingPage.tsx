@@ -7,6 +7,7 @@ import { Demo } from '@/components/landing/Demo'
 import { Hero } from '@/components/landing/Hero'
 import { Nav } from '@/components/landing/Nav'
 import { Story } from '@/components/landing/Story'
+import { UseCases } from '@/components/landing/UseCases'
 import { API_URL } from '@/lib/api'
 
 const LOADED_WITH_HASH = typeof location === 'undefined' ? '' : location.hash
@@ -51,10 +52,11 @@ export function LandingPage() {
   }, [hash])
 
   return (
-    <div className="lp min-h-screen overflow-x-clip bg-(--lp-paper)">
+    <div className="lp min-h-screen overflow-x-clip bg-(--lp-ink)">
       <Nav />
       <main>
         <Hero />
+        <UseCases />
         <Story />
         <Bento />
         <Demo notice={notice} />
