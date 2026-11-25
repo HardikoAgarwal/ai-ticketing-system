@@ -1,5 +1,5 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
-import { AlertOctagon, CalendarDays, ChevronLeft, ChevronRight, Clock, Inbox, Loader2, Search, Sparkles, UserRound, UserX } from 'lucide-react'
+import { AlertOctagon, ChevronLeft, ChevronRight, Clock, Inbox, Loader2, Search, Sparkles, UserRound, UserX } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 
@@ -7,31 +7,23 @@ import { useAuth } from '@/auth/AuthContext'
 import { useWorkspace } from '@/auth/workspace'
 import { PageHeader } from '@/components/common'
 import { ActiveFilterChips, FilterDialog, QuickViews, SearchBox, SortSelect, SORT_OPTIONS, type FilterSpec } from '@/components/dashboard/QueueFilters'
-import { surface } from '@/components/dashboard/surface'
 import { TicketCard, TicketCardSkeleton } from '@/components/dashboard/TicketCard'
 import { EmptyState, ErrorState } from '@/components/states'
 import { Button } from '@/components/ui/button'
-import { categoryTone, PRIORITIES, PRIORITY_META, SENTIMENT_META, SLA_META, STATUSES, STATUS_META } from '@/lib/constants'
+import { categoryTone, PRIORITIES, PRIORITY_META, SLA_META, STATUSES, STATUS_META } from '@/lib/constants'
 import type { TicketQuery } from '@/lib/endpoints'
-import type { Sentiment } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import { useFallbackInterval } from '@/realtime/RealtimeProvider'
 
 const VIEWS = {
   attention: { label: 'Needs attention', query: { status: 'OPEN,IN_PROGRESS' } },
-  mine: { label: 'Assigned to me', query: { status: 'OPEN,IN_PROGRESS', assigned: 'me' } },
+  mine: { label: 'Mine', query: { status: 'OPEN,IN_PROGRESS', assigned: 'me' } },
   unassigned: { label: 'Unassigned', query: { status: 'OPEN,IN_PROGRESS', assigned: 'unassigned' } },
-  all: { label: 'All tickets', query: { ordering: '-created_at' } },
+  all: { label: 'All', query: { ordering: '-created_at' } },
 } as const
 type ViewKey = keyof typeof VIEWS
 
-const DATE_RANGES: Record<string, { label: string; days: number }> = {
-  '1': { label: 'Last 24 hours', days: 1 },
-  '7': { label: 'Last 7 days', days: 7 },
-  '30': { label: 'Last 30 days', days: 30 },
-}
-
-const FILTER_KEYS = ['status', 'category', 'priority', 'assigned', 'sla', 'sentiment', 'range', 'q'] as const
+const FILTER_KEYS = ['status', 'category', 'priority', 'assigned', 'sla', 'q'] as const
 const PAGE_SIZE = 25
 
 function KpiCard({ label, value, icon: Icon, tile, ring, onClick, active }: {
@@ -48,16 +40,15 @@ function KpiCard({ label, value, icon: Icon, tile, ring, onClick, active }: {
       onClick={onClick}
       aria-pressed={active}
       className={cn(
-        surface,
-        'group flex items-center gap-3.5 p-4 text-left transition-all hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-lg focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none sm:gap-4 sm:p-5',
+        'group flex items-center gap-3.5 rounded-lg border border-border bg-card p-4 text-left shadow-xs transition-colors hover:bg-muted/40 focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none sm:gap-4',
         active && cn('ring-2', ring),
       )}
     >
-      <div className={cn('flex size-11 shrink-0 items-center justify-center rounded-xl ring-1 ring-inset ring-black/5 sm:size-12', tile)}>
-        <Icon className="size-5 sm:size-6" />
+      <div className={cn('flex size-10 shrink-0 items-center justify-center rounded-md ring-1 ring-inset ring-black/5', tile)}>
+        <Icon className="size-5" />
       </div>
       <div>
-        <p className="text-[1.75rem] leading-none font-semibold tracking-tight tabular-nums">{value ?? '–'}</p>
+        <p className="text-2xl leading-none font-semibold tracking-tight tabular-nums">{value ?? '–'}</p>
         <p className="mt-1.5 text-[13px] font-medium text-muted-foreground">{label}</p>
       </div>
     </button>
@@ -100,14 +91,12 @@ export function QueuePage() {
 
   const query: TicketQuery = useMemo(() => {
     const q: TicketQuery = { ...VIEWS[view].query, page }
-    for (const key of ['status', 'category', 'priority', 'assigned', 'sla', 'sentiment', 'q'] as const) {
+    for (const key of ['status', 'category', 'priority', 'assigned', 'sla', 'q'] as const) {
       const v = params.get(key)
       if (v) q[key] = v
     }
     const ordering = SORT_OPTIONS.find((o) => o.value === sort)?.ordering
     if (ordering) q.ordering = ordering
-    const range = params.get('range')
-    if (range && DATE_RANGES[range]) q.created_after = new Date(Date.now() - DATE_RANGES[range].days * 86400_000).toISOString()
     return q
   }, [params, view, page, sort])
 
@@ -126,8 +115,7 @@ export function QueuePage() {
       { key: 'status', label: 'Status', multi: true, options: STATUSES.map((s) => ({ value: s, label: STATUS_META[s].label, tone: STATUS_META[s] })) },
       { key: 'priority', label: 'Priority', multi: true, options: PRIORITIES.map((p) => ({ value: p, label: PRIORITY_META[p].label, tone: PRIORITY_META[p] })) },
       { key: 'category', label: 'Category', multi: true, options: (categories.data ?? []).map((c) => ({ value: c.key, label: c.name, tone: categoryTone(c.key, c.name) })) },
-      { key: 'sentiment', label: 'Mood', multi: true, options: (['NEGATIVE', 'NEUTRAL', 'POSITIVE'] as Sentiment[]).map((s) => ({ value: s, label: SENTIMENT_META[s].label, tone: SENTIMENT_META[s] })) },
-      { key: 'sla', label: 'SLA', options: [{ value: 'overdue', label: 'Overdue', tone: SLA_META.overdue }, { value: 'at_risk', label: 'Due soon', tone: SLA_META.at_risk }] },
+      { key: 'sla', label: 'Response SLA', options: [{ value: 'overdue', label: 'Overdue', tone: SLA_META.overdue }, { value: 'at_risk', label: 'Due soon', tone: SLA_META.at_risk }] },
     ]
     if (view === 'attention' || view === 'all') {
       out.push({
@@ -141,7 +129,6 @@ export function QueuePage() {
         ],
       })
     }
-    out.push({ key: 'range', label: 'Created', icon: CalendarDays, options: Object.entries(DATE_RANGES).map(([value, r]) => ({ value, label: r.label, icon: CalendarDays })) })
     return out
   }, [categories.data, members.data, user?.id, view])
 
@@ -205,38 +192,36 @@ export function QueuePage() {
         <KpiCard label="Critical open" value={stats.data?.critical} icon={AlertOctagon} tile="bg-orange-100 text-orange-700" ring="ring-orange-300" onClick={() => applyKpi({ priority: 'CRITICAL' })} active={params.get('priority') === 'CRITICAL'} />
       </div>
 
-      <section aria-label="Find and filter tickets" className="mb-5 space-y-3">
-        <div className={cn(surface, 'flex flex-col gap-3 p-3 sm:p-3.5')}>
-          <div className="flex flex-wrap items-center gap-2.5 2xl:flex-nowrap">
-            <QuickViews views={quickViews} value={view} onChange={(v) => applyKpi(v === 'attention' ? {} : { view: v })} />
-            <div className="ml-auto flex w-full flex-wrap items-center gap-2.5 sm:w-auto sm:flex-nowrap">
-              <SearchBox value={search} onChange={setSearch} />
-              <FilterDialog
-                specs={specs}
-                values={values}
-                activeCount={activeCount}
-                onApply={(next) => {
-                  const p = new URLSearchParams(params)
-                  p.delete('page')
-                  for (const s of specs) {
-                    if (next[s.key]) p.set(s.key, next[s.key]!)
-                    else p.delete(s.key)
-                  }
-                  setParams(p, { replace: true })
-                }}
-              />
-              <SortSelect value={sort} onChange={(v) => setParam('sort', v === 'default' ? null : v)} />
-            </div>
+      <section aria-label="Find and filter tickets" className="mb-4 space-y-3">
+        <div className="flex flex-wrap items-center gap-2.5">
+          <QuickViews views={quickViews} value={view} onChange={(v) => applyKpi(v === 'attention' ? {} : { view: v })} />
+          <div className="flex w-full flex-wrap items-center gap-2 sm:ml-auto sm:w-auto sm:flex-nowrap">
+            <SearchBox value={search} onChange={setSearch} />
+            <FilterDialog
+              specs={specs}
+              values={values}
+              activeCount={activeCount}
+              onApply={(next) => {
+                const p = new URLSearchParams(params)
+                p.delete('page')
+                for (const s of specs) {
+                  if (next[s.key]) p.set(s.key, next[s.key]!)
+                  else p.delete(s.key)
+                }
+                setParams(p, { replace: true })
+              }}
+            />
+            <SortSelect value={sort} onChange={(v) => setParam('sort', v === 'default' ? null : v)} />
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-1">
+        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
           <ActiveFilterChips specs={specs} values={values} onChange={setParam} onClear={clearAll} />
           <p className="ml-auto flex items-center gap-2 text-[13px] text-muted-foreground" aria-live="polite">
             {list.isFetching && !list.isLoading && <Loader2 className="size-3.5 animate-spin" />}
             {list.data ? (list.data.count ? (
               <>
-                Showing <span className="font-semibold text-foreground tabular-nums">{from}–{to}</span> of <span className="font-semibold text-foreground tabular-nums">{list.data.count}</span> tickets
+                <span className="font-medium text-foreground tabular-nums">{from}–{to}</span> of <span className="font-medium text-foreground tabular-nums">{list.data.count}</span> tickets
               </>
             ) : '0 tickets') : 'Loading tickets…'}
           </p>
@@ -244,7 +229,7 @@ export function QueuePage() {
       </section>
 
       {list.isLoading ? (
-        <div className="space-y-3.5">
+        <div className="space-y-2.5">
           {Array.from({ length: 5 }).map((_, i) => (
             <TicketCardSkeleton key={i} />
           ))}
@@ -259,7 +244,7 @@ export function QueuePage() {
           action={hasAny ? <Button variant="outline" size="sm" onClick={clearAll}>Clear all filters</Button> : undefined}
         />
       ) : (
-        <ul className="space-y-3.5">
+        <ul className="space-y-2.5">
           {tickets.map((t, i) => (
             <li key={t.id}>
               <TicketCard
@@ -277,7 +262,7 @@ export function QueuePage() {
       )}
 
       {list.data && list.data.count > PAGE_SIZE && (
-        <div className="mt-5 flex items-center justify-between rounded-2xl border bg-card px-4 py-2.5 text-sm text-muted-foreground shadow-xs">
+        <div className="mt-5 flex items-center justify-between rounded-lg border bg-card px-4 py-2.5 text-sm text-muted-foreground shadow-xs">
           <span>
             Page {page} of {totalPages}
           </span>

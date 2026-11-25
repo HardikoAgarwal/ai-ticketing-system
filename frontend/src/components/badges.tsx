@@ -11,11 +11,11 @@ import { cn } from '@/lib/utils'
 type Size = 'sm' | 'md' | 'lg' | 'card'
 
 const SIZES: Record<Size, { pill: string; icon: string }> = {
-  sm: { pill: 'gap-1 px-2 py-0.5 text-[11px]', icon: 'size-3' },
-  md: { pill: 'gap-1.5 px-3 py-1 text-[13px]', icon: 'size-3.5' },
-  lg: { pill: 'gap-1.5 px-3 py-1.5 text-sm', icon: 'size-4' },
+  sm: { pill: 'h-6 gap-1 px-2 text-xs', icon: 'size-3' },
+  md: { pill: 'h-7 gap-1.5 px-2.5 text-xs', icon: 'size-3.5' },
+  lg: { pill: 'h-8 gap-1.5 px-3 text-[13px]', icon: 'size-4' },
   // dashboard cards: ~28px tall, 13px semibold, 14px icons
-  card: { pill: 'h-7 gap-1.5 px-3 text-[13px] font-semibold', icon: 'size-3.5' },
+  card: { pill: 'h-7 gap-1.5 px-2.5 text-xs', icon: 'size-3.5' },
 }
 
 export function Pill({ tone, label, size = 'md', className, children }: {
@@ -29,7 +29,7 @@ export function Pill({ tone, label, size = 'md', className, children }: {
   return (
     <span
       className={cn(
-        'inline-flex items-center rounded-full font-medium whitespace-nowrap ring-1 ring-inset',
+        'inline-flex items-center rounded-lg font-semibold whitespace-nowrap',
         SIZES[size].pill,
         tone.pill,
         className,

@@ -1,11 +1,10 @@
-import { Check, ChevronDown, ListFilter, Search, SlidersHorizontal, X, type LucideIcon } from 'lucide-react'
+import { Check, ListFilter, Search, SlidersHorizontal, X, type LucideIcon } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import type { Tone } from '@/lib/constants'
 import { cn } from '@/lib/utils'
 
@@ -26,13 +25,6 @@ export interface FilterSpec {
 
 const csv = (v: string | null) => (v ? v.split(',').filter(Boolean) : [])
 
-function summary(spec: FilterSpec, value: string | null): string | null {
-  const vals = csv(value)
-  if (!vals.length) return null
-  const first = spec.options.find((o) => o.value === vals[0])?.label ?? vals[0]
-  return vals.length > 1 ? `${first} +${vals.length - 1}` : first
-}
-
 function toggle(spec: FilterSpec, current: string | null, value: string): string | null {
   if (!spec.multi) return current === value ? null : value
   const set = new Set(csv(current))
@@ -41,108 +33,33 @@ function toggle(spec: FilterSpec, current: string | null, value: string): string
   return set.size ? [...set].join(',') : null
 }
 
-function OptionRow({ spec, option, active, onPick }: { spec: FilterSpec; option: FilterOption; active: boolean; onPick: () => void }) {
-  const Icon = option.tone?.icon ?? option.icon
-  return (
-    <button
-      type="button"
-      role={spec.multi ? 'menuitemcheckbox' : 'menuitemradio'}
-      aria-checked={active}
-      onClick={onPick}
-      className={cn('flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-sm transition-colors hover:bg-muted focus-visible:bg-muted focus-visible:outline-none', active && 'bg-accent/60 font-medium')}
-    >
-      {Icon && <Icon className={cn('size-4 shrink-0', option.tone?.iconClass ?? 'text-muted-foreground')} />}
-      <span className="flex-1 truncate">{option.label}</span>
-      {active && <Check className="size-4 text-primary" />}
-    </button>
-  )
-}
-
-/** One filter in the toolbar grid: equal-sized, neutral when unset, filled with a count when active. Opens a pick list. */
-export function FilterButton({ spec, value, onChange }: { spec: FilterSpec; value: string | null; onChange: (v: string | null) => void }) {
-  const [open, setOpen] = useState(false)
-  const vals = csv(value)
-  const text = summary(spec, value)
-  const Icon = spec.icon ?? ListFilter
-  return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <button
-          type="button"
-          aria-label={`Filter by ${spec.label}${text ? `, currently ${text}` : ''}`}
-          className={cn(
-            'group flex h-10 w-full min-w-0 items-center gap-2 rounded-xl border px-3 text-sm font-medium shadow-xs transition-all focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none',
-            text ? 'border-primary/40 bg-primary/[0.08] text-primary' : 'border-slate-200 bg-card text-foreground/80 hover:border-slate-300 hover:bg-slate-50',
-          )}
-        >
-          <Icon className={cn('size-4 shrink-0', text ? 'text-primary' : 'text-muted-foreground')} />
-          <span className="min-w-0 flex-1 truncate text-left">{vals.length > 1 ? spec.label : (text ?? spec.label)}</span>
-          {vals.length > 1 && <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-primary text-[11px] font-semibold text-primary-foreground">{vals.length}</span>}
-          <ChevronDown className={cn('size-4 shrink-0 transition-transform', open && 'rotate-180', text ? 'text-primary/70' : 'text-muted-foreground')} />
-        </button>
-      </PopoverTrigger>
-      <PopoverContent align="start" className="w-64 gap-0.5 p-1.5">
-        <p className="px-2.5 pt-1.5 pb-1 text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
-          {spec.label} {spec.multi && <span className="font-normal normal-case">· pick any</span>}
-        </p>
-        <div role="menu" className="max-h-72 overflow-y-auto">
-          {spec.options.map((o) => (
-            <OptionRow
-              key={o.value}
-              spec={spec}
-              option={o}
-              active={vals.includes(o.value)}
-              onPick={() => {
-                onChange(toggle(spec, value, o.value))
-                if (!spec.multi) setOpen(false)
-              }}
-            />
-          ))}
-        </div>
-        {vals.length > 0 && (
-          <button type="button" onClick={() => { onChange(null); setOpen(false) }} className="mt-1 rounded-md border-t px-2.5 py-2 text-left text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground">
-            Clear {spec.label.toLowerCase()}
-          </button>
-        )}
-      </PopoverContent>
-    </Popover>
-  )
-}
-
-/** Removable chips for every active filter value ("Priority: High ×"). */
-export function ActiveFilterChips({ specs, values, onChange, onClear, extra }: {
+/** Small removable chips for every applied filter value, e.g. "Priority: High ×". Renders nothing when no filter is set. */
+export function ActiveFilterChips({ specs, values, onChange, onClear }: {
   specs: FilterSpec[]
   values: Record<string, string | null>
   onChange: (key: string, v: string | null) => void
   onClear: () => void
-  extra?: { label: string; onRemove: () => void }[]
 }) {
   const chips = specs.flatMap((spec) =>
     csv(values[spec.key]).map((v) => ({ spec, value: v, label: spec.options.find((o) => o.value === v)?.label ?? v })),
   )
-  if (!chips.length && !extra?.length) return null
+  if (!chips.length) return <span />
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      <span className="mr-1 text-xs font-semibold tracking-wide text-muted-foreground uppercase">Applied</span>
-      {extra?.map((e) => (
-        <button key={e.label} type="button" onClick={e.onRemove} className="inline-flex h-8 items-center gap-1.5 rounded-md bg-foreground pr-2 pl-3 text-[13px] font-medium text-background transition-colors hover:bg-foreground/80 focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none">
-          {e.label} <X className="size-3.5 opacity-80" />
-        </button>
-      ))}
+    <div className="flex flex-wrap items-center gap-1.5">
       {chips.map(({ spec, value, label }) => (
         <button
           key={`${spec.key}:${value}`}
           type="button"
           onClick={() => onChange(spec.key, toggle(spec, values[spec.key], value))}
           aria-label={`Remove ${spec.label} filter ${label}`}
-          className="inline-flex h-8 items-center gap-1.5 rounded-md border border-primary/30 bg-primary/10 pr-2 pl-3 text-[13px] font-medium text-primary transition-colors hover:bg-primary/15 focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none"
+          className="inline-flex h-7 items-center gap-1.5 rounded-md border border-border bg-card pr-1.5 pl-2.5 text-xs font-medium transition-colors hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none"
         >
-          <span className="text-primary/70">{spec.label}:</span> {label} <X className="size-3.5" />
+          <span className="text-muted-foreground">{spec.label}:</span> {label} <X className="size-3.5 text-muted-foreground" />
         </button>
       ))}
-      <Button variant="ghost" size="sm" onClick={onClear} className="ml-auto h-8 text-muted-foreground">
-        <X /> Clear all
-      </Button>
+      <button type="button" onClick={onClear} className="ml-1 text-xs font-medium text-muted-foreground underline-offset-2 hover:text-foreground hover:underline">
+        Clear all
+      </button>
     </div>
   )
 }
@@ -158,9 +75,8 @@ export const SORT_OPTIONS = [
 export function SortSelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   return (
     <Select value={value} onValueChange={onChange}>
-      <SelectTrigger aria-label="Sort tickets" className="h-10 w-full min-w-44 rounded-lg border-border bg-card font-medium shadow-xs sm:w-auto">
+      <SelectTrigger aria-label="Sort tickets" className="h-9 w-auto min-w-40 rounded-md border-border bg-card font-medium shadow-xs">
         <ListFilter className="size-4 text-muted-foreground" />
-        <span className="text-muted-foreground">Sort:</span>
         <SelectValue />
       </SelectTrigger>
       <SelectContent align="end">
@@ -190,25 +106,25 @@ export function SearchBox({ value, onChange }: { value: string; onChange: (v: st
     return () => window.removeEventListener('keydown', onKey)
   }, [])
   return (
-    <div className="relative min-w-0 flex-1 sm:max-w-xs sm:flex-none sm:basis-72">
-      <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+    <div className="relative w-full sm:w-52">
+      <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
       <Input
         ref={ref}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
-        placeholder="Search tickets"
+        placeholder="Search"
         aria-label="Search tickets"
-        className="h-10 rounded-lg border-border bg-card pr-12 pl-9 text-sm shadow-xs"
+        className="h-9 rounded-md border-border bg-card pr-9 pl-8 text-sm shadow-xs"
       />
       {value ? (
-        <button type="button" onClick={() => { onChange(''); ref.current?.focus() }} aria-label="Clear search" className="absolute top-1/2 right-3 flex size-6 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground hover:bg-muted">
-          <X className="size-4" />
+        <button type="button" onClick={() => { onChange(''); ref.current?.focus() }} aria-label="Clear search" className="absolute top-1/2 right-2 flex size-5 -translate-y-1/2 items-center justify-center rounded text-muted-foreground hover:bg-muted">
+          <X className="size-3.5" />
         </button>
       ) : (
         !focused && (
-          <kbd aria-hidden className="pointer-events-none absolute top-1/2 right-3 hidden h-6 min-w-6 -translate-y-1/2 items-center justify-center rounded-md border bg-slate-50 px-1.5 font-mono text-xs text-muted-foreground sm:flex">
+          <kbd aria-hidden className="pointer-events-none absolute top-1/2 right-2 hidden h-5 min-w-5 -translate-y-1/2 items-center justify-center rounded border bg-muted px-1 font-mono text-[11px] text-muted-foreground sm:flex">
             /
           </kbd>
         )
@@ -223,15 +139,10 @@ export interface QuickView {
   count?: number
 }
 
-/** Segmented control for the quick views, each with a live count. Scrolls sideways on phones. */
+/** Neutral segmented control for the quick views, each with a live count. Scrolls sideways on phones. */
 export function QuickViews({ views, value, onChange }: { views: QuickView[]; value: string; onChange: (key: string) => void }) {
-  const ref = useRef<HTMLDivElement>(null)
-  useEffect(() => {
-    const el = ref.current?.querySelector<HTMLElement>('[aria-selected="true"]')
-    if (el && ref.current) ref.current.scrollTo({ left: el.offsetLeft - 24, behavior: 'smooth' })
-  }, [value])
   return (
-    <div ref={ref} role="tablist" aria-label="Ticket views" className="flex max-w-full shrink-0 gap-1 overflow-x-auto rounded-lg bg-muted p-1 ring-1 ring-border ring-inset [&::-webkit-scrollbar]:hidden">
+    <div role="tablist" aria-label="Ticket views" className="flex max-w-full shrink-0 gap-0.5 overflow-x-auto rounded-md border border-border bg-muted p-0.5 [&::-webkit-scrollbar]:hidden">
       {views.map((v) => {
         const on = v.key === value
         return (
@@ -241,14 +152,12 @@ export function QuickViews({ views, value, onChange }: { views: QuickView[]; val
             aria-selected={on}
             onClick={() => onChange(v.key)}
             className={cn(
-              'flex h-9 shrink-0 items-center gap-2 rounded-md px-3.5 text-sm font-medium whitespace-nowrap transition-all focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none',
-              on ? 'bg-card text-foreground shadow-sm ring-1 ring-border' : 'text-muted-foreground hover:text-foreground',
+              'flex h-8 shrink-0 items-center gap-1.5 rounded px-3 text-sm font-medium whitespace-nowrap transition-colors focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none',
+              on ? 'bg-card text-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground',
             )}
           >
             {v.label}
-            {v.count !== undefined && (
-              <span className={cn('rounded-md px-1.5 py-px text-xs font-semibold tabular-nums', on ? 'bg-primary text-primary-foreground' : 'bg-background text-muted-foreground')}>{v.count}</span>
-            )}
+            {v.count !== undefined && <span className={cn('text-xs tabular-nums', on ? 'text-muted-foreground' : 'text-muted-foreground/70')}>{v.count}</span>}
           </button>
         )
       })}
@@ -256,7 +165,7 @@ export function QuickViews({ views, value, onChange }: { views: QuickView[]; val
   )
 }
 
-/** All filters live here: one "Filters" button opens a dialog with every filter as toggle pills; nothing applies until "Apply". */
+/** "Filters" button + dialog. Nothing applies until "Apply". */
 export function FilterDialog({ specs, values, onApply, activeCount }: {
   specs: FilterSpec[]
   values: Record<string, string | null>
@@ -266,12 +175,13 @@ export function FilterDialog({ specs, values, onApply, activeCount }: {
   const [open, setOpen] = useState(false)
   return (
     <>
-      <Button variant="outline" onClick={() => setOpen(true)} className="h-10 shrink-0 rounded-lg border-border bg-card px-3.5 shadow-xs">
+      <Button variant="outline" onClick={() => setOpen(true)} className="h-9 shrink-0 rounded-md border-border bg-card px-3 shadow-xs">
         <SlidersHorizontal /> Filters
-        {activeCount > 0 && <span className="rounded-md bg-primary px-1.5 text-xs font-semibold text-primary-foreground">{activeCount}</span>}
+        {activeCount > 0 && <span className="rounded bg-primary px-1.5 text-xs font-semibold text-primary-foreground">{activeCount}</span>}
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-h-[88svh] gap-0 overflow-hidden p-0 sm:max-w-xl">
+        {/* flex-col (not the default grid) so the body gets a bounded height and scrolls while header and footer stay put */}
+        <DialogContent className="flex max-h-[85svh] flex-col gap-0 overflow-hidden rounded-lg p-0 sm:max-w-lg">
           {open && <FilterForm specs={specs} initial={values} onClose={() => setOpen(false)} onApply={onApply} />}
         </DialogContent>
       </Dialog>
@@ -289,46 +199,43 @@ function FilterForm({ specs, initial, onApply, onClose }: {
   const count = specs.filter((s) => draft[s.key]).length
   return (
     <>
-      <DialogHeader className="border-b px-6 py-5">
-        <DialogTitle>Filter tickets</DialogTitle>
-        <DialogDescription>Pick as many as you like, then apply. Active filters show above the list.</DialogDescription>
+      <DialogHeader className="shrink-0 border-b px-5 py-4">
+        <DialogTitle className="text-base">Filter tickets</DialogTitle>
+        <DialogDescription>Narrow the queue, then apply. Applied filters show above the list.</DialogDescription>
       </DialogHeader>
-      <div className="min-h-0 flex-1 space-y-6 overflow-y-auto px-6 py-5">
-        {specs.map((spec) => {
-          const Icon = spec.icon
-          return (
-            <section key={spec.key}>
-              <p className="mb-2.5 flex items-center gap-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-                {Icon && <Icon className="size-3.5" />} {spec.label}
-                {spec.multi && <span className="font-normal tracking-normal normal-case">· pick any</span>}
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {spec.options.map((o) => {
-                  const on = csv(draft[spec.key]).includes(o.value)
-                  const OIcon = o.tone?.icon ?? o.icon
-                  return (
-                    <button
-                      key={o.value}
-                      type="button"
-                      aria-pressed={on}
-                      onClick={() => setDraft((d) => ({ ...d, [spec.key]: toggle(spec, d[spec.key], o.value) }))}
-                      className={cn(
-                        'inline-flex h-9 items-center gap-1.5 rounded-md border px-3 text-sm font-medium transition-colors focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none',
-                        on ? 'border-primary bg-primary/10 text-primary' : 'border-border bg-card text-foreground/80 hover:bg-muted',
-                      )}
-                    >
-                      {OIcon && <OIcon className={cn('size-4', on ? 'text-primary' : (o.tone?.iconClass ?? 'text-muted-foreground'))} />}
-                      {o.label}
-                      {on && <Check className="size-3.5" />}
-                    </button>
-                  )
-                })}
-              </div>
-            </section>
-          )
-        })}
+      <div className="min-h-0 flex-1 divide-y overflow-y-auto overscroll-contain">
+        {specs.map((spec) => (
+          <section key={spec.key} className="px-5 py-4">
+            <div className="mb-2.5 flex items-baseline justify-between">
+              <h3 className="text-sm font-semibold">{spec.label}</h3>
+              <span className="text-xs text-muted-foreground">{spec.multi ? 'Pick any' : 'Pick one'}</span>
+            </div>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+              {spec.options.map((o) => {
+                const on = csv(draft[spec.key]).includes(o.value)
+                const OIcon = o.tone?.icon ?? o.icon
+                return (
+                  <button
+                    key={o.value}
+                    type="button"
+                    aria-pressed={on}
+                    onClick={() => setDraft((d) => ({ ...d, [spec.key]: toggle(spec, d[spec.key], o.value) }))}
+                    className={cn(
+                      'flex h-9 min-w-0 items-center gap-2 rounded-md border px-2.5 text-left text-sm transition-colors focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none',
+                      on ? 'border-primary bg-primary/10 font-medium text-foreground' : 'border-border bg-card text-foreground/80 hover:bg-muted',
+                    )}
+                  >
+                    {OIcon && <OIcon className={cn('size-4 shrink-0', on ? 'text-primary' : 'text-muted-foreground')} />}
+                    <span className="min-w-0 flex-1 truncate">{o.label}</span>
+                    {on && <Check className="size-3.5 shrink-0 text-primary" />}
+                  </button>
+                )
+              })}
+            </div>
+          </section>
+        ))}
       </div>
-      <DialogFooter className="border-t bg-muted/40 px-6 py-4 sm:justify-between">
+      <DialogFooter className="shrink-0 flex-row items-center justify-between border-t bg-muted/40 px-5 py-3 sm:justify-between">
         <Button variant="ghost" onClick={() => setDraft(Object.fromEntries(specs.map((s) => [s.key, null])))} disabled={!count}>
           Reset
         </Button>

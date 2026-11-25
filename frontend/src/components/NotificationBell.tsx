@@ -58,12 +58,12 @@ function NotificationItem({ item, onOpen }: { item: AppNotification; onOpen: () 
         {(urgent || item.owner === 'unassigned') && (
           <span className="mt-2 flex gap-1.5">
             {urgent && (
-              <span className="rounded-full bg-red-50 px-2 py-0.5 text-[10px] font-semibold text-red-700 ring-1 ring-red-200 ring-inset">
+              <span className="rounded-md bg-red-50 px-2 py-0.5 text-[10px] font-semibold text-red-700 ring-1 ring-red-200 ring-inset">
                 {item.priority === 'CRITICAL' ? 'Critical' : 'High'} priority
               </span>
             )}
             {item.owner === 'unassigned' && (
-              <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground ring-1 ring-border ring-inset">Unassigned</span>
+              <span className="rounded-md bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground ring-1 ring-border ring-inset">Unassigned</span>
             )}
           </span>
         )}
@@ -154,7 +154,7 @@ export function NotificationBell() {
         <div className="flex items-center justify-between gap-3 border-b px-4 py-3">
           <p className="flex items-center gap-2 text-sm font-semibold">
             Notifications
-            {count > 0 && <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">{count} new</span>}
+            {count > 0 && <span className="rounded-md bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">{count} new</span>}
           </p>
           {hasReadable && (
             <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => markAll.mutate()} disabled={markAll.isPending}>

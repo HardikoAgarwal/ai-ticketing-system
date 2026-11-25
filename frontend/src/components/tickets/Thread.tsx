@@ -79,7 +79,7 @@ export function MessageBubble({ message, viewer }: { message: Message; viewer: V
       avatar={<PersonAvatar name={message.sender_name} variant={variant} />}
       meta={
         viewer === 'staff' && message.ai_draft_id ? (
-          <span className="inline-flex items-center gap-1 rounded-full bg-violet-50 px-2 py-0.5 text-[11px] font-medium text-violet-700 ring-1 ring-violet-600/20 ring-inset">
+          <span className="inline-flex items-center gap-1 rounded-md bg-violet-50 px-2 py-0.5 text-[11px] font-medium text-violet-700 ring-1 ring-violet-600/20 ring-inset">
             <Sparkles className="size-3" /> {message.ai_draft_edited ? 'AI draft, edited' : 'AI draft'}
           </span>
         ) : viewer === 'requester' && fromTeam ? (

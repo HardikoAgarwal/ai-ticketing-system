@@ -97,12 +97,12 @@ function RoleToggle({ role, onChange }: { role: Role; onChange: (r: Role) => voi
 function Overlay({ name, step, progress, waking, error, onClose }: { name: string; step: number; progress: number; waking: boolean; error: string | null; onClose: () => void }) {
   const reduce = useReducedMotion()
   const blobs = [
-    { c: '#6a4df4', x: ['-10%', '8%', '-10%'], y: ['-12%', '6%', '-12%'], s: 'left-[8%] top-[10%] size-[34rem]' },
-    { c: '#2dd4bf', x: ['6%', '-8%', '6%'], y: ['8%', '-6%', '8%'], s: 'right-[4%] bottom-[6%] size-[30rem]' },
-    { c: '#f472b6', x: ['0%', '10%', '0%'], y: ['6%', '-8%', '6%'], s: 'right-[30%] top-[-8%] size-[22rem]' },
+    { c: '#10b981', x: ['-10%', '8%', '-10%'], y: ['-12%', '6%', '-12%'], s: 'left-[8%] top-[10%] size-[34rem]' },
+    { c: '#64748b', x: ['6%', '-8%', '6%'], y: ['8%', '-6%', '8%'], s: 'right-[4%] bottom-[6%] size-[30rem]' },
+    { c: '#34d399', x: ['0%', '10%', '0%'], y: ['6%', '-8%', '6%'], s: 'right-[30%] top-[-8%] size-[22rem]' },
   ]
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[60] flex items-center justify-center overflow-hidden bg-[#0d0b24] p-6 text-white" role="status" aria-live="polite">
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[60] flex items-center justify-center overflow-hidden bg-[#0e1013] p-6 text-white" role="status" aria-live="polite">
       {/* drifting colour fields + faint grid */}
       <div className="pointer-events-none absolute inset-0" aria-hidden>
         {blobs.map((b, i) => (
@@ -139,7 +139,7 @@ function Overlay({ name, step, progress, waking, error, onClose }: { name: strin
                 transition={{ duration: 0.35 }}
                 className="flex items-center gap-3.5 rounded-xl px-3.5 py-3"
               >
-                <span className={cn('flex size-8 shrink-0 items-center justify-center rounded-lg transition-colors', complete ? 'bg-emerald-400 text-[#06281f]' : active ? 'bg-white text-[#2a1d7a]' : 'bg-white/10 text-white/60')}>
+                <span className={cn('flex size-8 shrink-0 items-center justify-center rounded-lg transition-colors', complete ? 'bg-emerald-400 text-[#06281f]' : active ? 'bg-white text-zinc-900' : 'bg-white/10 text-white/60')}>
                   {complete ? (
                     <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 500, damping: 18 }}>
                       <Check className="size-[18px]" strokeWidth={3} />
@@ -167,7 +167,7 @@ function Overlay({ name, step, progress, waking, error, onClose }: { name: strin
 
         <div className="mt-7 flex items-center gap-4">
           <div className="relative h-2 flex-1 overflow-hidden rounded-full bg-white/15">
-            <motion.div className="h-full rounded-full bg-gradient-to-r from-[#8b74ff] via-[#5eead4] to-[#f9a8d4]" animate={{ width: `${progress}%` }} transition={{ duration: 0.6, ease: 'easeOut' }} />
+            <motion.div className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-emerald-300" animate={{ width: `${progress}%` }} transition={{ duration: 0.6, ease: 'easeOut' }} />
             {!reduce && <motion.span className="absolute inset-y-0 w-24 bg-gradient-to-r from-transparent via-white/40 to-transparent" animate={{ x: ['-6rem', '36rem'] }} transition={{ duration: 1.8, repeat: Infinity, ease: 'linear' }} />}
           </div>
           <span className="w-10 text-right text-sm font-semibold tabular-nums">{Math.round(progress)}%</span>
@@ -177,7 +177,7 @@ function Overlay({ name, step, progress, waking, error, onClose }: { name: strin
         {error && (
           <div className="mt-6 rounded-2xl bg-rose-500/15 p-4 text-center ring-1 ring-rose-400/40">
             <p role="alert" className="text-sm text-rose-100">{error}</p>
-            <button type="button" onClick={onClose} className="lp-focus mt-3 rounded-lg bg-white px-5 py-2 text-sm font-semibold text-[#1b1352]">
+            <button type="button" onClick={onClose} className="lp-focus mt-3 rounded-lg bg-white px-5 py-2 text-sm font-semibold text-zinc-900">
               Back to the demos
             </button>
           </div>

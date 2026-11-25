@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 
 import { useAuth } from '@/auth/AuthContext'
@@ -8,24 +8,21 @@ import { useWorkspace } from '@/auth/workspace'
 import { ConfirmDialog, type ConfirmOptions } from '@/components/ConfirmDialog'
 import { Conversation } from '@/components/dashboard/Conversation'
 import { TicketHeader } from '@/components/dashboard/TicketHeader'
-import { TicketSidebar, type SidebarTab } from '@/components/dashboard/TicketSidebar'
+import { ActivityTab, AiTab, DetailsTab, SimilarTab } from '@/components/dashboard/TicketSidebar'
 import { ErrorState, ListSkeleton } from '@/components/states'
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { errorMessage } from '@/lib/api'
 import { cn } from '@/lib/utils'
+import { Activity, Copy, MessagesSquare, Sparkles, UserRound, type LucideIcon } from 'lucide-react'
 import { useFallbackInterval } from '@/realtime/RealtimeProvider'
 
-const SIDEBAR_KEY = 'helpdesk.ticket.sidebar'
-
-function useIsXl() {
-  const [yes, setYes] = useState(() => window.matchMedia('(min-width: 1280px)').matches)
-  useEffect(() => {
-    const mq = window.matchMedia('(min-width: 1280px)')
-    const on = () => setYes(mq.matches)
-    mq.addEventListener('change', on)
-    return () => mq.removeEventListener('change', on)
-  }, [])
-  return yes
+const TABS = ['conversation', 'details', 'ai', 'similar', 'activity'] as const
+type TicketTab = (typeof TABS)[number]
+const TAB_META: Record<TicketTab, { label: string; icon: LucideIcon }> = {
+  conversation: { label: 'Conversation', icon: MessagesSquare },
+  details: { label: 'Details', icon: UserRound },
+  ai: { label: 'AI triage', icon: Sparkles },
+  similar: { label: 'Similar', icon: Copy },
+  activity: { label: 'Activity', icon: Activity },
 }
 
 export function TicketPage() {
@@ -36,10 +33,16 @@ export function TicketPage() {
   const queryClient = useQueryClient()
   const refetchInterval = useFallbackInterval()
   const [confirm, setConfirm] = useState<ConfirmOptions | null>(null)
-  const isXl = useIsXl()
-  const [sidebarOpen, setSidebarOpen] = useState(() => localStorage.getItem(SIDEBAR_KEY) !== '0')
-  const [drawerOpen, setDrawerOpen] = useState(false)
-  const [tab, setTab] = useState<SidebarTab>('workflow')
+  const [params, setParams] = useSearchParams()
+  const raw = params.get('tab')
+  const tab: TicketTab = TABS.includes(raw as TicketTab) ? (raw as TicketTab) : 'conversation'
+  const setTab = (t: TicketTab) =>
+    setParams((p) => {
+      const next = new URLSearchParams(p)
+      if (t === 'conversation') next.delete('tab')
+      else next.set('tab', t)
+      return next
+    }, { replace: true })
 
   const { data: ticket, isLoading, isError, error, refetch } = useQuery({
     queryKey: ['ticket', ticketId, slug],
@@ -113,38 +116,7 @@ export function TicketPage() {
       onConfirm: () => update.mutate({ status: 'RESOLVED' }),
     })
 
-  const toggleSidebar = () => {
-    if (isXl) {
-      const next = !sidebarOpen
-      setSidebarOpen(next)
-      localStorage.setItem(SIDEBAR_KEY, next ? '1' : '0')
-    } else setDrawerOpen(true)
-  }
-  const openAi = () => {
-    setTab('ai')
-    if (isXl) {
-      setSidebarOpen(true)
-      localStorage.setItem(SIDEBAR_KEY, '1')
-    } else setDrawerOpen(true)
-  }
-
-  const sidebar = (
-    <TicketSidebar
-      ticket={ticket}
-      tab={tab}
-      onTab={setTab}
-      categories={categories.data ?? []}
-      members={members.data ?? []}
-      similar={similar.data ?? []}
-      slug={slug}
-      meId={user?.id}
-      saving={update.isPending}
-      onUpdate={(data) => update.mutate(data)}
-      onAssign={assign}
-      onRerun={() => rerun.mutate()}
-      rerunning={rerun.isPending}
-    />
-  )
+  const counts: Partial<Record<TicketTab, number>> = { similar: similar.data?.length ?? 0, activity: ticket.activities.length, conversation: ticket.messages.length }
 
   return (
     <div className="mx-auto max-w-[1500px]">
@@ -157,27 +129,46 @@ export function TicketPage() {
         resolving={update.isPending}
         onTake={() => update.mutate({ assigned_to: user!.id })}
         taking={update.isPending}
-        sidebarOpen={isXl ? sidebarOpen : drawerOpen}
-        onToggleSidebar={toggleSidebar}
-        onOpenAi={openAi}
+        onOpenAi={() => setTab('ai')}
       />
 
-      <div className={cn('grid h-[max(38rem,calc(100svh-6rem))] items-stretch gap-4 xl:gap-5', isXl && sidebarOpen ? 'xl:grid-cols-[minmax(0,1fr)_380px]' : 'grid-cols-1')}>
-        <Conversation ticket={ticket} />
-        {isXl && sidebarOpen && <aside aria-label="Ticket details" className="min-h-0 min-w-0 overflow-y-auto rounded-2xl bg-muted/40 p-2 ring-1 ring-border">{sidebar}</aside>}
+      <div role="tablist" aria-label="Ticket sections" className="mb-4 flex gap-1 overflow-x-auto border-b border-border [&::-webkit-scrollbar]:hidden">
+        {TABS.map((t) => {
+          const { label, icon: Icon } = TAB_META[t]
+          const on = t === tab
+          return (
+            <button
+              key={t}
+              role="tab"
+              id={`tab-${t}`}
+              aria-selected={on}
+              aria-controls={`panel-${t}`}
+              onClick={() => setTab(t)}
+              className={cn(
+                '-mb-px inline-flex shrink-0 items-center gap-2 border-b-2 px-4 py-2.5 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:outline-none',
+                on ? 'border-primary text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground',
+              )}
+            >
+              <Icon className="size-4" /> {label}
+              {counts[t] ? <span className={cn('rounded-md px-1.5 py-px text-xs font-semibold tabular-nums', on ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground')}>{counts[t]}</span> : null}
+            </button>
+          )
+        })}
       </div>
 
-      {!isXl && (
-        <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
-          <SheetContent side="right" className="w-full gap-0 overflow-y-auto sm:max-w-md">
-            <SheetHeader className="border-b">
-              <SheetTitle>{ticket.reference} details</SheetTitle>
-              <SheetDescription>Workflow, AI triage, duplicates and history.</SheetDescription>
-            </SheetHeader>
-            <div className="p-4">{sidebar}</div>
-          </SheetContent>
-        </Sheet>
-      )}
+      <div role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`}>
+        {tab === 'conversation' && (
+          <div className="h-[max(34rem,calc(100svh-19rem))]">
+            <Conversation ticket={ticket} />
+          </div>
+        )}
+        {tab === 'details' && (
+          <DetailsTab ticket={ticket} categories={categories.data ?? []} members={members.data ?? []} meId={user?.id} saving={update.isPending} onUpdate={(data) => update.mutate(data)} onAssign={assign} />
+        )}
+        {tab === 'ai' && <AiTab ticket={ticket} onRerun={() => rerun.mutate()} rerunning={rerun.isPending} />}
+        {tab === 'similar' && <SimilarTab similar={similar.data ?? []} slug={slug} />}
+        {tab === 'activity' && <ActivityTab ticket={ticket} />}
+      </div>
       <ConfirmDialog options={confirm} onClose={() => setConfirm(null)} />
     </div>
   )

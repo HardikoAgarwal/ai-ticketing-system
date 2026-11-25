@@ -53,7 +53,7 @@ export function KbPlayground() {
           <div className="mt-2.5 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
             Try:
             {EXAMPLES.map((e) => (
-              <button key={e} type="button" onClick={() => run(e)} className="rounded-full border bg-background px-2.5 py-1 transition-colors hover:border-primary/40 hover:text-foreground">
+              <button key={e} type="button" onClick={() => run(e)} className="rounded-md border bg-background px-2.5 py-1 transition-colors hover:border-primary/40 hover:text-foreground">
                 {e}
               </button>
             ))}

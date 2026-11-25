@@ -114,9 +114,9 @@ function SidebarLink({ item, collapsed, onNavigate }: { item: NavItem; collapsed
       className={({ isActive }) => {
         const active = isActive && !item.to.includes('?')
         return cn(
-          'group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-sidebar-foreground/75 transition-colors outline-none hover:bg-sidebar-accent/70 hover:text-sidebar-accent-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring',
+          'group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-sidebar-foreground/80 transition-colors outline-none hover:bg-sidebar-accent/70 hover:text-sidebar-accent-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring',
           collapsed && 'justify-center px-0',
-          active && 'bg-sidebar-accent font-semibold text-sidebar-accent-foreground shadow-[inset_3px_0_0_0_var(--sidebar-primary)] hover:bg-sidebar-accent',
+          active && 'bg-primary/10 font-semibold text-primary hover:bg-primary/15',
         )
       }}
     >

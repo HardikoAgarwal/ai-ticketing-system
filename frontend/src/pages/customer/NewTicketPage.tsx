@@ -126,7 +126,7 @@ export function NewTicketPage() {
         <form onSubmit={submit} className="space-y-7 rounded-2xl border border-border bg-card p-5 shadow-card sm:p-7" noValidate>
           <section aria-labelledby="step1" className="border-b border-border pb-7">
             <h2 id="step1" className="mb-4 flex items-center gap-2.5 text-[15px] font-semibold">
-              <span className="flex size-7 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">1</span> What is this about?
+              <span className="flex size-7 items-center justify-center rounded-md bg-primary text-xs font-bold text-primary-foreground">1</span> What is this about?
             </h2>
             {records.isLoading ? (
               <p className="text-sm text-muted-foreground">Loading your items…</p>
@@ -142,7 +142,7 @@ export function NewTicketPage() {
 
           <section aria-labelledby="step2" className="space-y-4">
             <h2 id="step2" className="flex items-center gap-2.5 text-[15px] font-semibold">
-              <span className="flex size-7 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">2</span> Describe the issue
+              <span className="flex size-7 items-center justify-center rounded-md bg-primary text-xs font-bold text-primary-foreground">2</span> Describe the issue
             </h2>
             <div className="space-y-1.5">
               <Label htmlFor="subject">Title</Label>

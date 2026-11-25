@@ -399,10 +399,10 @@ function DraftDock({
   if (draft.status === 'failed') {
     return (
       <div className="mb-3 flex">
-        <div className="flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 py-1 pr-1 pl-3 text-xs text-amber-900 shadow-md">
+        <div className="flex items-center gap-2 rounded-md border border-amber-200 bg-amber-50 py-1 pr-1 pl-3 text-xs text-amber-900 shadow-md">
           <AlertTriangle className="size-3.5 text-amber-600" />
           <span className="max-w-[60vw] truncate">{draft.error || 'AI draft unavailable'}</span>
-          <Button variant="ghost" size="xs" onClick={onRegenerate} disabled={regenerating} className="h-6 rounded-full px-2 text-amber-900 hover:bg-amber-100">
+          <Button variant="ghost" size="xs" onClick={onRegenerate} disabled={regenerating} className="h-6 rounded-md px-2 text-amber-900 hover:bg-amber-100">
             <RefreshCw className={cn(regenerating && 'animate-spin')} /> Try again
           </Button>
         </div>
@@ -431,7 +431,7 @@ function DraftDock({
               <div className="min-w-0 flex-1">
                 <p className="flex items-center gap-2 text-sm font-semibold">
                   <span className="bg-linear-to-r from-violet-600 to-fuchsia-600 bg-clip-text text-transparent">AI draft</span>
-                  <span className="inline-flex items-center gap-1 rounded-full bg-violet-50 px-2 py-0.5 text-[11px] font-medium text-violet-700 ring-1 ring-violet-600/20 ring-inset">
+                  <span className="inline-flex items-center gap-1 rounded-md bg-violet-50 px-2 py-0.5 text-[11px] font-medium text-violet-700 ring-1 ring-violet-600/20 ring-inset">
                     {generating && <Loader2 className="size-3 animate-spin" />}
                     {generating ? 'Writing…' : inEditor ? 'In your reply' : 'Ready to review'}
                   </span>
@@ -488,10 +488,10 @@ function DraftDock({
         <button
           type="button"
           onClick={onToggle}
-          className="ai-ring rounded-full shadow-md transition-transform hover:-translate-y-0.5"
+          className="ai-ring rounded-md shadow-md transition-transform hover:-translate-y-0.5"
           aria-label="Show AI draft"
         >
-          <span className="flex items-center gap-2 rounded-full bg-card py-1.5 pr-3 pl-1.5 text-xs">
+          <span className="flex items-center gap-2 rounded-md bg-card py-1.5 pr-3 pl-1.5 text-xs">
             <AiMark className={cn('size-6 rounded-full', generating && 'animate-pulse')} />
             <span className="bg-linear-to-r from-violet-600 to-fuchsia-600 bg-clip-text font-semibold text-transparent">AI draft</span>
             <span className="text-muted-foreground">{summary}</span>

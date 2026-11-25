@@ -3,6 +3,7 @@ import { Lock, MessagesSquare } from 'lucide-react'
 import { Fragment, useEffect, useRef } from 'react'
 
 import { Composer } from '@/components/agent/Composer'
+import { Chip } from '@/components/dashboard/Chip'
 import { surface } from '@/components/dashboard/surface'
 import { RelativeTime } from '@/components/common'
 import { AttachmentList, ChatBubble, DayDivider, MessageBubble, PersonAvatar } from '@/components/tickets/Thread'
@@ -21,16 +22,14 @@ function dayLabel(iso: string): string {
 function NoteBubble({ note }: { note: Message }) {
   return (
     <div className="mx-auto w-full max-w-[92%]">
-      <div className="rounded-2xl border border-amber-300/70 border-l-4 border-l-amber-400 bg-amber-50 px-4 py-3 shadow-sm">
+      <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-500/25 dark:bg-amber-500/10">
         <div className="mb-1.5 flex flex-wrap items-center gap-2 text-xs">
-          <span className="flex size-6 items-center justify-center rounded-full bg-amber-200/70 text-[10px] font-semibold text-amber-900">{initials(note.sender_name)}</span>
-          <span className="font-semibold text-amber-950">{note.sender_name}</span>
-          <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-800 ring-1 ring-amber-300/60 ring-inset">
-            <Lock className="size-3" /> Internal note · team only
-          </span>
-          <RelativeTime value={note.created_at} className="ml-auto text-amber-800/70" />
+          <span className="flex size-6 items-center justify-center rounded-full bg-amber-200/70 text-[10px] font-semibold text-amber-900 dark:text-amber-200">{initials(note.sender_name)}</span>
+          <span className="font-semibold text-foreground">{note.sender_name}</span>
+          <Chip tone="amber" icon={Lock}>Internal note · team only</Chip>
+          <RelativeTime value={note.created_at} className="ml-auto text-muted-foreground" />
         </div>
-        <p className="text-[15px] leading-relaxed whitespace-pre-wrap text-amber-950/90">{note.body}</p>
+        <p className="text-[15px] leading-relaxed whitespace-pre-wrap text-foreground/90">{note.body}</p>
       </div>
     </div>
   )
@@ -54,19 +53,15 @@ export function Conversation({ ticket }: { ticket: StaffTicketDetail }) {
 
   return (
     <section aria-label="Conversation" className={cn(surface, 'flex h-full min-h-0 flex-col overflow-hidden')}>
-      <header className="flex min-h-12 shrink-0 items-center gap-2.5 border-b border-border bg-muted/50 px-4 py-2.5 text-sm sm:px-5">
-        <span className="flex size-7 items-center justify-center rounded-lg bg-blue-100 text-blue-700 ring-1 ring-blue-200 ring-inset">
+      <header className="flex min-h-14 shrink-0 items-center gap-2.5 border-b border-border px-4 py-3 text-sm sm:px-5">
+        <span className="flex size-8 items-center justify-center rounded-lg border border-border bg-muted text-muted-foreground">
           <MessagesSquare className="size-4" />
         </span>
         <h2 className="font-semibold tracking-tight">Conversation</h2>
-        <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+        <Chip tone="slate">
           {thread.filter((m) => !m.is_internal).length + 1} {thread.filter((m) => !m.is_internal).length === 0 ? 'message' : 'messages'}
-        </span>
-        {thread.some((m) => m.is_internal) && (
-          <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-800 ring-1 ring-amber-300/60 ring-inset">
-            <Lock className="size-3" /> {thread.filter((m) => m.is_internal).length} internal
-          </span>
-        )}
+        </Chip>
+        {thread.some((m) => m.is_internal) && <Chip tone="amber" icon={Lock}>{thread.filter((m) => m.is_internal).length} internal</Chip>}
       </header>
 
       <div ref={scrollRef} className="min-h-[12rem] flex-1 space-y-6 overflow-y-auto scroll-smooth px-4 py-6 sm:px-8" tabIndex={0} aria-label="Message history">

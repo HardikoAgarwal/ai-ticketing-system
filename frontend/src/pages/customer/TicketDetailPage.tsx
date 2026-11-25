@@ -125,7 +125,7 @@ export function TicketDetailPage() {
           <span className="rounded-md bg-muted px-2 py-1 font-mono text-xs font-semibold text-foreground/80">{ticket.reference}</span>
           <StatusBadge status={ticket.status} audience="requester" size="card" />
           {ticket.record && (
-            <span className="inline-flex h-7 items-center gap-1.5 rounded-full border bg-background px-3 text-[13px] font-medium text-muted-foreground">
+            <span className="inline-flex h-7 items-center gap-1.5 rounded-md border bg-background px-3 text-[13px] font-medium text-muted-foreground">
               <Package className="size-3.5" /> {ticket.record.title}
             </span>
           )}

@@ -135,7 +135,7 @@ export function CategoriesSection({ readOnly }: { readOnly: boolean }) {
                       <p className="flex flex-wrap items-center gap-2 text-sm font-semibold">
                         {c.name}
                         {c.is_default && (
-                          <span title="Tickets that match nothing else land here. It can’t be deleted." className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+                          <span title="Tickets that match nothing else land here. It can’t be deleted." className="rounded-md bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
                             Default
                           </span>
                         )}

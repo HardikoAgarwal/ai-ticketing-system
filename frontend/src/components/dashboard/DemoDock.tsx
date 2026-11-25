@@ -131,7 +131,7 @@ export function DemoDock() {
             className="pointer-events-auto w-[calc(100vw-1.5rem)] overflow-hidden border bg-card text-card-foreground shadow-2xl ring-1 ring-black/5 sm:w-[24rem]"
           >
             <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.06, duration: 0.2 }}>
-              <header className="flex items-start gap-3 border-b bg-primary px-5 py-4 text-primary-foreground">
+              <header className="flex items-start gap-3 border-b bg-[#18181b] px-5 py-4 text-white dark:bg-[#2a2a2e]">
                 <span className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-xl bg-white/15 text-white">
                   <Sparkles className="size-[18px]" />
                 </span>
@@ -142,7 +142,7 @@ export function DemoDock() {
                       <span className="size-1.5 rounded-full bg-emerald-500" /> Private sandbox
                     </span>
                   </p>
-                  <p className="mt-0.5 truncate text-xs text-primary-foreground/75">{brief?.name}</p>
+                  <p className="mt-0.5 truncate text-xs text-white/70">{brief?.name}</p>
                 </div>
                 <Button ref={closeRef} variant="ghost" size="icon-sm" onClick={close} aria-label="Collapse demo controls" className="-mr-2 -mt-1 text-white hover:bg-white/15 hover:text-white">
                   <ChevronDown />
@@ -235,7 +235,7 @@ export function DemoDock() {
             ref={pillRef}
             layoutId="demo-dock"
             transition={SPRING}
-            style={{ borderRadius: 999, transformOrigin: 'bottom right' }}
+            style={{ borderRadius: 12, transformOrigin: 'bottom right' }}
             type="button"
             onClick={() => setOpen(true)}
             aria-expanded={false}

@@ -17,9 +17,9 @@ import { cn } from '@/lib/utils'
 import { Field, Section } from './settings-shared'
 
 const ROLES: { role: Role; label: string; icon: typeof Crown; pill: string; can: string[] }[] = [
-  { role: 'OWNER', label: 'Owner', icon: Crown, pill: 'bg-violet-50 text-violet-700 ring-violet-600/20', can: ['Everything an admin can do', 'Created the workspace'] },
-  { role: 'ADMIN', label: 'Admin', icon: Shield, pill: 'bg-indigo-50 text-indigo-700 ring-indigo-600/20', can: ['Change settings, SLA and categories', 'Manage the knowledge base', 'Invite teammates', 'Work tickets'] },
-  { role: 'AGENT', label: 'Agent', icon: Headphones, pill: 'bg-emerald-50 text-emerald-700 ring-emerald-600/20', can: ['Work the queue and reply', 'Add internal notes', 'Read settings and articles'] },
+  { role: 'OWNER', label: 'Owner', icon: Crown, pill: 'bg-violet-50 text-violet-700 border border-violet-200', can: ['Everything an admin can do', 'Created the workspace'] },
+  { role: 'ADMIN', label: 'Admin', icon: Shield, pill: 'bg-indigo-50 text-indigo-700 border border-indigo-200', can: ['Change settings, SLA and categories', 'Manage the knowledge base', 'Invite teammates', 'Work tickets'] },
+  { role: 'AGENT', label: 'Agent', icon: Headphones, pill: 'bg-emerald-50 text-emerald-700 border border-emerald-200', can: ['Work the queue and reply', 'Add internal notes', 'Read settings and articles'] },
   { role: 'REQUESTER', label: 'Customer', icon: UserRound, pill: 'bg-slate-100 text-slate-700 ring-slate-500/20', can: ['Raise and follow own tickets', 'See help article suggestions', 'Never sees notes or triage'] },
 ]
 const META = Object.fromEntries(ROLES.map((r) => [r.role, r])) as Record<Role, (typeof ROLES)[number]>

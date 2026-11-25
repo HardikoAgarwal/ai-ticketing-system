@@ -1,20 +1,21 @@
 import { differenceInMinutes, parseISO } from 'date-fns'
 import { Archive, CheckCheck, Clock, Flame, Inbox, MessageCircleReply, TriangleAlert, type LucideIcon } from 'lucide-react'
 
+import { CHIP_TONES, type ChipTone } from '@/components/dashboard/Chip'
 import { cn } from '@/lib/utils'
 import type { StaffTicket } from '@/lib/types'
 
 export type StateKind = 'message' | 'ticket' | 'overdue' | 'atrisk' | 'critical' | 'resolved' | 'closed' | 'aifailed'
 
-const VARIANTS: Record<StateKind, { cls: string; icon: LucideIcon }> = {
-  message: { cls: 'bg-blue-600 text-white shadow-blue-600/30', icon: MessageCircleReply },
-  ticket: { cls: 'bg-indigo-600 text-white shadow-indigo-600/30', icon: Inbox },
-  overdue: { cls: 'bg-red-600 text-white shadow-red-600/30', icon: TriangleAlert },
-  critical: { cls: 'bg-[#991b1b] text-white shadow-red-800/30', icon: Flame },
-  atrisk: { cls: 'bg-amber-400 text-[#3b2300] shadow-amber-500/30', icon: Clock },
-  resolved: { cls: 'bg-emerald-600 text-white shadow-emerald-600/30', icon: CheckCheck },
-  closed: { cls: 'bg-zinc-600 text-white shadow-zinc-600/30', icon: Archive },
-  aifailed: { cls: 'bg-orange-500 text-white shadow-orange-500/30', icon: TriangleAlert },
+const VARIANTS: Record<StateKind, { tone: ChipTone; icon: LucideIcon }> = {
+  message: { tone: 'blue', icon: MessageCircleReply },
+  ticket: { tone: 'green', icon: Inbox },
+  overdue: { tone: 'red', icon: TriangleAlert },
+  critical: { tone: 'red', icon: Flame },
+  atrisk: { tone: 'amber', icon: Clock },
+  resolved: { tone: 'green', icon: CheckCheck },
+  closed: { tone: 'slate', icon: Archive },
+  aifailed: { tone: 'amber', icon: TriangleAlert },
 }
 
 /** Strong, filled badge for the state that needs attention. Bigger and louder than the calm info badges. */
@@ -22,11 +23,11 @@ export function StateBadge({ kind, label, pulse, className }: { kind: StateKind;
   const v = VARIANTS[kind]
   const Icon = v.icon
   return (
-    <span className={cn('inline-flex h-8 items-center gap-1.5 rounded-md px-3 text-[13px] font-semibold whitespace-nowrap shadow-sm', v.cls, className)}>
+    <span className={cn('inline-flex h-7 items-center gap-1.5 rounded-lg border px-2.5 text-xs font-semibold whitespace-nowrap', CHIP_TONES[v.tone], className)}>
       {pulse ? (
         <span className="relative flex size-2.5 items-center justify-center" aria-hidden>
-          <span className="absolute inline-flex size-full animate-ping rounded-full bg-white/70" />
-          <span className="relative size-1.5 rounded-full bg-white" />
+          <span className="absolute inline-flex size-full animate-ping rounded-full bg-current opacity-40" />
+          <span className="relative size-1.5 rounded-full bg-current" />
         </span>
       ) : (
         <Icon className="size-3.5 shrink-0" />
