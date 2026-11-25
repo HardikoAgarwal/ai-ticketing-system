@@ -33,7 +33,7 @@ function RecordCard({ record, selected, onSelect }: { record: WorkspaceRecord | 
       onClick={onSelect}
       aria-pressed={selected}
       className={cn(
-        'flex w-full items-start gap-3 rounded-xl border bg-card p-3 text-left transition-colors hover:border-primary/50',
+        'flex w-full items-start gap-3 rounded-xl border border-border bg-card p-3.5 text-left shadow-xs transition-all hover:border-primary/50 hover:shadow-sm',
         selected && 'border-primary bg-primary/[0.04] ring-2 ring-primary/20',
       )}
     >
@@ -123,10 +123,10 @@ export function NewTicketPage() {
       <PageHeader title="How can we help?" description="Tell us what's going on. A few details up front means fewer back-and-forths." />
 
       <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
-        <form onSubmit={submit} className="space-y-6 rounded-2xl border bg-card p-5 shadow-xs sm:p-6" noValidate>
-          <section aria-labelledby="step1">
-            <h2 id="step1" className="mb-3 flex items-center gap-2 text-sm font-semibold">
-              <span className="flex size-6 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">1</span> What is this about?
+        <form onSubmit={submit} className="space-y-7 rounded-2xl border border-border bg-card p-5 shadow-card sm:p-7" noValidate>
+          <section aria-labelledby="step1" className="border-b border-border pb-7">
+            <h2 id="step1" className="mb-4 flex items-center gap-2.5 text-[15px] font-semibold">
+              <span className="flex size-7 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">1</span> What is this about?
             </h2>
             {records.isLoading ? (
               <p className="text-sm text-muted-foreground">Loading your items…</p>
@@ -141,8 +141,8 @@ export function NewTicketPage() {
           </section>
 
           <section aria-labelledby="step2" className="space-y-4">
-            <h2 id="step2" className="flex items-center gap-2 text-sm font-semibold">
-              <span className="flex size-6 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">2</span> Describe the issue
+            <h2 id="step2" className="flex items-center gap-2.5 text-[15px] font-semibold">
+              <span className="flex size-7 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">2</span> Describe the issue
             </h2>
             <div className="space-y-1.5">
               <Label htmlFor="subject">Title</Label>
@@ -204,7 +204,7 @@ export function NewTicketPage() {
         </form>
 
         <aside className="space-y-4 lg:sticky lg:top-24 lg:self-start">
-          <div className="rounded-2xl border bg-card p-5 shadow-xs">
+          <div className="rounded-2xl border border-border bg-card p-5 shadow-card">
             <h3 className="text-sm font-semibold">{selected ? selected.title : 'Selected item'}</h3>
             {selected ? (
               <dl className="mt-3 space-y-2 text-sm">
@@ -223,7 +223,7 @@ export function NewTicketPage() {
               <p className="mt-2 text-sm text-muted-foreground">Pick an item to attach its details so we don't have to ask for them.</p>
             )}
           </div>
-          <div className="rounded-2xl border bg-muted/40 p-5 text-sm text-muted-foreground">
+          <div className="rounded-2xl border border-border bg-muted/50 p-5 text-sm text-muted-foreground">
             <p className="font-medium text-foreground">Tips for a quick answer</p>
             <ul className="mt-2 list-disc space-y-1 pl-4">
               <li>Say what you expected and what happened instead.</li>

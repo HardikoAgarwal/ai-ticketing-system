@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils'
 export function Logo({ subtitle, name = 'Helpdesk AI' }: { subtitle?: string; name?: string }) {
   return (
     <div className="flex items-center gap-2">
-      <div className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+      <div className="flex size-8 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-xs">
         <LifeBuoy className="size-4" />
       </div>
       <div className="leading-tight">
@@ -20,14 +20,24 @@ export function Logo({ subtitle, name = 'Helpdesk AI' }: { subtitle?: string; na
   )
 }
 
+/** Workspace tile: first letter on the brand colour. */
+export function WorkspaceMark({ name = 'H', className }: { name?: string; className?: string }) {
+  return (
+    <span className={cn('flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary text-sm font-bold text-primary-foreground shadow-xs', className)} aria-hidden>
+      {name.trim().charAt(0).toUpperCase() || 'H'}
+    </span>
+  )
+}
+
+/** The one page header pattern: title + description on the left, primary actions on the right. */
 export function PageHeader({ title, description, actions }: { title: string; description?: ReactNode; actions?: ReactNode }) {
   return (
-    <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-      <div>
-        <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">{title}</h1>
-        {description && <p className="mt-1 text-sm text-muted-foreground">{description}</p>}
+    <div className="mb-7 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+      <div className="min-w-0">
+        <h1 className="text-2xl font-semibold tracking-tight text-balance sm:text-[1.75rem] sm:leading-9">{title}</h1>
+        {description && <p className="mt-1 max-w-2xl text-sm text-muted-foreground sm:text-[15px]">{description}</p>}
       </div>
-      {actions && <div className="flex shrink-0 items-center gap-2">{actions}</div>}
+      {actions && <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div>}
     </div>
   )
 }
@@ -49,14 +59,14 @@ export function RelativeTime({ value, className }: { value: string | null | unde
 export function ConnectionIndicator() {
   const state = useConnectionState()
   const meta = {
-    live: { label: 'Live', dot: 'bg-emerald-500', hint: 'Updates appear instantly' },
+    live: { label: 'Live', dot: 'bg-emerald-500 shadow-[0_0_0_3px_rgb(16_185_129/0.2)]', hint: 'Updates appear instantly' },
     connecting: { label: 'Connecting…', dot: 'bg-amber-400 animate-pulse', hint: 'Establishing live connection' },
     offline: { label: 'Reconnecting…', dot: 'bg-zinc-400', hint: 'Live updates paused; refreshing every 15s' },
   }[state]
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <span className="inline-flex items-center gap-1.5 rounded-full border bg-card px-2.5 py-1 text-xs text-muted-foreground">
+        <span className="inline-flex items-center gap-1.5 rounded-full border bg-card px-2.5 py-1 text-xs font-medium text-muted-foreground shadow-xs">
           <span className={cn('size-2 rounded-full', meta.dot)} />
           {meta.label}
         </span>
@@ -86,7 +96,7 @@ export function Stat({ label, value, hint, icon, tone, accent = 'default' }: {
   const resolved = tone === 'warning' ? 'amber' : tone === 'danger' ? 'red' : tone === 'success' ? 'green' : accent
   const a = STAT_ACCENTS[resolved]
   return (
-    <div className="rounded-2xl border bg-card p-3.5 shadow-xs sm:p-5">
+    <div className="rounded-2xl border border-border bg-card p-3.5 shadow-card sm:p-5">
       <div className="flex items-start justify-between gap-2 sm:gap-3">
         <p className="text-[10px] leading-tight font-semibold tracking-wide text-muted-foreground uppercase sm:text-xs">{label}</p>
         {icon && <span className={cn('hidden size-9 items-center justify-center rounded-xl sm:flex', a.tile)}>{icon}</span>}

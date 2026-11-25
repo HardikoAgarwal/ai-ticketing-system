@@ -10,6 +10,7 @@ import { Toaster } from '@/components/ui/sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { ApiError } from '@/lib/api'
 import { RealtimeProvider } from '@/realtime/RealtimeProvider'
+import { ThemeProvider } from '@/theme/ThemeProvider'
 
 import App from './App'
 
@@ -30,6 +31,7 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
+        <ThemeProvider>
         <AuthProvider>
           <RealtimeProvider>
             <TooltipProvider delayDuration={300}>
@@ -38,6 +40,7 @@ createRoot(document.getElementById('root')!).render(
             </TooltipProvider>
           </RealtimeProvider>
         </AuthProvider>
+        </ThemeProvider>
       </BrowserRouter>
     </QueryClientProvider>
   </StrictMode>,

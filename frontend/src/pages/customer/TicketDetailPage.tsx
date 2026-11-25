@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, CheckCircle2, Loader2, Package, RotateCcw, Send, Star } from 'lucide-react'
+import { ArrowLeft, CheckCircle2, Loader2, MessagesSquare, Package, RotateCcw, Send, Star } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -7,6 +7,7 @@ import { toast } from 'sonner'
 import { useWorkspace } from '@/auth/workspace'
 import { StatusBadge } from '@/components/badges'
 import { RelativeTime } from '@/components/common'
+import { Surface, SurfaceHeader, surface } from '@/components/dashboard/surface'
 import { usePersistentText } from '@/components/agent/Composer'
 import { ErrorState, ListSkeleton } from '@/components/states'
 import { AttachmentList, ChatBubble, MessageBubble, PersonAvatar } from '@/components/tickets/Thread'
@@ -30,9 +31,10 @@ function Csat({ ticketId, onDone }: { ticketId: number; onDone: () => void }) {
     onError: (err) => toast.error(errorMessage(err)),
   })
   return (
-    <div className="rounded-2xl border bg-card p-5 shadow-xs">
-      <p className="text-sm font-semibold">How did we do?</p>
-      <div className="mt-2 flex gap-1" role="radiogroup" aria-label="Rating">
+    <div className={cn(surface, "p-5 sm:p-6")}>
+      <p className="text-base font-semibold">How did we do?</p>
+      <p className="mt-0.5 text-sm text-muted-foreground">Your rating helps the team keep improving.</p>
+      <div className="mt-3 flex gap-1" role="radiogroup" aria-label="Rating">
         {[1, 2, 3, 4, 5].map((n) => (
           <button key={n} type="button" role="radio" aria-checked={score === n} aria-label={`${n} star${n > 1 ? 's' : ''}`} onClick={() => setScore(n)} className="rounded p-0.5 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none">
             <Star className={cn('size-7 transition-colors', n <= score ? 'fill-amber-400 text-amber-400' : 'text-muted-foreground/40')} />
@@ -118,18 +120,18 @@ export function TicketDetailPage() {
         <ArrowLeft className="size-4" /> My tickets
       </Link>
 
-      <header className="mb-5">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="font-mono text-sm text-muted-foreground">{ticket.reference}</span>
-          <StatusBadge status={ticket.status} audience="requester" />
+      <header className={cn(surface, 'mb-5 p-5 sm:p-6')}>
+        <div className="flex flex-wrap items-center gap-2.5">
+          <span className="rounded-md bg-muted px-2 py-1 font-mono text-xs font-semibold text-foreground/80">{ticket.reference}</span>
+          <StatusBadge status={ticket.status} audience="requester" size="card" />
           {ticket.record && (
-            <span className="inline-flex items-center gap-1.5 rounded-full border bg-card px-2.5 py-1 text-xs text-muted-foreground">
+            <span className="inline-flex h-7 items-center gap-1.5 rounded-full border bg-background px-3 text-[13px] font-medium text-muted-foreground">
               <Package className="size-3.5" /> {ticket.record.title}
             </span>
           )}
         </div>
-        <h1 className="mt-2 text-xl font-semibold tracking-tight sm:text-2xl">{ticket.subject}</h1>
-        <p className="mt-1 text-xs text-muted-foreground">
+        <h1 className="mt-3 text-xl font-semibold tracking-tight text-balance sm:text-2xl">{ticket.subject}</h1>
+        <p className="mt-1.5 text-[13px] text-muted-foreground">
           Opened <RelativeTime value={ticket.created_at} />
         </p>
       </header>
@@ -154,7 +156,9 @@ export function TicketDetailPage() {
         </div>
       )}
 
-      <section aria-label="Conversation" className="space-y-5 rounded-2xl border bg-card p-4 shadow-xs sm:p-6">
+      <Surface aria-label="Conversation">
+        <SurfaceHeader icon={MessagesSquare} tone="violet" title="Conversation" right={<span className="text-xs text-muted-foreground">{ticket.messages.length} message{ticket.messages.length === 1 ? '' : 's'}</span>} />
+        <div className="space-y-5 p-4 sm:p-6">
         <ChatBubble side="right" name="You" variant="customer" time={ticket.created_at} avatar={<PersonAvatar name={user?.full_name ?? 'You'} variant="customer" />}>
           <p className="whitespace-pre-wrap">{ticket.description}</p>
           <div className="mt-3 empty:hidden">
@@ -166,7 +170,8 @@ export function TicketDetailPage() {
         ))}
         {thread.length === 0 && <p className="text-center text-sm text-muted-foreground">Thanks for reaching out. We'll reply here soon.</p>}
         <div ref={endRef} />
-      </section>
+        </div>
+      </Surface>
 
       {(resolved || closed) && !ticket.csat_score && (
         <div className="mt-5">
@@ -179,7 +184,7 @@ export function TicketDetailPage() {
         </p>
       )}
 
-      <div className="mt-5 rounded-2xl border bg-card p-4 shadow-xs">
+      <div className={cn(surface, "mt-5 p-4 sm:p-5")}>
         <Textarea
           value={reply}
           onChange={(e) => setReply(e.target.value)}

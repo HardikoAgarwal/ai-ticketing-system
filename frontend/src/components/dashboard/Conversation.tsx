@@ -54,7 +54,7 @@ export function Conversation({ ticket }: { ticket: StaffTicketDetail }) {
 
   return (
     <section aria-label="Conversation" className={cn(surface, 'flex h-[max(38rem,calc(100svh-5rem))] min-h-0 flex-col overflow-hidden')}>
-      <header className="flex min-h-12 shrink-0 items-center gap-2.5 border-b border-slate-200/80 bg-slate-50/80 px-4 py-2.5 text-sm sm:px-5">
+      <header className="flex min-h-12 shrink-0 items-center gap-2.5 border-b border-border bg-muted/50 px-4 py-2.5 text-sm sm:px-5">
         <span className="flex size-7 items-center justify-center rounded-lg bg-blue-100 text-blue-700 ring-1 ring-blue-200 ring-inset">
           <MessagesSquare className="size-4" />
         </span>

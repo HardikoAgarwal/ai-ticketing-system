@@ -14,13 +14,18 @@ import { categoryTone, PRIORITY_FILLS } from '@/lib/constants'
 import { formatDuration, formatNumber } from '@/lib/format'
 
 const SENTIMENT_FILLS = { NEGATIVE: '#f43f5e', NEUTRAL: '#94a3b8', POSITIVE: '#10b981' } as const
+const TOOLTIP = {
+  contentStyle: { background: 'var(--popover)', border: '1px solid var(--border)', borderRadius: 12, boxShadow: 'var(--shadow-pop)', color: 'var(--popover-foreground)', fontSize: 12 },
+  labelStyle: { color: 'var(--muted-foreground)', marginBottom: 2 },
+  cursor: { fill: 'var(--muted)', opacity: 0.5 },
+}
 const pct = (v: number | null | undefined) => (v === null || v === undefined ? '—' : `${Math.round(v * 100)}%`)
 
 function ChartCard({ title, caption, children, empty }: { title: string; caption: string; children: ReactNode; empty?: boolean }) {
   return (
-    <section className="rounded-2xl border bg-card p-5 shadow-xs">
-      <h3 className="text-sm font-semibold">{title}</h3>
-      <p className="mb-3 text-xs text-muted-foreground">{caption}</p>
+    <section className="rounded-2xl border border-border bg-card p-5 shadow-card sm:p-6">
+      <h3 className="text-[15px] font-semibold tracking-tight">{title}</h3>
+      <p className="mb-4 text-[13px] text-muted-foreground">{caption}</p>
       {empty ? <div className="flex h-56 items-center justify-center text-sm text-muted-foreground">No data in this period yet</div> : children}
     </section>
   )
@@ -84,10 +89,10 @@ export function AnalyticsPage() {
               <ChartCard title="Volume" caption="Tickets opened vs resolved per day. A widening gap means the backlog is growing." empty={!data.totals.created}>
                 <ResponsiveContainer width="100%" height={224}>
                   <LineChart data={data.volume}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
-                    <XAxis dataKey="date" tickFormatter={(d) => format(parseISO(d), 'd MMM')} fontSize={11} tickLine={false} axisLine={false} minTickGap={24} />
-                    <YAxis allowDecimals={false} fontSize={11} tickLine={false} axisLine={false} width={28} />
-                    <Tooltip labelFormatter={(d) => format(parseISO(String(d)), 'd MMM yyyy')} />
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
+                    <XAxis dataKey="date" tickFormatter={(d) => format(parseISO(d), 'd MMM')} fontSize={11} tickLine={false} axisLine={false} tick={{ fill: 'var(--muted-foreground)' }} minTickGap={24} />
+                    <YAxis allowDecimals={false} fontSize={11} tickLine={false} axisLine={false} tick={{ fill: 'var(--muted-foreground)' }} width={28} />
+                    <Tooltip {...TOOLTIP} labelFormatter={(d) => format(parseISO(String(d)), 'd MMM yyyy')} />
                     <Line type="monotone" dataKey="created" name="Opened" stroke="var(--chart-2)" strokeWidth={2} dot={false} />
                     <Line type="monotone" dataKey="resolved" name="Resolved" stroke="var(--chart-1)" strokeWidth={2} dot={false} />
                   </LineChart>
@@ -102,7 +107,7 @@ export function AnalyticsPage() {
                       <Cell key={p.key} fill={PRIORITY_FILLS[p.key]} />
                     ))}
                   </Pie>
-                  <Tooltip />
+                  <Tooltip {...TOOLTIP} />
                 </PieChart>
               </ResponsiveContainer>
               <div className="flex flex-wrap justify-center gap-3 text-xs">
@@ -120,10 +125,10 @@ export function AnalyticsPage() {
             <ChartCard title="By category" caption="What customers ask about most. Useful for improving self-serve help content." empty={!data.totals.created}>
               <ResponsiveContainer width="100%" height={240}>
                 <BarChart data={data.by_category} layout="vertical" margin={{ left: 8 }}>
-                  <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e5e7eb" />
-                  <XAxis type="number" allowDecimals={false} fontSize={11} tickLine={false} axisLine={false} />
-                  <YAxis type="category" dataKey="label" fontSize={11} tickLine={false} axisLine={false} width={120} />
-                  <Tooltip />
+                  <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="var(--border)" />
+                  <XAxis type="number" allowDecimals={false} fontSize={11} tickLine={false} axisLine={false} tick={{ fill: 'var(--muted-foreground)' }} />
+                  <YAxis type="category" dataKey="label" fontSize={11} tickLine={false} axisLine={false} tick={{ fill: 'var(--muted-foreground)' }} width={120} />
+                  <Tooltip {...TOOLTIP} />
                   <Bar dataKey="count" name="Tickets" radius={[0, 4, 4, 0]}>
                     {data.by_category.map((c) => (
                       <Cell key={c.key} fill={categoryTone(c.key).fill} />
@@ -136,10 +141,10 @@ export function AnalyticsPage() {
             <ChartCard title="Customer sentiment" caption="AI-read tone of incoming tickets. A rising red share is an early warning." empty={!data.by_sentiment.some((s) => s.count)}>
               <ResponsiveContainer width="100%" height={240}>
                 <BarChart data={data.by_sentiment} margin={{ top: 8 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
-                  <XAxis dataKey="label" fontSize={11} tickLine={false} axisLine={false} />
-                  <YAxis allowDecimals={false} fontSize={11} tickLine={false} axisLine={false} width={28} />
-                  <Tooltip />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
+                  <XAxis dataKey="label" fontSize={11} tickLine={false} axisLine={false} tick={{ fill: 'var(--muted-foreground)' }} />
+                  <YAxis allowDecimals={false} fontSize={11} tickLine={false} axisLine={false} tick={{ fill: 'var(--muted-foreground)' }} width={28} />
+                  <Tooltip {...TOOLTIP} />
                   <Bar dataKey="count" name="Tickets" radius={[4, 4, 0, 0]}>
                     {data.by_sentiment.map((s) => (
                       <Cell key={s.key} fill={SENTIMENT_FILLS[s.key]} />

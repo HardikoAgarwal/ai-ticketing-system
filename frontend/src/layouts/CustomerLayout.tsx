@@ -1,9 +1,9 @@
 import { useQuery } from '@tanstack/react-query'
-import { LifeBuoy } from 'lucide-react'
+import { LifeBuoy, Ticket } from 'lucide-react'
 import { Link, NavLink, Outlet } from 'react-router-dom'
 
 import { useWorkspace } from '@/auth/workspace'
-import { Logo } from '@/components/common'
+import { WorkspaceMark } from '@/components/common'
 import { DemoDock } from '@/components/dashboard/DemoDock'
 import { NotificationBell } from '@/components/NotificationBell'
 import { Button } from '@/components/ui/button'
@@ -18,11 +18,15 @@ export function CustomerLayout() {
   const unread = data?.results.filter((t) => t.has_unread).length ?? 0
 
   return (
-    <div className="min-h-screen">
-      <header className="sticky top-0 z-30 border-b bg-background/90 backdrop-blur">
-        <div className="mx-auto flex h-14 max-w-6xl items-center gap-4 px-4 sm:gap-6">
-          <Link to={base} aria-label={`${brief?.name ?? 'Help'} home`}>
-            <Logo name={brief?.name} subtitle="Help center" />
+    <div className="min-h-screen bg-background">
+      <header className="sticky top-0 z-30 border-b border-border bg-card/85 backdrop-blur">
+        <div className="mx-auto flex h-16 max-w-6xl items-center gap-4 px-4 sm:gap-6 sm:px-6">
+          <Link to={base} aria-label={`${brief?.name ?? 'Help'} home`} className="flex items-center gap-3 rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-ring">
+            <WorkspaceMark name={brief?.name} />
+            <span className="hidden leading-tight min-[420px]:block">
+              <span className="block max-w-44 truncate text-sm font-semibold tracking-tight">{brief?.name}</span>
+              <span className="block text-[11px] text-muted-foreground">Help center</span>
+            </span>
           </Link>
           <nav className="hidden items-center gap-1 sm:flex" aria-label="Primary">
             <NavLink
@@ -30,20 +34,20 @@ export function CustomerLayout() {
               end
               className={({ isActive }) =>
                 cn(
-                  'rounded-md px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground',
-                  isActive && 'bg-accent font-medium text-accent-foreground',
+                  'flex items-center gap-2 rounded-xl px-3.5 py-2 text-sm font-medium text-muted-foreground transition-colors outline-none hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring',
+                  isActive && 'bg-accent font-semibold text-accent-foreground hover:bg-accent',
                 )
               }
             >
-              My tickets
+              <Ticket className="size-4" /> My tickets
               {unread > 0 && (
-                <span className="ml-1.5 inline-flex size-4 items-center justify-center rounded-full bg-primary text-[10px] text-primary-foreground">{unread}</span>
+                <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-[11px] font-semibold text-primary-foreground tabular-nums">{unread}</span>
               )}
             </NavLink>
           </nav>
           <div className="ml-auto flex items-center gap-2 sm:gap-3">
             <NotificationBell />
-            <Button asChild size="sm">
+            <Button asChild size="sm" className="h-9 rounded-xl px-3.5 shadow-xs">
               <Link to={`${base}/tickets/new`}>
                 <LifeBuoy /> Get help
               </Link>
@@ -52,7 +56,7 @@ export function CustomerLayout() {
           </div>
         </div>
       </header>
-      <main className={cn('mx-auto max-w-6xl px-4 py-6 sm:py-8', isDemo && 'pb-24 sm:pb-24')}>
+      <main className={cn('mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-10', isDemo && 'pb-24 sm:pb-24')}>
         <Outlet />
       </main>
       <DemoDock />

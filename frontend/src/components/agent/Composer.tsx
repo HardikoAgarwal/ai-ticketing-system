@@ -165,7 +165,7 @@ export function Composer({ ticket }: { ticket: StaffTicketDetail }) {
   const submitNote = () => note.trim() && !addNote.isPending && addNote.mutate()
 
   return (
-    <div className="shrink-0 border-t border-slate-200/80 bg-slate-50/80 px-3 py-3 sm:px-5 sm:py-4">
+    <div className="shrink-0 border-t border-border bg-muted/50 px-3 py-3 sm:px-5 sm:py-4">
       {!noteMode && !closed && !draftQuery.isLoading && (
         <DraftDock
           draft={draft}

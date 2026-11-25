@@ -6,6 +6,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="AI-assisted, multi-workspace helpdesk: triage, grounded drafts with citations, real-time updates" />
     <title>Helpdesk AI</title>
+    <script>
+      // Apply the saved theme before first paint (no flash). The marketing page (/) never goes dark.
+      try {
+        var t = localStorage.getItem('helpdesk.theme') || 'system';
+        var dark = t === 'dark' || (t === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        if (dark && location.pathname !== '/') document.documentElement.classList.add('dark');
+      } catch (e) {}
+    </script>
   </head>
   <body>
     <div id="root"></div>

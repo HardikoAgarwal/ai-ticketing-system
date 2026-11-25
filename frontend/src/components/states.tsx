@@ -28,11 +28,11 @@ export function EmptyState({
   className?: string
 }) {
   return (
-    <div className={cn('flex flex-col items-center justify-center rounded-xl border border-dashed bg-card px-6 py-12 text-center', className)}>
-      <div className="mb-3 flex size-11 items-center justify-center rounded-full bg-accent text-accent-foreground">
+    <div className={cn('flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-card px-6 py-14 text-center shadow-xs', className)}>
+      <div className="mb-4 flex size-12 items-center justify-center rounded-2xl bg-accent text-accent-foreground ring-8 ring-accent/40">
         <Icon className="size-5" />
       </div>
-      <p className="font-medium">{title}</p>
+      <p className="text-base font-semibold tracking-tight">{title}</p>
       {description && <p className="mt-1 max-w-sm text-sm text-muted-foreground">{description}</p>}
       {action && <div className="mt-4">{action}</div>}
     </div>
@@ -41,7 +41,7 @@ export function EmptyState({
 
 export function ErrorState({ error, onRetry, className }: { error: unknown; onRetry?: () => void; className?: string }) {
   return (
-    <div className={cn('flex flex-col items-center justify-center rounded-xl border border-red-200 bg-red-50/50 px-6 py-10 text-center', className)}>
+    <div className={cn('flex flex-col items-center justify-center rounded-2xl border border-red-200 bg-red-50/60 px-6 py-12 text-center', className)}>
       <AlertTriangle className="mb-2 size-5 text-red-600" />
       <p className="font-medium text-red-900">We couldn't load this</p>
       <p className="mt-1 max-w-sm text-sm text-red-800/80">{errorMessage(error)}</p>

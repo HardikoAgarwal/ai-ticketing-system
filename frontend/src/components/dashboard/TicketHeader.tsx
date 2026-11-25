@@ -79,11 +79,11 @@ export function TicketHeader({
       {/* breadcrumb + page actions */}
       <div className="flex flex-wrap items-center gap-3">
         <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-sm">
-          <Link to={backTo} className="rounded-md px-1.5 py-1 font-medium text-muted-foreground transition-colors hover:bg-white hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:outline-none">
+          <Link to={backTo} className="rounded-md px-1.5 py-1 font-medium text-muted-foreground transition-colors hover:bg-card hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:outline-none">
             Queue
           </Link>
           <ChevronRight className="size-4 text-muted-foreground/60" />
-          <span className="rounded-md bg-white px-2 py-1 font-mono text-[13px] font-semibold shadow-xs ring-1 ring-slate-200">{ticket.reference}</span>
+          <span className="rounded-md bg-card px-2 py-1 font-mono text-[13px] font-semibold shadow-xs ring-1 ring-slate-200">{ticket.reference}</span>
         </nav>
         <div className="ml-auto flex items-center gap-2">
           {canResolve && (
@@ -91,7 +91,7 @@ export function TicketHeader({
               <CheckCheck /> Mark as resolved
             </Button>
           )}
-          <Button variant="outline" className="bg-white shadow-xs" onClick={onToggleSidebar} aria-pressed={sidebarOpen} aria-label={sidebarOpen ? 'Hide ticket details panel' : 'Show ticket details panel'}>
+          <Button variant="outline" className="bg-card shadow-xs" onClick={onToggleSidebar} aria-pressed={sidebarOpen} aria-label={sidebarOpen ? 'Hide ticket details panel' : 'Show ticket details panel'}>
             {sidebarOpen ? <PanelRightClose /> : <PanelRight />} <span className="hidden sm:inline">Details</span>
           </Button>
         </div>

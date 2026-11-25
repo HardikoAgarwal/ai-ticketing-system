@@ -72,7 +72,7 @@ export function FilterButton({ spec, value, onChange }: { spec: FilterSpec; valu
           aria-label={`Filter by ${spec.label}${text ? `, currently ${text}` : ''}`}
           className={cn(
             'group flex h-10 w-full min-w-0 items-center gap-2 rounded-xl border px-3 text-sm font-medium shadow-xs transition-all focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none',
-            text ? 'border-primary/40 bg-primary/[0.08] text-primary' : 'border-slate-200 bg-white text-foreground/80 hover:border-slate-300 hover:bg-slate-50',
+            text ? 'border-primary/40 bg-primary/[0.08] text-primary' : 'border-slate-200 bg-card text-foreground/80 hover:border-slate-300 hover:bg-slate-50',
           )}
         >
           <Icon className={cn('size-4 shrink-0', text ? 'text-primary' : 'text-muted-foreground')} />
@@ -125,7 +125,7 @@ export function ActiveFilterChips({ specs, values, onChange, onClear, extra }: {
     <div className="flex flex-wrap items-center gap-2 border-t border-slate-200/80 pt-4">
       <span className="mr-1 text-xs font-semibold tracking-wide text-muted-foreground uppercase">Active</span>
       {extra?.map((e) => (
-        <button key={e.label} type="button" onClick={e.onRemove} className="inline-flex h-8 items-center gap-1.5 rounded-full bg-slate-900 pr-2 pl-3 text-[13px] font-medium text-white transition-colors hover:bg-slate-700 focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none">
+        <button key={e.label} type="button" onClick={e.onRemove} className="inline-flex h-8 items-center gap-1.5 rounded-full bg-foreground pr-2 pl-3 text-[13px] font-medium text-background transition-colors hover:bg-foreground/80 focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none">
           {e.label} <X className="size-3.5 opacity-80" />
         </button>
       ))}
@@ -158,7 +158,7 @@ export const SORT_OPTIONS = [
 export function SortSelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   return (
     <Select value={value} onValueChange={onChange}>
-      <SelectTrigger aria-label="Sort tickets" className="h-11 w-full min-w-48 rounded-xl border-slate-200 bg-white font-medium shadow-xs sm:w-auto">
+      <SelectTrigger aria-label="Sort tickets" className="h-11 w-full min-w-48 rounded-xl border-slate-200 bg-card font-medium shadow-xs sm:w-auto">
         <ListFilter className="size-4 text-muted-foreground" />
         <span className="text-muted-foreground">Sort:</span>
         <SelectValue />
@@ -200,7 +200,7 @@ export function SearchBox({ value, onChange }: { value: string; onChange: (v: st
         onBlur={() => setFocused(false)}
         placeholder="Search by subject, customer, company or TKT-0001"
         aria-label="Search tickets"
-        className="h-11 rounded-xl border-slate-200 bg-white pr-14 pl-11 text-[15px] shadow-xs"
+        className="h-11 rounded-xl border-slate-200 bg-card pr-14 pl-11 text-[15px] shadow-xs"
       />
       {value ? (
         <button type="button" onClick={() => { onChange(''); ref.current?.focus() }} aria-label="Clear search" className="absolute top-1/2 right-3 flex size-6 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground hover:bg-muted">
@@ -242,7 +242,7 @@ export function QuickViews({ views, value, onChange }: { views: QuickView[]; val
             onClick={() => onChange(v.key)}
             className={cn(
               'flex h-9 shrink-0 items-center gap-2 rounded-lg px-3.5 text-sm font-medium whitespace-nowrap transition-all focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none',
-              on ? 'bg-white text-foreground shadow-sm ring-1 ring-slate-200' : 'text-muted-foreground hover:text-foreground',
+              on ? 'bg-card text-foreground shadow-sm ring-1 ring-slate-200' : 'text-muted-foreground hover:text-foreground',
             )}
           >
             {v.label}
@@ -268,7 +268,7 @@ export function FilterSheet({ specs, values, onChange, onClear, activeCount, chi
   const [open, setOpen] = useState(false)
   return (
     <>
-      <Button variant="outline" onClick={() => setOpen(true)} className="h-11 rounded-xl border-slate-200 bg-white px-3.5 shadow-xs">
+      <Button variant="outline" onClick={() => setOpen(true)} className="h-11 rounded-xl border-slate-200 bg-card px-3.5 shadow-xs">
         <SlidersHorizontal /> Filters
         {activeCount > 0 && <span className="rounded-full bg-primary px-1.5 text-xs font-semibold text-primary-foreground">{activeCount}</span>}
       </Button>
