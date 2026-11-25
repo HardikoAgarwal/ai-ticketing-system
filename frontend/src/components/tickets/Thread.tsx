@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 import { toast } from 'sonner'
 
 import { RelativeTime } from '@/components/common'
+import { Chip } from '@/components/dashboard/Chip'
 import { errorMessage } from '@/lib/api'
 import { useWorkspace } from '@/auth/workspace'
 import { formatBytes, initials } from '@/lib/format'
@@ -39,11 +40,11 @@ export function ChatBubble({
         </div>
         <div
           className={cn(
-            'rounded-2xl px-4 py-3 text-[15px] leading-relaxed shadow-xs',
+            'rounded-xl px-4 py-3 text-[15px] leading-relaxed shadow-xs',
             variant === 'team'
-              ? 'border border-primary/15 bg-primary/[0.07] text-foreground'
-              : 'border bg-card text-foreground',
-            side === 'right' ? 'rounded-br-md' : 'rounded-bl-md',
+              ? 'border border-primary/25 bg-primary/10 text-foreground'
+              : 'border border-border bg-card text-foreground',
+            side === 'right' ? 'rounded-br-sm' : 'rounded-bl-sm',
           )}
         >
           {children}
@@ -57,7 +58,7 @@ export function PersonAvatar({ name, variant }: { name: string; variant: 'team' 
   return (
     <span
       className={cn(
-        'flex size-9 items-center justify-center rounded-full text-xs font-semibold ring-2 ring-background',
+        'flex size-9 items-center justify-center rounded-lg text-xs font-semibold',
         variant === 'team' ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground/80',
       )}
     >
@@ -79,9 +80,7 @@ export function MessageBubble({ message, viewer }: { message: Message; viewer: V
       avatar={<PersonAvatar name={message.sender_name} variant={variant} />}
       meta={
         viewer === 'staff' && message.ai_draft_id ? (
-          <span className="inline-flex items-center gap-1 rounded-md bg-violet-50 px-2 py-0.5 text-[11px] font-medium text-violet-700 ring-1 ring-violet-600/20 ring-inset">
-            <Sparkles className="size-3" /> {message.ai_draft_edited ? 'AI draft, edited' : 'AI draft'}
-          </span>
+          <Chip tone="violet" icon={Sparkles} className="h-5 px-1.5 text-[11px]">{message.ai_draft_edited ? 'AI draft, edited' : 'AI draft'}</Chip>
         ) : viewer === 'requester' && fromTeam ? (
           <span className="inline-flex items-center gap-1 text-muted-foreground">
             <LifeBuoy className="size-3" /> Support
@@ -124,7 +123,7 @@ export function AttachmentList({ ticketId, attachments }: { ticketId: number; at
             key={a.id}
             type="button"
             onClick={() => open(a)}
-            className="group inline-flex items-center gap-2.5 rounded-xl border bg-card py-2 pr-3 pl-2 text-left text-xs shadow-xs transition-colors hover:border-primary/40"
+            className="group inline-flex items-center gap-2.5 rounded-lg border bg-card py-2 pr-3 pl-2 text-left text-xs shadow-xs transition-colors hover:border-primary/40"
           >
             <span className={cn('flex size-8 items-center justify-center rounded-lg', image ? 'bg-sky-50 text-sky-600' : 'bg-rose-50 text-rose-600')}>
               {image ? <ImageIcon className="size-4" /> : <FileText className="size-4" />}

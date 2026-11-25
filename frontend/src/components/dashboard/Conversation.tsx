@@ -4,11 +4,9 @@ import { Fragment, useEffect, useRef } from 'react'
 
 import { Composer } from '@/components/agent/Composer'
 import { Chip } from '@/components/dashboard/Chip'
-import { surface } from '@/components/dashboard/surface'
 import { RelativeTime } from '@/components/common'
 import { AttachmentList, ChatBubble, DayDivider, MessageBubble, PersonAvatar } from '@/components/tickets/Thread'
 import { initials } from '@/lib/format'
-import { cn } from '@/lib/utils'
 import type { Message, StaffTicketDetail } from '@/lib/types'
 
 function dayLabel(iso: string): string {
@@ -24,7 +22,7 @@ function NoteBubble({ note }: { note: Message }) {
     <div className="mx-auto w-full max-w-[92%]">
       <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-500/25 dark:bg-amber-500/10">
         <div className="mb-1.5 flex flex-wrap items-center gap-2 text-xs">
-          <span className="flex size-6 items-center justify-center rounded-full bg-amber-200/70 text-[10px] font-semibold text-amber-900 dark:text-amber-200">{initials(note.sender_name)}</span>
+          <span className="flex size-6 items-center justify-center rounded-md bg-amber-200/70 text-[10px] font-semibold text-amber-900 dark:text-amber-200">{initials(note.sender_name)}</span>
           <span className="font-semibold text-foreground">{note.sender_name}</span>
           <Chip tone="amber" icon={Lock}>Internal note · team only</Chip>
           <RelativeTime value={note.created_at} className="ml-auto text-muted-foreground" />
@@ -43,6 +41,8 @@ export function Conversation({ ticket }: { ticket: StaffTicketDetail }) {
   const thread = first && first.sender_is_requester && first.body === ticket.description ? ticket.messages.slice(1) : ticket.messages
   const name = ticket.requester_profile.name
   const count = ticket.messages.length
+  const customerCount = thread.filter((m) => !m.is_internal).length + 1
+  const internalCount = thread.filter((m) => m.is_internal).length
 
   useEffect(() => {
     const el = scrollRef.current
@@ -52,19 +52,14 @@ export function Conversation({ ticket }: { ticket: StaffTicketDetail }) {
   let lastDay = dayLabel(ticket.created_at)
 
   return (
-    <section aria-label="Conversation" className={cn(surface, 'flex h-full min-h-0 flex-col overflow-hidden')}>
-      <header className="flex min-h-14 shrink-0 items-center gap-2.5 border-b border-border px-4 py-3 text-sm sm:px-5">
-        <span className="flex size-8 items-center justify-center rounded-lg border border-border bg-muted text-muted-foreground">
-          <MessagesSquare className="size-4" />
-        </span>
-        <h2 className="font-semibold tracking-tight">Conversation</h2>
-        <Chip tone="slate">
-          {thread.filter((m) => !m.is_internal).length + 1} {thread.filter((m) => !m.is_internal).length === 0 ? 'message' : 'messages'}
-        </Chip>
-        {thread.some((m) => m.is_internal) && <Chip tone="amber" icon={Lock}>{thread.filter((m) => m.is_internal).length} internal</Chip>}
-      </header>
+    <section aria-label="Conversation" className="flex min-h-0 flex-1 flex-col bg-card">
+      <div className="flex shrink-0 items-center gap-2 border-b border-border px-4 py-2.5 text-xs text-muted-foreground sm:px-5">
+        <MessagesSquare className="size-3.5" />
+        <span className="font-medium text-foreground">{customerCount} {customerCount === 1 ? 'message' : 'messages'} with {name}</span>
+        {internalCount > 0 && <Chip tone="amber" icon={Lock} size="sm">{internalCount} internal {internalCount === 1 ? 'note' : 'notes'}</Chip>}
+      </div>
 
-      <div ref={scrollRef} className="min-h-[12rem] flex-1 space-y-6 overflow-y-auto scroll-smooth px-4 py-6 sm:px-8" tabIndex={0} aria-label="Message history">
+      <div ref={scrollRef} className="min-h-[12rem] flex-1 space-y-6 overflow-y-auto scroll-smooth bg-muted/20 px-4 py-6 sm:px-8" tabIndex={0} aria-label="Message history">
         <DayDivider label={lastDay} />
         <ChatBubble side="left" name={name} variant="customer" time={ticket.created_at} avatar={<PersonAvatar name={name} variant="customer" />}>
           <p className="text-[15px] leading-relaxed whitespace-pre-wrap">{ticket.description}</p>

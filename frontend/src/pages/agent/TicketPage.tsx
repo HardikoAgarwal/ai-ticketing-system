@@ -8,6 +8,8 @@ import { useWorkspace } from '@/auth/workspace'
 import { ConfirmDialog, type ConfirmOptions } from '@/components/ConfirmDialog'
 import { Conversation } from '@/components/dashboard/Conversation'
 import { TicketHeader } from '@/components/dashboard/TicketHeader'
+import { TicketRail } from '@/components/dashboard/TicketRail'
+import { surface } from '@/components/dashboard/surface'
 import { ActivityTab, AiTab, DetailsTab, SimilarTab } from '@/components/dashboard/TicketSidebar'
 import { ErrorState, ListSkeleton } from '@/components/states'
 import { errorMessage } from '@/lib/api'
@@ -132,42 +134,64 @@ export function TicketPage() {
         onOpenAi={() => setTab('ai')}
       />
 
-      <div role="tablist" aria-label="Ticket sections" className="mb-4 flex gap-1 overflow-x-auto border-b border-border [&::-webkit-scrollbar]:hidden">
-        {TABS.map((t) => {
-          const { label, icon: Icon } = TAB_META[t]
-          const on = t === tab
-          return (
-            <button
-              key={t}
-              role="tab"
-              id={`tab-${t}`}
-              aria-selected={on}
-              aria-controls={`panel-${t}`}
-              onClick={() => setTab(t)}
-              className={cn(
-                '-mb-px inline-flex shrink-0 items-center gap-2 border-b-2 px-4 py-2.5 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:outline-none',
-                on ? 'border-primary text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground',
-              )}
-            >
-              <Icon className="size-4" /> {label}
-              {counts[t] ? <span className={cn('rounded-md px-1.5 py-px text-xs font-semibold tabular-nums', on ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground')}>{counts[t]}</span> : null}
-            </button>
-          )
-        })}
-      </div>
-
-      <div role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`}>
-        {tab === 'conversation' && (
-          <div className="h-[max(34rem,calc(100svh-19rem))]">
-            <Conversation ticket={ticket} />
+      {/* Both columns share one fixed height on desktop, so they always end on the same line. */}
+      <div className="grid gap-4 xl:h-[max(40rem,calc(100svh-9rem))] xl:grid-cols-[minmax(0,1fr)_340px] xl:items-stretch">
+        <section aria-label="Ticket workspace" className={cn(surface, 'flex h-[max(42rem,calc(100svh-6rem))] min-h-0 flex-col overflow-hidden xl:h-full')}>
+          <div role="tablist" aria-label="Ticket sections" className="flex shrink-0 gap-1 overflow-x-auto border-b border-border bg-muted/40 px-2 pt-2 [&::-webkit-scrollbar]:hidden">
+            {TABS.map((t) => {
+              const { label, icon: Icon } = TAB_META[t]
+              const on = t === tab
+              return (
+                <button
+                  key={t}
+                  role="tab"
+                  id={`tab-${t}`}
+                  aria-selected={on}
+                  aria-controls={`panel-${t}`}
+                  onClick={() => setTab(t)}
+                  className={cn(
+                    '-mb-px inline-flex shrink-0 items-center gap-2 rounded-t-lg border border-b-0 px-3.5 py-2.5 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:outline-none',
+                    on ? 'border-border bg-card text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground',
+                  )}
+                >
+                  <Icon className={cn('size-4', on && 'text-primary')} /> {label}
+                  {counts[t] ? <span className={cn('rounded-md px-1.5 py-px text-xs font-semibold tabular-nums', on ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground')}>{counts[t]}</span> : null}
+                </button>
+              )
+            })}
           </div>
-        )}
-        {tab === 'details' && (
-          <DetailsTab ticket={ticket} categories={categories.data ?? []} members={members.data ?? []} meId={user?.id} saving={update.isPending} onUpdate={(data) => update.mutate(data)} onAssign={assign} />
-        )}
-        {tab === 'ai' && <AiTab ticket={ticket} onRerun={() => rerun.mutate()} rerunning={rerun.isPending} />}
-        {tab === 'similar' && <SimilarTab similar={similar.data ?? []} slug={slug} />}
-        {tab === 'activity' && <ActivityTab ticket={ticket} />}
+
+          <div role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`} className="flex min-h-0 flex-1 flex-col">
+            {tab === 'conversation' ? (
+              <Conversation ticket={ticket} />
+            ) : (
+              <div className="min-h-0 flex-1 overflow-y-auto bg-muted/30 p-4">
+                {tab === 'details' && (
+                  <DetailsTab ticket={ticket} categories={categories.data ?? []} members={members.data ?? []} meId={user?.id} saving={update.isPending} onUpdate={(data) => update.mutate(data)} onAssign={assign} />
+                )}
+                {tab === 'ai' && <AiTab ticket={ticket} onRerun={() => rerun.mutate()} rerunning={rerun.isPending} />}
+                {tab === 'similar' && <SimilarTab similar={similar.data ?? []} slug={slug} />}
+                {tab === 'activity' && <ActivityTab ticket={ticket} />}
+              </div>
+            )}
+          </div>
+        </section>
+
+        <div className="min-h-0 xl:h-full">
+          <TicketRail
+            ticket={ticket}
+            meId={user?.id}
+            canResolve={canResolve}
+            onTake={() => update.mutate({ assigned_to: user!.id })}
+            onResolve={resolve}
+            onStart={() => update.mutate({ status: 'IN_PROGRESS' })}
+            onRerun={() => rerun.mutate()}
+            rerunning={rerun.isPending}
+            busy={update.isPending}
+            onOpenConversation={() => setTab('conversation')}
+            onOpenAi={() => setTab('ai')}
+          />
+        </div>
       </div>
       <ConfirmDialog options={confirm} onClose={() => setConfirm(null)} />
     </div>

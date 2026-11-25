@@ -7,7 +7,7 @@ import { useAuth } from '@/auth/AuthContext'
 import { useWorkspace } from '@/auth/workspace'
 import { PageHeader } from '@/components/common'
 import { ActiveFilterChips, FilterDialog, QuickViews, SearchBox, SortSelect, SORT_OPTIONS, type FilterSpec } from '@/components/dashboard/QueueFilters'
-import { TicketCard, TicketCardSkeleton } from '@/components/dashboard/TicketCard'
+import { BUCKETS, TicketCard, TicketCardSkeleton, ticketBucket } from '@/components/dashboard/TicketCard'
 import { EmptyState, ErrorState } from '@/components/states'
 import { Button } from '@/components/ui/button'
 import { categoryTone, PRIORITIES, PRIORITY_META, SLA_META, STATUSES, STATUS_META } from '@/lib/constants'
@@ -26,12 +26,13 @@ type ViewKey = keyof typeof VIEWS
 const FILTER_KEYS = ['status', 'category', 'priority', 'assigned', 'sla', 'q'] as const
 const PAGE_SIZE = 25
 
-function KpiCard({ label, value, icon: Icon, tile, ring, onClick, active }: {
+function KpiCard({ label, value, hint, icon: Icon, tile, activeCls, onClick, active }: {
   label: string
   value: number | undefined
+  hint: string
   icon: typeof Inbox
   tile: string
-  ring: string
+  activeCls: string
   onClick: () => void
   active: boolean
 }) {
@@ -40,16 +41,17 @@ function KpiCard({ label, value, icon: Icon, tile, ring, onClick, active }: {
       onClick={onClick}
       aria-pressed={active}
       className={cn(
-        'group flex items-center gap-3.5 rounded-lg border border-border bg-card p-4 text-left shadow-xs transition-colors hover:bg-muted/40 focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none sm:gap-4',
-        active && cn('ring-2', ring),
+        'group flex items-start gap-3.5 rounded-lg border border-border bg-card p-4 text-left shadow-xs transition-all hover:-translate-y-px hover:shadow-md focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none sm:p-5',
+        active && activeCls,
       )}
     >
-      <div className={cn('flex size-10 shrink-0 items-center justify-center rounded-md ring-1 ring-inset ring-black/5', tile)}>
+      <div className={cn('flex size-11 shrink-0 items-center justify-center rounded-lg ring-1 ring-inset ring-black/5', tile)}>
         <Icon className="size-5" />
       </div>
-      <div>
-        <p className="text-2xl leading-none font-semibold tracking-tight tabular-nums">{value ?? '–'}</p>
-        <p className="mt-1.5 text-[13px] font-medium text-muted-foreground">{label}</p>
+      <div className="min-w-0">
+        <p className="text-[13px] font-medium text-muted-foreground">{label}</p>
+        <p className="mt-1 text-3xl leading-none font-semibold tracking-tight tabular-nums">{value ?? '–'}</p>
+        <p className="mt-1.5 truncate text-xs text-muted-foreground">{hint}</p>
       </div>
     </button>
   )
@@ -107,7 +109,14 @@ export function QueuePage() {
     placeholderData: keepPreviousData,
     refetchInterval,
   })
-  const tickets = list.data?.results ?? []
+  const rawTickets = useMemo(() => list.data?.results ?? [], [list.data])
+  const grouped = sort === 'default' && view !== 'all'
+  const groups = useMemo(() => {
+    if (!grouped) return [{ key: 'all', label: '', dot: '', items: rawTickets }]
+    return BUCKETS.map((b) => ({ ...b, items: rawTickets.filter((t) => ticketBucket(t) === b.key) })).filter((g) => g.items.length)
+  }, [rawTickets, grouped])
+  const tickets = useMemo(() => groups.flatMap((g) => g.items), [groups])
+  const openCount = stats.data ? stats.data.open + stats.data.in_progress : undefined
   const activeFilters = FILTER_KEYS.filter((k) => params.get(k) && k !== 'q')
 
   const specs: FilterSpec[] = useMemo(() => {
@@ -186,14 +195,14 @@ export function QueuePage() {
       <PageHeader title="Ticket queue" description="Most urgent first, then oldest. Press J / K to move through cards and Enter to open." />
 
       <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
-        <KpiCard label="Open tickets" value={stats.data ? stats.data.open + stats.data.in_progress : undefined} icon={Inbox} tile="bg-sky-100 text-sky-700" ring="ring-sky-300" onClick={() => applyKpi({})} active={view === 'attention' && !activeFilters.length} />
-        <KpiCard label="Unassigned" value={stats.data?.unassigned} icon={UserX} tile="bg-violet-100 text-violet-700" ring="ring-violet-300" onClick={() => applyKpi({ view: 'unassigned' })} active={view === 'unassigned'} />
-        <KpiCard label="Overdue first reply" value={stats.data?.overdue} icon={Clock} tile="bg-red-100 text-red-700" ring="ring-red-300" onClick={() => applyKpi({ sla: 'overdue' })} active={params.get('sla') === 'overdue'} />
-        <KpiCard label="Critical open" value={stats.data?.critical} icon={AlertOctagon} tile="bg-orange-100 text-orange-700" ring="ring-orange-300" onClick={() => applyKpi({ priority: 'CRITICAL' })} active={params.get('priority') === 'CRITICAL'} />
+        <KpiCard label="Open tickets" value={openCount} hint={stats.data ? `${stats.data.in_progress} in progress` : ' '} icon={Inbox} tile="bg-sky-100 text-sky-700 dark:bg-sky-500/15 dark:text-sky-300" activeCls="border-sky-300 bg-sky-50/60 dark:border-sky-500/40 dark:bg-sky-500/10" onClick={() => applyKpi({})} active={view === 'attention' && !activeFilters.length} />
+        <KpiCard label="Unassigned" value={stats.data?.unassigned} hint={stats.data && openCount ? `${Math.round((stats.data.unassigned / openCount) * 100)}% of open tickets` : ' '} icon={UserX} tile="bg-violet-100 text-violet-700 dark:bg-violet-500/15 dark:text-violet-300" activeCls="border-violet-300 bg-violet-50/60 dark:border-violet-500/40 dark:bg-violet-500/10" onClick={() => applyKpi({ view: 'unassigned' })} active={view === 'unassigned'} />
+        <KpiCard label="Overdue first reply" value={stats.data?.overdue} hint="Past the response target" icon={Clock} tile="bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-300" activeCls="border-red-300 bg-red-50/60 dark:border-red-500/40 dark:bg-red-500/10" onClick={() => applyKpi({ sla: 'overdue' })} active={params.get('sla') === 'overdue'} />
+        <KpiCard label="Critical open" value={stats.data?.critical} hint="Need attention first" icon={AlertOctagon} tile="bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-300" activeCls="border-orange-300 bg-orange-50/60 dark:border-orange-500/40 dark:bg-orange-500/10" onClick={() => applyKpi({ priority: 'CRITICAL' })} active={params.get('priority') === 'CRITICAL'} />
       </div>
 
       <section aria-label="Find and filter tickets" className="mb-4 space-y-3">
-        <div className="flex flex-wrap items-center gap-2.5">
+        <div className="flex flex-wrap items-center gap-2.5 rounded-lg border border-border bg-card p-2.5 shadow-xs">
           <QuickViews views={quickViews} value={view} onChange={(v) => applyKpi(v === 'attention' ? {} : { view: v })} />
           <div className="flex w-full flex-wrap items-center gap-2 sm:ml-auto sm:w-auto sm:flex-nowrap">
             <SearchBox value={search} onChange={setSearch} />
@@ -244,21 +253,41 @@ export function QueuePage() {
           action={hasAny ? <Button variant="outline" size="sm" onClick={clearAll}>Clear all filters</Button> : undefined}
         />
       ) : (
-        <ul className="space-y-2.5">
-          {tickets.map((t, i) => (
-            <li key={t.id}>
-              <TicketCard
-                ref={(el) => {
-                  cardRefs.current[i] = el
-                }}
-                ticket={t}
-                to={`${base}/tickets/${t.id}`}
-                selected={kbActive && i === selected}
-                meId={user?.id}
-              />
-            </li>
-          ))}
-        </ul>
+        <div className="space-y-6">
+          {(() => {
+            let idx = -1
+            return groups.map((g) => (
+              <section key={g.key} aria-label={g.label || 'Tickets'}>
+                {g.label && (
+                  <div className="mb-2.5 flex items-center gap-2 px-1">
+                    <span className={cn('size-2 rounded-full', g.dot)} />
+                    <h2 className="text-[13px] font-semibold tracking-tight">{g.label}</h2>
+                    <span className="rounded-md bg-muted px-1.5 py-0.5 text-xs font-medium text-muted-foreground tabular-nums">{g.items.length}</span>
+                    <span className="ml-1 h-px flex-1 bg-border" />
+                  </div>
+                )}
+                <ul className="space-y-2.5">
+                  {g.items.map((t) => {
+                    const i = ++idx
+                    return (
+                      <li key={t.id}>
+                        <TicketCard
+                          ref={(el) => {
+                            cardRefs.current[i] = el
+                          }}
+                          ticket={t}
+                          to={`${base}/tickets/${t.id}`}
+                          selected={kbActive && i === selected}
+                          meId={user?.id}
+                        />
+                      </li>
+                    )
+                  })}
+                </ul>
+              </section>
+            ))
+          })()}
+        </div>
       )}
 
       {list.data && list.data.count > PAGE_SIZE && (

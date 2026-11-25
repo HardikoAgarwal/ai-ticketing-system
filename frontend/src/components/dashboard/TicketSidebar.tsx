@@ -61,23 +61,29 @@ function Row({ label, children }: { label: string; children: ReactNode }) {
 
 function ActivityList({ items }: { items: Activity[] }) {
   if (items.length === 0) return <p className="text-sm text-muted-foreground">Nothing has changed on this ticket yet.</p>
+  const list = [...items].reverse()
   return (
-    <ol className="relative space-y-5 border-l border-border pl-6">
-      {[...items].reverse().map((a) => (
-        <li key={a.id} className="relative text-sm">
-          <span className="absolute top-1.5 -left-[29px] size-2.5 rounded-full border-2 border-card bg-muted-foreground/50" />
-          <p className="leading-snug">
-            <span className="font-medium">{a.label}</span>
-            {(a.from_value || a.to_value) && (
-              <span className="text-muted-foreground">
-                {a.from_value ? ` ${a.from_value} → ` : ' '}
-                {a.to_value}
-              </span>
-            )}
-          </p>
-          <p className="text-xs text-muted-foreground">
-            {a.actor_name ?? 'System'} · <RelativeTime value={a.created_at} />
-          </p>
+    <ol>
+      {list.map((a, i) => (
+        <li key={a.id} className="flex gap-3.5 text-sm">
+          <div className="flex w-4 shrink-0 flex-col items-center">
+            <span className="mt-1.5 size-2.5 shrink-0 rounded-full border-2 border-card bg-primary ring-1 ring-primary/40" />
+            {i < list.length - 1 && <span className="my-1 w-px flex-1 bg-border" />}
+          </div>
+          <div className={cn('min-w-0 flex-1', i < list.length - 1 && 'pb-5')}>
+            <p className="leading-snug">
+              <span className="font-medium">{a.label}</span>
+              {(a.from_value || a.to_value) && (
+                <span className="text-muted-foreground">
+                  {a.from_value ? ` ${a.from_value} → ` : ' '}
+                  {a.to_value}
+                </span>
+              )}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {a.actor_name ?? 'System'} · <RelativeTime value={a.created_at} />
+            </p>
+          </div>
         </li>
       ))}
     </ol>
@@ -145,7 +151,7 @@ export function DetailsTab({
         </div>
       </Panel>
 
-      <Panel title="Customer" icon={UserRound} hint="Who opened this ticket.">
+      <Panel title="Customer profile" icon={UserRound} hint="Everything we know about who opened this ticket.">
         <div className="flex items-center gap-3.5">
           <Avatar className="size-12">
             <AvatarFallback className="bg-muted text-base font-semibold">{initials(rp.name)}</AvatarFallback>
@@ -234,7 +240,7 @@ export function AiTab({ ticket, onRerun, rerunning }: { ticket: StaffTicketDetai
       ) : disabled ? (
         <p className="text-sm text-muted-foreground">AI is off for this workspace. Triage uses keyword rules.</p>
       ) : (
-        <div className="max-w-3xl space-y-5 text-sm">
+        <div className="space-y-5 text-sm">
           {failed && (
             <p className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-500/25 dark:bg-amber-500/10 dark:text-amber-200">
               <AlertTriangle className="mt-0.5 size-3.5 shrink-0" /> {ticket.ai_error || 'AI unavailable. Showing rule-based triage.'}

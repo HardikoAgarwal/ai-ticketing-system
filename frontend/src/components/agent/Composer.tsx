@@ -21,6 +21,7 @@ import { toast } from 'sonner'
 import { useAuth } from '@/auth/AuthContext'
 import { useWorkspace } from '@/auth/workspace'
 import { ConfirmDialog, type ConfirmOptions } from '@/components/ConfirmDialog'
+import { Chip } from '@/components/dashboard/Chip'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -82,6 +83,16 @@ export function Composer({ ticket }: { ticket: StaffTicketDetail }) {
     lastCount.current = replyCount
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [replyCount])
+
+  // Surface a freshly written draft as a card above the box (once per ticket) so it can't be missed.
+  const autoOpened = useRef(false)
+  useEffect(() => {
+    if (draft?.status === 'ready' && draft.draft && !autoOpened.current && !reply.trim()) {
+      autoOpened.current = true
+      setExpanded(true)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draft?.status, draft?.draft?.id])
 
   const usingDraft = !!loadedDraft && reply.trim().length > 0
   const editedFromDraft = usingDraft && reply.trim() !== loadedDraft!.content.trim()
@@ -194,31 +205,37 @@ export function Composer({ ticket }: { ticket: StaffTicketDetail }) {
 
       <div
         className={cn(
-          'overflow-hidden rounded-2xl border border-slate-200 bg-card shadow-[0_1px_2px_rgba(15,23,42,0.06),0_6px_18px_-10px_rgba(15,23,42,0.18)] transition-colors focus-within:ring-3',
-          noteMode ? 'border-amber-300 bg-amber-50/40 focus-within:ring-amber-400/20' : usingDraft ? 'border-violet-300 focus-within:ring-violet-500/15' : 'focus-within:border-ring focus-within:ring-ring/30',
+          'overflow-hidden rounded-xl border border-border bg-card shadow-card transition-colors focus-within:ring-3',
+          noteMode ? 'border-amber-300 bg-amber-50/40 focus-within:ring-amber-400/20 dark:border-amber-500/30 dark:bg-amber-500/5' : usingDraft ? 'border-violet-300 focus-within:ring-violet-500/15 dark:border-violet-500/40' : 'focus-within:border-ring focus-within:ring-ring/30',
         )}
       >
-        <div role="tablist" aria-label="Message type" className="flex items-center gap-1 border-b px-2.5 pt-2">
-          {(
-            [
-              ['reply', `Reply to ${firstName}`, <Send key="i" className="size-3.5" />],
-              ['note', 'Internal note', <Lock key="i" className="size-3.5" />],
-            ] as const
-          ).map(([key, label, icon]) => (
-            <button
-              key={key}
-              role="tab"
-              aria-selected={mode === key}
-              onClick={() => setMode(key)}
-              className={cn(
-                '-mb-px flex items-center gap-1.5 rounded-t-lg border-b-2 px-3 py-2 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:outline-none',
-                mode === key ? (key === 'note' ? 'border-amber-500 text-amber-800' : 'border-primary text-primary') : 'border-transparent text-muted-foreground hover:text-foreground',
-              )}
-            >
-              {icon} {label}
-            </button>
-          ))}
-          <span className="ml-auto hidden items-center gap-1 pr-2 text-[11px] text-muted-foreground sm:flex">
+        <div className="flex flex-wrap items-center gap-2 border-b border-border px-3 py-2.5">
+          <div role="tablist" aria-label="Message type" className="inline-flex gap-0.5 rounded-lg bg-muted p-0.5">
+            {(
+              [
+                ['reply', `Reply to ${firstName}`, <Send key="i" className="size-3.5" />],
+                ['note', 'Internal note', <Lock key="i" className="size-3.5" />],
+              ] as const
+            ).map(([key, label, icon]) => (
+              <button
+                key={key}
+                role="tab"
+                aria-selected={mode === key}
+                onClick={() => setMode(key)}
+                className={cn(
+                  'flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:outline-none',
+                  mode === key
+                    ? key === 'note'
+                      ? 'bg-amber-100 text-amber-900 shadow-xs dark:bg-amber-500/20 dark:text-amber-200'
+                      : 'bg-card text-foreground shadow-xs'
+                    : 'text-muted-foreground hover:text-foreground',
+                )}
+              >
+                {icon} {label}
+              </button>
+            ))}
+          </div>
+          <span className="ml-auto hidden items-center gap-1 text-xs text-muted-foreground sm:flex">
             {noteMode ? (
               <>
                 <Lock className="size-3" /> Team only. {firstName} never sees notes.
@@ -239,7 +256,7 @@ export function Composer({ ticket }: { ticket: StaffTicketDetail }) {
             }}
             placeholder="Add context for the team, e.g. “Confirmed duplicate in the billing console”…"
             aria-label="Internal note"
-            className="max-h-72 min-h-28 resize-none rounded-none border-0 bg-transparent px-5 py-4 text-[15px] leading-relaxed shadow-none focus-visible:ring-0 dark:bg-transparent"
+            className="max-h-60 min-h-20 resize-none rounded-none border-0 bg-transparent px-5 py-4 text-[15px] leading-relaxed shadow-none focus-visible:ring-0 dark:bg-transparent"
           />
         ) : closed ? (
           <div className="px-5 py-8 text-center text-sm text-muted-foreground">
@@ -256,11 +273,11 @@ export function Composer({ ticket }: { ticket: StaffTicketDetail }) {
             }}
             placeholder={`Write your reply to ${firstName}…`}
             aria-label={`Reply to ${firstName}`}
-            className="max-h-72 min-h-28 resize-none rounded-none border-0 bg-transparent px-5 py-4 text-[15px] leading-relaxed shadow-none focus-visible:ring-0 dark:bg-transparent"
+            className="max-h-60 min-h-20 resize-none rounded-none border-0 bg-transparent px-5 py-4 text-[15px] leading-relaxed shadow-none focus-visible:ring-0 dark:bg-transparent"
           />
         )}
 
-        <div className="flex flex-wrap items-center justify-between gap-2 border-t bg-muted/30 px-3 py-2.5 sm:px-4">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-t bg-muted/40 px-3 py-2.5 sm:px-4">
           <div className="flex min-w-0 items-center gap-2">
             {!noteMode && (
               <DropdownMenu>
@@ -279,8 +296,13 @@ export function Composer({ ticket }: { ticket: StaffTicketDetail }) {
                 </DropdownMenuContent>
               </DropdownMenu>
             )}
+            {!noteMode && !closed && draft?.status === 'ready' && draft.draft && !usingDraft && (
+              <Button variant="outline" size="sm" onClick={insertDraft}>
+                <Sparkles className="text-violet-600" /> AI draft
+              </Button>
+            )}
             {!noteMode && usingDraft ? (
-              <p className="hidden items-center gap-1.5 text-xs font-medium text-violet-700 sm:flex">
+              <p className="hidden items-center gap-1.5 text-xs font-medium text-violet-700 dark:text-violet-300 sm:flex">
                 <Sparkles className="size-3.5" />
                 {editedFromDraft ? 'From AI draft, edited by you' : 'From AI draft, review before sending'}
               </p>
@@ -293,7 +315,7 @@ export function Composer({ ticket }: { ticket: StaffTicketDetail }) {
             )}
           </div>
           {noteMode ? (
-            <Button onClick={submitNote} disabled={!note.trim() || addNote.isPending} variant="outline" className="shrink-0 border-amber-300 bg-amber-50 text-amber-900 hover:bg-amber-100">
+            <Button onClick={submitNote} disabled={!note.trim() || addNote.isPending} variant="outline" className="shrink-0 border-amber-300 bg-amber-50 text-amber-900 hover:bg-amber-100 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
               {addNote.isPending ? <Loader2 className="animate-spin" /> : <Lock />} Add note
             </Button>
           ) : (
@@ -388,7 +410,6 @@ function DraftDock({
 
   useEffect(() => {
     if (!expanded) return
-    cardRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onToggle()
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
@@ -399,7 +420,7 @@ function DraftDock({
   if (draft.status === 'failed') {
     return (
       <div className="mb-3 flex">
-        <div className="flex items-center gap-2 rounded-md border border-amber-200 bg-amber-50 py-1 pr-1 pl-3 text-xs text-amber-900 shadow-md">
+        <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 py-1 pr-1 pl-3 text-xs text-amber-900 shadow-xs">
           <AlertTriangle className="size-3.5 text-amber-600" />
           <span className="max-w-[60vw] truncate">{draft.error || 'AI draft unavailable'}</span>
           <Button variant="ghost" size="xs" onClick={onRegenerate} disabled={regenerating} className="h-6 rounded-md px-2 text-amber-900 hover:bg-amber-100">
@@ -424,17 +445,16 @@ function DraftDock({
   return (
     <div className="mb-3 flex flex-col items-start">
       {expanded ? (
-        <div ref={cardRef} className="ai-ring w-full animate-in rounded-2xl shadow-md duration-200 fade-in slide-in-from-bottom-2">
-          <div className="overflow-hidden rounded-[calc(var(--radius-2xl)-2px)] bg-card">
+        <div ref={cardRef} className="w-full animate-in rounded-xl border border-violet-200 shadow-card duration-200 fade-in slide-in-from-bottom-2 dark:border-violet-500/30">
+          <div className="overflow-hidden rounded-[11px] bg-card">
             <div className="flex items-center gap-3 border-b px-4 py-3">
               <AiMark className={cn('size-8 rounded-lg', generating && 'animate-pulse')} />
               <div className="min-w-0 flex-1">
                 <p className="flex items-center gap-2 text-sm font-semibold">
-                  <span className="bg-linear-to-r from-violet-600 to-fuchsia-600 bg-clip-text text-transparent">AI draft</span>
-                  <span className="inline-flex items-center gap-1 rounded-md bg-violet-50 px-2 py-0.5 text-[11px] font-medium text-violet-700 ring-1 ring-violet-600/20 ring-inset">
-                    {generating && <Loader2 className="size-3 animate-spin" />}
-                    {generating ? 'Writing…' : inEditor ? 'In your reply' : 'Ready to review'}
-                  </span>
+                  <span>Suggested reply</span>
+                  <Chip tone={inEditor ? 'green' : 'violet'} icon={generating ? Loader2 : inEditor ? Check : Sparkles} className="h-6 px-2 text-[11px]">
+                    {generating ? 'Writing…' : inEditor ? 'In your reply' : 'AI draft · ready to review'}
+                  </Chip>
                 </p>
                 <p className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
                   {generating ? (
@@ -443,9 +463,7 @@ function DraftDock({
                     <>
                       Grounded in
                       {citations.map((c) => (
-                        <span key={c.article_id} className="inline-flex items-center gap-1 rounded-md bg-muted px-1.5 py-0.5 font-medium text-foreground/80" title={`Relevance ${(c.score * 100).toFixed(0)}%`}>
-                          <BookMarked className="size-3" /> {c.title}
-                        </span>
+                        <Chip key={c.article_id} tone="slate" icon={BookMarked} className="h-6 px-2 text-[11px]">{c.title}</Chip>
                       ))}
                     </>
                   ) : (
@@ -460,13 +478,13 @@ function DraftDock({
 
             {generating ? (
               <div className="space-y-3 px-5 py-5">
-                <div className="ai-shimmer h-3 w-1/4 rounded-full" />
-                <div className="ai-shimmer h-3 w-full rounded-full" />
-                <div className="ai-shimmer h-3 w-11/12 rounded-full" />
-                <div className="ai-shimmer h-3 w-2/3 rounded-full" />
+                <div className="ai-shimmer h-3 w-1/4 rounded-md" />
+                <div className="ai-shimmer h-3 w-full rounded-md" />
+                <div className="ai-shimmer h-3 w-11/12 rounded-md" />
+                <div className="ai-shimmer h-3 w-2/3 rounded-md" />
               </div>
             ) : (
-              <div className="max-h-[min(150px,20vh)] overflow-y-auto px-5 py-4 text-sm leading-relaxed whitespace-pre-wrap text-foreground/90">
+              <div className="max-h-[min(120px,16vh)] overflow-y-auto bg-violet-50/40 px-5 py-4 text-sm leading-relaxed whitespace-pre-wrap text-foreground/90 dark:bg-violet-500/5">
                 {draft.draft?.content}
               </div>
             )}
@@ -479,7 +497,7 @@ function DraftDock({
                 {copied ? <Check /> : <Copy />} {copied ? 'Copied' : 'Copy'}
               </Button>
               <Button size="sm" className="ml-auto" onClick={onUse} disabled={generating || inEditor}>
-                {inEditor ? <Check /> : <CornerDownLeft />} {inEditor ? 'In your reply' : 'Use this draft'}
+                {inEditor ? <Check /> : <CornerDownLeft />} {inEditor ? 'In your reply' : 'Use draft'}
               </Button>
             </div>
           </div>
@@ -488,12 +506,12 @@ function DraftDock({
         <button
           type="button"
           onClick={onToggle}
-          className="ai-ring rounded-md shadow-md transition-transform hover:-translate-y-0.5"
+          className="rounded-lg border border-violet-200 shadow-xs transition-colors hover:bg-violet-50 dark:border-violet-500/30 dark:hover:bg-violet-500/10"
           aria-label="Show AI draft"
         >
-          <span className="flex items-center gap-2 rounded-md bg-card py-1.5 pr-3 pl-1.5 text-xs">
-            <AiMark className={cn('size-6 rounded-full', generating && 'animate-pulse')} />
-            <span className="bg-linear-to-r from-violet-600 to-fuchsia-600 bg-clip-text font-semibold text-transparent">AI draft</span>
+          <span className="flex items-center gap-2 rounded-lg bg-card py-1.5 pr-3 pl-1.5 text-xs">
+            <AiMark className={cn('size-6 rounded-md', generating && 'animate-pulse')} />
+            <span className="font-semibold">Suggested reply</span>
             <span className="text-muted-foreground">{summary}</span>
             {generating ? <Loader2 className="size-3.5 animate-spin text-violet-600" /> : <ChevronUp className="size-3.5 text-muted-foreground" />}
           </span>
