@@ -5,16 +5,16 @@ import { NavLink, Outlet } from 'react-router-dom'
 
 import { useWorkspace } from '@/auth/workspace'
 import { ConnectionIndicator, Logo } from '@/components/common'
+import { DemoDock } from '@/components/dashboard/DemoDock'
 import { NotificationBell } from '@/components/NotificationBell'
 import { ListSkeleton } from '@/components/states'
 import { cn } from '@/lib/utils'
 import { useFallbackInterval } from '@/realtime/RealtimeProvider'
 
-import { DemoBanner } from './DemoBanner'
 import { UserMenu } from './UserMenu'
 
 export function AgentLayout() {
-  const { slug, api, brief, manager } = useWorkspace()
+  const { slug, api, brief, manager, isDemo } = useWorkspace()
   const refetchInterval = useFallbackInterval()
   const { data: stats } = useQuery({ queryKey: ['stats', slug], queryFn: api.tickets.stats, refetchInterval })
   const base = `/w/${slug}/agent`
@@ -29,7 +29,6 @@ export function AgentLayout() {
 
   return (
     <div className="flex min-h-screen flex-col">
-      <DemoBanner />
       <div className="flex min-h-0 flex-1">
         <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col self-start border-r bg-card px-3 py-4 md:flex">
           <div className="px-2">
@@ -56,9 +55,6 @@ export function AgentLayout() {
               </NavLink>
             ))}
           </nav>
-          <div className="mt-auto px-2">
-            <ConnectionIndicator />
-          </div>
         </aside>
         <div className="flex min-w-0 flex-1 flex-col">
           <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b bg-background/90 px-4 backdrop-blur md:px-6">
@@ -88,13 +84,14 @@ export function AgentLayout() {
               </NavLink>
             ))}
           </nav>
-          <main className="flex-1 px-4 py-6 md:px-6">
+          <main className={cn('flex-1 px-4 py-6 md:px-6', isDemo && 'pb-24')}>
             <Suspense fallback={<ListSkeleton rows={6} />}>
               <Outlet />
             </Suspense>
           </main>
         </div>
       </div>
+      <DemoDock />
     </div>
   )
 }

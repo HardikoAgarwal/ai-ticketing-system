@@ -1,21 +1,18 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
-import { AlertOctagon, CalendarDays, ChevronLeft, ChevronRight, Clock, Inbox, Loader2, MessageCircleReply, Search, SlidersHorizontal, Sparkles, UserX, X } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { AlertOctagon, CalendarDays, ChevronLeft, ChevronRight, Clock, Inbox, Loader2, Search, Sparkles, UserRound, UserX, X } from 'lucide-react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 
+import { useAuth } from '@/auth/AuthContext'
 import { useWorkspace } from '@/auth/workspace'
-import { CategoryBadge, PriorityBadge, SentimentBadge, SlaBadge, StatusBadge } from '@/components/badges'
-import { PageHeader, RelativeTime } from '@/components/common'
-import { MetaSelect, type MetaOption } from '@/components/MetaSelect'
-import { EmptyState, ErrorState, ListSkeleton } from '@/components/states'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { PageHeader } from '@/components/common'
+import { FilterChip, FilterSheet, QuickViews, SearchBox, SortSelect, SORT_OPTIONS, type FilterSpec } from '@/components/dashboard/QueueFilters'
+import { TicketCard, TicketCardSkeleton } from '@/components/dashboard/TicketCard'
+import { EmptyState, ErrorState } from '@/components/states'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { categoryTone, PRIORITIES, PRIORITY_META, SLA_META, STATUSES, STATUS_META } from '@/lib/constants'
+import { categoryTone, PRIORITIES, PRIORITY_META, SENTIMENT_META, SLA_META, STATUSES, STATUS_META } from '@/lib/constants'
 import type { TicketQuery } from '@/lib/endpoints'
-import { initials } from '@/lib/format'
-import type { StaffTicket } from '@/lib/types'
+import type { Sentiment } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import { useFallbackInterval } from '@/realtime/RealtimeProvider'
 
@@ -33,12 +30,8 @@ const DATE_RANGES: Record<string, { label: string; days: number }> = {
   '30': { label: 'Last 30 days', days: 30 },
 }
 
-const FILTER_KEYS = ['status', 'category', 'priority', 'sla', 'sentiment', 'range', 'q'] as const
-
-const SLA_FILTER_OPTIONS: MetaOption[] = [
-  { value: 'overdue', label: 'Overdue', tone: SLA_META.overdue },
-  { value: 'at_risk', label: 'Due soon', tone: SLA_META.at_risk },
-]
+const FILTER_KEYS = ['status', 'category', 'priority', 'assigned', 'sla', 'sentiment', 'range', 'q'] as const
+const PAGE_SIZE = 25
 
 function KpiCard({ label, value, icon: Icon, tile, ring, onClick, active }: {
   label: string
@@ -54,7 +47,7 @@ function KpiCard({ label, value, icon: Icon, tile, ring, onClick, active }: {
       onClick={onClick}
       aria-pressed={active}
       className={cn(
-        'group flex items-center gap-3 rounded-2xl border bg-card p-3.5 text-left shadow-xs transition-all hover:-translate-y-px hover:shadow-md sm:gap-4 sm:p-4',
+        'group flex items-center gap-3 rounded-2xl border bg-card p-3.5 text-left shadow-xs transition-all hover:-translate-y-px hover:shadow-md focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none sm:gap-4 sm:p-4',
         active && cn('ring-2', ring),
       )}
     >
@@ -69,128 +62,23 @@ function KpiCard({ label, value, icon: Icon, tile, ring, onClick, active }: {
   )
 }
 
-const PRIORITY_EDGE: Record<string, string> = {
-  CRITICAL: 'shadow-[inset_4px_0_0_0_var(--color-red-500)]',
-  HIGH: 'shadow-[inset_4px_0_0_0_var(--color-orange-500)]',
-  MEDIUM: 'shadow-[inset_4px_0_0_0_var(--color-amber-400)]',
-  LOW: 'shadow-[inset_4px_0_0_0_var(--color-slate-300)]',
-}
-
-function TicketTableRow({ ticket, selected, onOpen }: { ticket: StaffTicket; selected: boolean; onOpen: () => void }) {
-  const overdue = ticket.sla_state === 'overdue'
-  return (
-    <tr
-      onClick={onOpen}
-      className={cn(
-        'cursor-pointer border-b transition-colors last:border-0 hover:bg-muted/50',
-        PRIORITY_EDGE[ticket.priority],
-        selected && 'bg-primary/[0.05]',
-        overdue && 'bg-red-50/40',
-      )}
-    >
-      <td className="max-w-0 py-4 pr-5 pl-6 align-middle">
-        <div className="flex min-w-0 items-center gap-2.5">
-          <PriorityBadge priority={ticket.priority} source={ticket.priority_source} />
-          <p className={cn('min-w-0 truncate text-[0.95rem]', ticket.has_unread ? 'font-semibold' : 'font-medium')}>{ticket.subject}</p>
-        </div>
-        <p className="mt-1.5 flex min-w-0 items-center gap-1.5 text-[13px] text-muted-foreground">
-          {ticket.unread_kind === 'requester_reply' && (
-            <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-primary px-2 py-0.5 text-[11px] font-semibold text-primary-foreground">
-              <MessageCircleReply className="size-3" /> New message
-            </span>
-          )}
-          {ticket.unread_kind === 'new_ticket' && (
-            <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary ring-1 ring-primary/25 ring-inset">
-              <Inbox className="size-3" /> New
-            </span>
-          )}
-          <span className="shrink-0 font-mono font-medium text-foreground/70">{ticket.reference}</span>
-          <span>·</span>
-          <span className="truncate">{ticket.requester.name}</span>
-          {ticket.sentiment === 'NEGATIVE' && (
-            <span className="shrink-0">
-              <SentimentBadge sentiment="NEGATIVE" />
-            </span>
-          )}
-        </p>
-      </td>
-      <td className="py-4 pr-6 align-middle">
-        {ticket.ai_status === 'PENDING' && ticket.category_source !== 'STAFF' ? (
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-violet-50 px-2.5 py-1 text-xs font-medium text-violet-700 ring-1 ring-violet-600/20 ring-inset">
-            <Loader2 className="size-3.5 animate-spin" /> Triaging
-          </span>
-        ) : (
-          <div className="flex flex-col items-start gap-1.5">
-            <CategoryBadge category={ticket.category} source={ticket.category_source} subtle />
-            {ticket.ai_status === 'FAILED' && ticket.category_source === 'FALLBACK' && <span className="text-xs font-medium text-amber-700">Needs triage</span>}
-          </div>
-        )}
-      </td>
-      <td className="py-4 pr-6 align-middle">
-        <StatusBadge status={ticket.status} />
-      </td>
-      <td className="py-4 pr-6 align-middle">
-        <SlaBadge state={ticket.sla_state} dueAt={ticket.sla_due_at} />
-      </td>
-      <td className="py-4 pr-6 align-middle text-sm whitespace-nowrap text-muted-foreground">
-        <RelativeTime value={ticket.created_at} />
-      </td>
-      <td className="py-4 pr-6 align-middle">
-        {ticket.assigned_to ? (
-          <div className="flex min-w-0 items-center gap-2">
-            <Avatar className="size-8">
-              <AvatarFallback className="bg-accent text-[11px] font-semibold text-accent-foreground">{initials(ticket.assigned_to.full_name)}</AvatarFallback>
-            </Avatar>
-            <span className="truncate text-sm">{ticket.assigned_to.full_name.split(' ')[0]}</span>
-          </div>
-        ) : (
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-dashed px-2.5 py-1 text-xs text-muted-foreground">
-            <UserX className="size-3.5" /> Unassigned
-          </span>
-        )}
-      </td>
-    </tr>
-  )
-}
-
-/** Compact card used below the lg breakpoint instead of the wide table. */
-function TicketCard({ ticket, onOpen }: { ticket: StaffTicket; onOpen: () => void }) {
-  return (
-    <button onClick={onOpen} className={cn('block w-full border-b p-4 text-left last:border-0 hover:bg-muted/40', PRIORITY_EDGE[ticket.priority])}>
-      <div className="flex items-center gap-2">
-        <PriorityBadge priority={ticket.priority} />
-        <StatusBadge status={ticket.status} size="sm" />
-        <span className="ml-auto text-xs text-muted-foreground">
-          <RelativeTime value={ticket.created_at} />
-        </span>
-      </div>
-      <p className={cn('mt-2 line-clamp-2 text-sm', ticket.has_unread ? 'font-semibold' : 'font-medium')}>
-        {ticket.unread_kind && <span className="mr-2 inline-block size-2 rounded-full bg-primary align-middle" aria-label="Unread" />}
-        {ticket.subject}
-      </p>
-      <p className="mt-1 truncate text-xs text-muted-foreground">
-        <span className="font-mono">{ticket.reference}</span> · {ticket.requester.name}
-      </p>
-      <div className="mt-2 flex flex-wrap items-center gap-2">
-        <CategoryBadge category={ticket.category} subtle size="sm" />
-        <SlaBadge state={ticket.sla_state} dueAt={ticket.sla_due_at} size="sm" />
-      </div>
-    </button>
-  )
-}
-
 export function QueuePage() {
   const { slug, api } = useWorkspace()
+  const { user } = useAuth()
   const [params, setParams] = useSearchParams()
   const navigate = useNavigate()
   const refetchInterval = useFallbackInterval()
   const view: ViewKey = (params.get('view') as ViewKey) in VIEWS ? (params.get('view') as ViewKey) : 'attention'
   const page = Number(params.get('page') ?? 1)
+  const sort = params.get('sort') ?? 'default'
   const [search, setSearch] = useState(params.get('q') ?? '')
   const [selected, setSelected] = useState(0)
+  const [kbActive, setKbActive] = useState(false)
   const base = `/w/${slug}/agent`
+  const cardRefs = useRef<(HTMLAnchorElement | null)[]>([])
 
   const categories = useQuery({ queryKey: ['categories', slug], queryFn: api.categories, staleTime: 60_000 })
+  const members = useQuery({ queryKey: ['members', slug, 'staff'], queryFn: () => api.members(true), staleTime: 60_000 })
 
   const setParam = (key: string, value: string | null) => {
     const next = new URLSearchParams(params)
@@ -210,14 +98,16 @@ export function QueuePage() {
 
   const query: TicketQuery = useMemo(() => {
     const q: TicketQuery = { ...VIEWS[view].query, page }
-    for (const key of ['status', 'category', 'priority', 'sla', 'sentiment', 'q'] as const) {
+    for (const key of ['status', 'category', 'priority', 'assigned', 'sla', 'sentiment', 'q'] as const) {
       const v = params.get(key)
       if (v) q[key] = v
     }
+    const ordering = SORT_OPTIONS.find((o) => o.value === sort)?.ordering
+    if (ordering) q.ordering = ordering
     const range = params.get('range')
     if (range && DATE_RANGES[range]) q.created_after = new Date(Date.now() - DATE_RANGES[range].days * 86400_000).toISOString()
     return q
-  }, [params, view, page])
+  }, [params, view, page, sort])
 
   const stats = useQuery({ queryKey: ['stats', slug], queryFn: api.tickets.stats, refetchInterval })
   const list = useQuery({
@@ -227,7 +117,31 @@ export function QueuePage() {
     refetchInterval,
   })
   const tickets = list.data?.results ?? []
-  const activeFilters = FILTER_KEYS.filter((k) => params.get(k))
+  const activeFilters = FILTER_KEYS.filter((k) => params.get(k) && k !== 'q')
+
+  const specs: FilterSpec[] = useMemo(() => {
+    const out: FilterSpec[] = [
+      { key: 'status', label: 'Status', multi: true, options: STATUSES.map((s) => ({ value: s, label: STATUS_META[s].label, tone: STATUS_META[s] })) },
+      { key: 'priority', label: 'Priority', multi: true, options: PRIORITIES.map((p) => ({ value: p, label: PRIORITY_META[p].label, tone: PRIORITY_META[p] })) },
+      { key: 'category', label: 'Category', multi: true, options: (categories.data ?? []).map((c) => ({ value: c.key, label: c.name, tone: categoryTone(c.key, c.name) })) },
+      { key: 'sentiment', label: 'Mood', multi: true, options: (['NEGATIVE', 'NEUTRAL', 'POSITIVE'] as Sentiment[]).map((s) => ({ value: s, label: SENTIMENT_META[s].label, tone: SENTIMENT_META[s] })) },
+      { key: 'sla', label: 'SLA', options: [{ value: 'overdue', label: 'Overdue', tone: SLA_META.overdue }, { value: 'at_risk', label: 'Due soon', tone: SLA_META.at_risk }] },
+    ]
+    if (view === 'attention' || view === 'all') {
+      out.push({
+        key: 'assigned',
+        label: 'Owner',
+        icon: UserRound,
+        options: [
+          { value: 'me', label: 'Assigned to me', icon: UserRound },
+          { value: 'unassigned', label: 'Unassigned', icon: UserX },
+          ...(members.data ?? []).filter((m) => m.id !== user?.id).map((m) => ({ value: String(m.id), label: m.full_name, icon: UserRound })),
+        ],
+      })
+    }
+    out.push({ key: 'range', label: 'Created', icon: CalendarDays, options: Object.entries(DATE_RANGES).map(([value, r]) => ({ value, label: r.label, icon: CalendarDays })) })
+    return out
+  }, [categories.data, members.data, user?.id, view])
 
   useEffect(() => {
     setSelected(0)
@@ -237,131 +151,142 @@ export function QueuePage() {
     const onKey = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement
       if (['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName) || target.isContentEditable) return
-      if (e.key === 'j') setSelected((s) => Math.min(s + 1, tickets.length - 1))
-      if (e.key === 'k') setSelected((s) => Math.max(s - 1, 0))
-      if (e.key === 'Enter' && tickets[selected]) navigate(`${base}/tickets/${tickets[selected].id}`)
+      if (e.metaKey || e.ctrlKey || e.altKey) return
+      if (e.key === 'j') {
+        setKbActive(true)
+        setSelected((s) => Math.min(s + 1, tickets.length - 1))
+      }
+      if (e.key === 'k') {
+        setKbActive(true)
+        setSelected((s) => Math.max(s - 1, 0))
+      }
+      if (e.key === 'Enter' && kbActive && tickets[selected] && target.tagName !== 'A' && target.tagName !== 'BUTTON') navigate(`${base}/tickets/${tickets[selected].id}`)
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [tickets, selected, navigate, base])
 
+  useEffect(() => {
+    if (kbActive) cardRefs.current[selected]?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+  }, [selected, kbActive])
+
   const applyKpi = (next: Record<string, string>) => {
     setSearch('')
     setParams(new URLSearchParams(next), { replace: true })
   }
-  const totalPages = list.data ? Math.max(1, Math.ceil(list.data.count / 25)) : 1
+  const clearAll = () => {
+    setSearch('')
+    setParams(view === 'attention' ? new URLSearchParams() : new URLSearchParams({ view }), { replace: true })
+  }
+  const totalPages = list.data ? Math.max(1, Math.ceil(list.data.count / PAGE_SIZE)) : 1
+  const from = list.data && list.data.count ? (page - 1) * PAGE_SIZE + 1 : 0
+  const to = list.data ? Math.min(list.data.count, page * PAGE_SIZE) : 0
+  const values = Object.fromEntries(specs.map((s) => [s.key, params.get(s.key)]))
+  const activeCount = specs.filter((s) => params.get(s.key)).length
+  const hasAny = activeFilters.length > 0 || !!params.get('q') || sort !== 'default'
+
+  const quickViews = [
+    { key: 'attention', label: VIEWS.attention.label, count: stats.data ? stats.data.open + stats.data.in_progress : undefined },
+    { key: 'mine', label: VIEWS.mine.label, count: stats.data?.mine },
+    { key: 'unassigned', label: VIEWS.unassigned.label, count: stats.data?.unassigned },
+    { key: 'all', label: VIEWS.all.label },
+  ]
 
   return (
-    <div className="mx-auto max-w-[1440px]">
-      <PageHeader title="Ticket queue" description="Most urgent first, then oldest. Press J / K to move, Enter to open." />
+    <div className="mx-auto max-w-[1280px]">
+      <PageHeader title="Ticket queue" description="Most urgent first, then oldest. Press J / K to move through cards and Enter to open." />
 
-      <div className="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
+      <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
         <KpiCard label="Open tickets" value={stats.data ? stats.data.open + stats.data.in_progress : undefined} icon={Inbox} tile="bg-sky-100 text-sky-700" ring="ring-sky-300" onClick={() => applyKpi({})} active={view === 'attention' && !activeFilters.length} />
         <KpiCard label="Unassigned" value={stats.data?.unassigned} icon={UserX} tile="bg-violet-100 text-violet-700" ring="ring-violet-300" onClick={() => applyKpi({ view: 'unassigned' })} active={view === 'unassigned'} />
         <KpiCard label="Overdue first reply" value={stats.data?.overdue} icon={Clock} tile="bg-red-100 text-red-700" ring="ring-red-300" onClick={() => applyKpi({ sla: 'overdue' })} active={params.get('sla') === 'overdue'} />
         <KpiCard label="Critical open" value={stats.data?.critical} icon={AlertOctagon} tile="bg-orange-100 text-orange-700" ring="ring-orange-300" onClick={() => applyKpi({ priority: 'CRITICAL' })} active={params.get('priority') === 'CRITICAL'} />
       </div>
 
-      <div className="overflow-hidden rounded-2xl border bg-card shadow-xs">
-        <div className="flex flex-col gap-3 border-b p-3 sm:p-4 xl:flex-row xl:items-center">
-          <Tabs value={view} onValueChange={(v) => applyKpi(v === 'attention' ? {} : { view: v })} className="max-w-full overflow-x-auto">
-            <TabsList>
-              {Object.entries(VIEWS).map(([key, v]) => (
-                <TabsTrigger key={key} value={key}>
-                  {v.label}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-          </Tabs>
-          <div className="relative xl:ml-auto xl:w-80">
-            <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search subject, customer, TKT-0001" aria-label="Search tickets" className="pl-9" />
+      <section aria-label="Find and filter tickets" className="mb-5 flex flex-col gap-3 rounded-2xl border bg-card/60 p-3 shadow-xs sm:p-4">
+        <div className="flex flex-wrap items-center gap-2.5 sm:flex-nowrap">
+          <SearchBox value={search} onChange={setSearch} />
+          <div className="md:hidden">
+            <FilterSheet specs={specs} values={values} onChange={setParam} onClear={clearAll} activeCount={activeCount}>
+              <section>
+                <p className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">Sort by</p>
+                <SortSelect value={sort} onChange={(v) => setParam('sort', v === 'default' ? null : v)} />
+              </section>
+            </FilterSheet>
+          </div>
+          <div className="hidden w-52 shrink-0 md:block">
+            <SortSelect value={sort} onChange={(v) => setParam('sort', v === 'default' ? null : v)} />
           </div>
         </div>
 
-        <div className="flex items-center gap-2 overflow-x-auto border-b bg-muted/20 px-3 py-3 sm:flex-wrap sm:overflow-visible sm:px-4 [&>*]:shrink-0">
-          <span className="mr-1 flex items-center gap-1.5 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-            <SlidersHorizontal className="size-3.5" /> Filter
-          </span>
-          <MetaSelect size="sm" value={params.get('status')} onChange={(v) => setParam('status', v)} placeholder="Status" anyLabel="Any status" options={STATUSES.map((s) => ({ value: s, label: STATUS_META[s].label, tone: STATUS_META[s] }))} />
-          <MetaSelect size="sm" value={params.get('priority')} onChange={(v) => setParam('priority', v)} placeholder="Priority" anyLabel="Any priority" options={PRIORITIES.map((p) => ({ value: p, label: PRIORITY_META[p].label, tone: PRIORITY_META[p] }))} />
-          <MetaSelect size="sm" value={params.get('category')} onChange={(v) => setParam('category', v)} placeholder="Category" anyLabel="Any category" className="min-w-44" options={(categories.data ?? []).map((c) => ({ value: c.key, label: c.name, tone: categoryTone(c.key, c.name) }))} />
-          <MetaSelect size="sm" value={params.get('sla')} onChange={(v) => setParam('sla', v)} placeholder="SLA" anyLabel="Any SLA" options={SLA_FILTER_OPTIONS} />
-          <MetaSelect size="sm" value={params.get('range')} onChange={(v) => setParam('range', v)} placeholder="Created" anyLabel="Any time" options={Object.entries(DATE_RANGES).map(([value, r]) => ({ value, label: r.label, icon: CalendarDays }))} />
-          {activeFilters.length > 0 && (
-            <Button variant="ghost" size="sm" onClick={() => applyKpi(view === 'attention' ? {} : { view })}>
-              <X /> Clear filters
+        <QuickViews views={quickViews} value={view} onChange={(v) => applyKpi(v === 'attention' ? {} : { view: v })} />
+
+        <div className="hidden flex-wrap items-center gap-2 md:flex">
+          <span className="mr-0.5 text-xs font-semibold tracking-wide text-muted-foreground uppercase">Filter</span>
+          {specs.map((s) => (
+            <FilterChip key={s.key} spec={s} value={params.get(s.key)} onChange={(v) => setParam(s.key, v)} />
+          ))}
+          {hasAny && (
+            <Button variant="ghost" size="sm" onClick={clearAll} className="h-8 text-muted-foreground">
+              <X /> Clear all
             </Button>
           )}
-          {list.isFetching && !list.isLoading && <Loader2 className="ml-auto size-4 animate-spin text-muted-foreground" />}
         </div>
+      </section>
 
-        {list.isLoading ? (
-          <div className="p-3">
-            <ListSkeleton rows={6} />
-          </div>
-        ) : list.isError ? (
-          <ErrorState error={list.error} onRetry={() => list.refetch()} className="m-3" />
-        ) : tickets.length === 0 ? (
-          <EmptyState
-            icon={activeFilters.length ? Search : Sparkles}
-            title={activeFilters.length ? 'No tickets match these filters' : view === 'mine' ? 'Nothing assigned to you' : 'Queue is clear'}
-            description={activeFilters.length ? 'Try removing a filter or searching for something else.' : 'New tickets will appear here instantly.'}
-            className="m-3 border-0"
-          />
-        ) : (
-          <>
-            <div className="xl:hidden">
-              {tickets.map((t) => (
-                <TicketCard key={t.id} ticket={t} onOpen={() => navigate(`${base}/tickets/${t.id}`)} />
-              ))}
-            </div>
-            <div className="hidden overflow-x-auto xl:block">
-              <table className="w-full min-w-[960px] table-fixed text-left">
-                <colgroup>
-                  <col />
-                  <col className="w-44" />
-                  <col className="w-32" />
-                  <col className="w-36" />
-                  <col className="w-24" />
-                  <col className="w-36" />
-                </colgroup>
-                <thead>
-                  <tr className="border-b bg-muted/30 text-xs tracking-wide text-muted-foreground uppercase">
-                    <th className="py-3 pr-5 pl-6 font-semibold">Ticket</th>
-                    <th className="py-3 pr-6 font-semibold">Category</th>
-                    <th className="py-3 pr-6 font-semibold">Status</th>
-                    <th className="py-3 pr-6 font-semibold">First reply SLA</th>
-                    <th className="py-3 pr-6 font-semibold">Age</th>
-                    <th className="py-3 pr-6 font-semibold">Owner</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {tickets.map((t, i) => (
-                    <TicketTableRow key={t.id} ticket={t} selected={i === selected} onOpen={() => navigate(`${base}/tickets/${t.id}`)} />
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </>
-        )}
-
-        {list.data && list.data.count > 25 && (
-          <div className="flex items-center justify-between border-t px-4 py-2.5 text-sm text-muted-foreground">
-            <span>
-              {list.data.count} tickets · page {page} of {totalPages}
-            </span>
-            <div className="flex gap-1">
-              <Button variant="outline" size="icon-sm" disabled={!list.data.previous} onClick={() => setParam('page', String(page - 1))} aria-label="Previous page">
-                <ChevronLeft />
-              </Button>
-              <Button variant="outline" size="icon-sm" disabled={!list.data.next} onClick={() => setParam('page', String(page + 1))} aria-label="Next page">
-                <ChevronRight />
-              </Button>
-            </div>
-          </div>
-        )}
+      <div className="mb-3 flex items-center justify-between px-1 text-sm text-muted-foreground" aria-live="polite">
+        <span>{list.data ? (list.data.count ? `Showing ${from}–${to} of ${list.data.count} tickets` : '0 tickets') : 'Loading tickets…'}</span>
+        {list.isFetching && !list.isLoading && <Loader2 className="size-4 animate-spin" />}
       </div>
+
+      {list.isLoading ? (
+        <div className="space-y-3">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <TicketCardSkeleton key={i} />
+          ))}
+        </div>
+      ) : list.isError ? (
+        <ErrorState error={list.error} onRetry={() => list.refetch()} />
+      ) : tickets.length === 0 ? (
+        <EmptyState
+          icon={activeFilters.length || params.get('q') ? Search : Sparkles}
+          title={activeFilters.length || params.get('q') ? 'No tickets match these filters' : view === 'mine' ? 'Nothing assigned to you' : 'Queue is clear'}
+          description={activeFilters.length || params.get('q') ? 'Try removing a filter or searching for something else.' : 'New tickets will appear here instantly.'}
+          action={hasAny ? <Button variant="outline" size="sm" onClick={clearAll}>Clear all filters</Button> : undefined}
+        />
+      ) : (
+        <ul className="space-y-3">
+          {tickets.map((t, i) => (
+            <li key={t.id}>
+              <TicketCard
+                ref={(el) => {
+                  cardRefs.current[i] = el
+                }}
+                ticket={t}
+                to={`${base}/tickets/${t.id}`}
+                selected={kbActive && i === selected}
+                meId={user?.id}
+              />
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {list.data && list.data.count > PAGE_SIZE && (
+        <div className="mt-5 flex items-center justify-between rounded-2xl border bg-card px-4 py-2.5 text-sm text-muted-foreground shadow-xs">
+          <span>
+            Page {page} of {totalPages}
+          </span>
+          <div className="flex gap-1">
+            <Button variant="outline" size="icon-sm" disabled={!list.data.previous} onClick={() => setParam('page', String(page - 1))} aria-label="Previous page">
+              <ChevronLeft />
+            </Button>
+            <Button variant="outline" size="icon-sm" disabled={!list.data.next} onClick={() => setParam('page', String(page + 1))} aria-label="Next page">
+              <ChevronRight />
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -39,7 +39,7 @@ export function ChatBubble({
         </div>
         <div
           className={cn(
-            'rounded-2xl px-4 py-3 text-sm leading-relaxed shadow-xs',
+            'rounded-2xl px-4 py-3 text-[15px] leading-relaxed shadow-xs',
             variant === 'team'
               ? 'border border-primary/15 bg-primary/[0.07] text-foreground'
               : 'border bg-card text-foreground',

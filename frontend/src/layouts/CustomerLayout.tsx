@@ -4,22 +4,21 @@ import { Link, NavLink, Outlet } from 'react-router-dom'
 
 import { useWorkspace } from '@/auth/workspace'
 import { Logo } from '@/components/common'
+import { DemoDock } from '@/components/dashboard/DemoDock'
 import { NotificationBell } from '@/components/NotificationBell'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
-import { DemoBanner } from './DemoBanner'
 import { UserMenu } from './UserMenu'
 
 export function CustomerLayout() {
-  const { slug, api, brief } = useWorkspace()
+  const { slug, api, brief, isDemo } = useWorkspace()
   const base = `/w/${slug}/help`
   const { data } = useQuery({ queryKey: ['tickets', slug, 'requester', 'unread'], queryFn: () => api.tickets.listRequester() })
   const unread = data?.results.filter((t) => t.has_unread).length ?? 0
 
   return (
     <div className="min-h-screen">
-      <DemoBanner />
       <header className="sticky top-0 z-30 border-b bg-background/90 backdrop-blur">
         <div className="mx-auto flex h-14 max-w-6xl items-center gap-4 px-4 sm:gap-6">
           <Link to={base} aria-label={`${brief?.name ?? 'Help'} home`}>
@@ -53,9 +52,10 @@ export function CustomerLayout() {
           </div>
         </div>
       </header>
-      <main className="mx-auto max-w-6xl px-4 py-6 sm:py-8">
+      <main className={cn('mx-auto max-w-6xl px-4 py-6 sm:py-8', isDemo && 'pb-24 sm:pb-24')}>
         <Outlet />
       </main>
+      <DemoDock />
     </div>
   )
 }

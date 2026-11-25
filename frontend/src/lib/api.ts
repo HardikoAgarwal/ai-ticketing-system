@@ -17,6 +17,8 @@ export interface StoredSession {
 export interface DemoMeta {
   slug: string
   expiresAt: string | null
+  /** Demo template the sandbox was started from (used by "Start fresh demo"). */
+  template?: string
 }
 interface Store {
   active: SessionKey | null

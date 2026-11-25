@@ -9,6 +9,7 @@ import {
   CornerDownLeft,
   Eye,
   Loader2,
+  Lock,
   MessageSquareText,
   RefreshCw,
   Send,
@@ -50,6 +51,8 @@ export function Composer({ ticket }: { ticket: StaffTicketDetail }) {
   const [preview, setPreview] = useState<{ resolve: boolean } | null>(null)
   const [skipPreview, setSkipPreview] = useState(() => sessionStorage.getItem(SKIP_PREVIEW_KEY) === '1')
   const [expanded, setExpanded] = useState(false)
+  const [mode, setMode] = useState<'reply' | 'note'>('reply')
+  const [note, setNote] = usePersistentText(`helpdesk.note.${slug}.${ticket.id}`)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const replyCount = ticket.messages.filter((m) => !m.is_internal).length
   const lastCount = useRef(replyCount)
@@ -105,6 +108,16 @@ export function Composer({ ticket }: { ticket: StaffTicketDetail }) {
     onError: (err) => toast.error(errorMessage(err)),
   })
 
+  const addNote = useMutation({
+    mutationFn: () => api.tickets.postMessage(ticket.id, { body: note, kind: 'NOTE' }),
+    onSuccess: () => {
+      setNote('')
+      toast.success('Internal note added', { description: 'Only your team can see it.' })
+      queryClient.invalidateQueries({ queryKey: ['ticket', ticket.id] })
+    },
+    onError: (err) => toast.error(errorMessage(err)),
+  })
+
   const regenerate = useMutation({
     mutationFn: () => api.tickets.regenerateDraft(ticket.id),
     onSuccess: (data) => queryClient.setQueryData(['draft', ticket.id, slug], data),
@@ -148,17 +161,12 @@ export function Composer({ ticket }: { ticket: StaffTicketDetail }) {
 
   const assignedElsewhere = ticket.assigned_to && ticket.assigned_to.id !== user?.id
 
-  if (closed) {
-    return (
-      <div className="shrink-0 rounded-b-2xl border-t bg-muted/40 px-6 py-5 text-sm text-muted-foreground">
-        This ticket is closed. Change the status to <span className="font-medium text-foreground">In Progress</span> to reply.
-      </div>
-    )
-  }
+  const noteMode = mode === 'note'
+  const submitNote = () => note.trim() && !addNote.isPending && addNote.mutate()
 
   return (
-    <div className="relative shrink-0 rounded-b-2xl border-t bg-card px-4 py-4 sm:px-6 sm:py-5">
-      {!draftQuery.isLoading && (
+    <div className="shrink-0 border-t bg-muted/25 px-3 py-3 sm:px-5 sm:py-4">
+      {!noteMode && !closed && !draftQuery.isLoading && (
         <DraftDock
           draft={draft}
           expanded={expanded}
@@ -170,55 +178,108 @@ export function Composer({ ticket }: { ticket: StaffTicketDetail }) {
         />
       )}
 
-      {newActivity && (
-        <div className="mb-3 flex items-center justify-between gap-2 rounded-lg border px-3 py-2 text-xs text-muted-foreground">
+      {!noteMode && newActivity && (
+        <div className="mb-3 flex items-center justify-between gap-2 rounded-lg border bg-card px-3 py-2 text-xs text-muted-foreground">
           {firstName} sent a new message while you were writing. Your text is safe; read it before sending.
           <button className="font-medium text-foreground underline" onClick={() => setNewActivity(false)}>
             Dismiss
           </button>
         </div>
       )}
-      {assignedElsewhere && (
-        <p className="mb-3 flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs text-muted-foreground">
+      {!noteMode && assignedElsewhere && !closed && (
+        <p className="mb-3 flex items-center gap-1.5 rounded-lg border bg-card px-3 py-2 text-xs text-muted-foreground">
           <AlertTriangle className="size-3.5 text-amber-600" /> Assigned to {ticket.assigned_to!.full_name}. You can still reply; assignment won't change.
         </p>
       )}
 
       <div
         className={cn(
-          'overflow-hidden rounded-2xl border bg-card shadow-xs transition-colors focus-within:ring-3',
-          usingDraft ? 'border-violet-300 focus-within:ring-violet-500/15' : 'focus-within:border-ring focus-within:ring-ring/30',
+          'overflow-hidden rounded-2xl border bg-card shadow-sm transition-colors focus-within:ring-3',
+          noteMode ? 'border-amber-300 bg-amber-50/40 focus-within:ring-amber-400/20' : usingDraft ? 'border-violet-300 focus-within:ring-violet-500/15' : 'focus-within:border-ring focus-within:ring-ring/30',
         )}
       >
-        <Textarea
-          ref={textareaRef}
-          value={reply}
-          onChange={(e) => setReply(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) requestSend(false)
-          }}
-          placeholder={`Write your reply to ${firstName}…`}
-          aria-label={`Reply to ${firstName}`}
-          className="max-h-72 min-h-24 resize-none rounded-none border-0 bg-transparent px-5 py-4 text-sm leading-relaxed shadow-none focus-visible:ring-0 dark:bg-transparent"
-        />
+        <div role="tablist" aria-label="Message type" className="flex items-center gap-1 border-b px-2.5 pt-2">
+          {(
+            [
+              ['reply', `Reply to ${firstName}`, <Send key="i" className="size-3.5" />],
+              ['note', 'Internal note', <Lock key="i" className="size-3.5" />],
+            ] as const
+          ).map(([key, label, icon]) => (
+            <button
+              key={key}
+              role="tab"
+              aria-selected={mode === key}
+              onClick={() => setMode(key)}
+              className={cn(
+                '-mb-px flex items-center gap-1.5 rounded-t-lg border-b-2 px-3 py-2 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:outline-none',
+                mode === key ? (key === 'note' ? 'border-amber-500 text-amber-800' : 'border-primary text-primary') : 'border-transparent text-muted-foreground hover:text-foreground',
+              )}
+            >
+              {icon} {label}
+            </button>
+          ))}
+          <span className="ml-auto hidden items-center gap-1 pr-2 text-[11px] text-muted-foreground sm:flex">
+            {noteMode ? (
+              <>
+                <Lock className="size-3" /> Team only. {firstName} never sees notes.
+              </>
+            ) : (
+              <>Visible to {firstName} instantly</>
+            )}
+          </span>
+        </div>
+
+        {noteMode ? (
+          <Textarea
+            key="note"
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) submitNote()
+            }}
+            placeholder="Add context for the team, e.g. “Confirmed duplicate in the billing console”…"
+            aria-label="Internal note"
+            className="max-h-72 min-h-28 resize-none rounded-none border-0 bg-transparent px-5 py-4 text-[15px] leading-relaxed shadow-none focus-visible:ring-0 dark:bg-transparent"
+          />
+        ) : closed ? (
+          <div className="px-5 py-8 text-center text-sm text-muted-foreground">
+            This ticket is closed. Change the status to <span className="font-medium text-foreground">In Progress</span> to reply, or add an internal note.
+          </div>
+        ) : (
+          <Textarea
+            key="reply"
+            ref={textareaRef}
+            value={reply}
+            onChange={(e) => setReply(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) requestSend(false)
+            }}
+            placeholder={`Write your reply to ${firstName}…`}
+            aria-label={`Reply to ${firstName}`}
+            className="max-h-72 min-h-28 resize-none rounded-none border-0 bg-transparent px-5 py-4 text-[15px] leading-relaxed shadow-none focus-visible:ring-0 dark:bg-transparent"
+          />
+        )}
+
         <div className="flex flex-wrap items-center justify-between gap-2 border-t bg-muted/30 px-3 py-2.5 sm:px-4">
           <div className="flex min-w-0 items-center gap-2">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" disabled={!macros.data?.length}>
-                  <MessageSquareText /> Macros
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-64">
-                <DropdownMenuLabel className="text-xs text-muted-foreground">Insert a canned reply</DropdownMenuLabel>
-                {macros.data?.map((m) => (
-                  <DropdownMenuItem key={m.id} onClick={() => insertMacro(m)}>
-                    {m.title}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-            {usingDraft ? (
+            {!noteMode && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" disabled={!macros.data?.length || closed}>
+                    <MessageSquareText /> Macros
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-64">
+                  <DropdownMenuLabel className="text-xs text-muted-foreground">Insert a canned reply</DropdownMenuLabel>
+                  {macros.data?.map((m) => (
+                    <DropdownMenuItem key={m.id} onClick={() => insertMacro(m)}>
+                      {m.title}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+            {!noteMode && usingDraft ? (
               <p className="hidden items-center gap-1.5 text-xs font-medium text-violet-700 sm:flex">
                 <Sparkles className="size-3.5" />
                 {editedFromDraft ? 'From AI draft, edited by you' : 'From AI draft, review before sending'}
@@ -227,13 +288,19 @@ export function Composer({ ticket }: { ticket: StaffTicketDetail }) {
               <p className="hidden items-center gap-1.5 text-xs text-muted-foreground md:flex">
                 <Kbd>⌘</Kbd>
                 <Kbd>Enter</Kbd>
-                <span className="ml-0.5">to send</span>
+                <span className="ml-0.5">to {noteMode ? 'add' : 'send'}</span>
               </p>
             )}
           </div>
-          <Button onClick={() => requestSend(false)} disabled={!reply.trim() || send.isPending} className="shrink-0">
-            {send.isPending ? <Loader2 className="animate-spin" /> : <Send />} {usingDraft && !skipPreview ? 'Review & send' : 'Send'}
-          </Button>
+          {noteMode ? (
+            <Button onClick={submitNote} disabled={!note.trim() || addNote.isPending} variant="outline" className="shrink-0 border-amber-300 bg-amber-50 text-amber-900 hover:bg-amber-100">
+              {addNote.isPending ? <Loader2 className="animate-spin" /> : <Lock />} Add note
+            </Button>
+          ) : (
+            <Button onClick={() => requestSend(false)} disabled={!reply.trim() || send.isPending || closed} className="shrink-0">
+              {send.isPending ? <Loader2 className="animate-spin" /> : <Send />} {usingDraft && !skipPreview ? 'Review & send' : 'Send'}
+            </Button>
+          )}
         </div>
       </div>
 
@@ -321,7 +388,7 @@ function DraftDock({
 
   useEffect(() => {
     if (!expanded) return
-    cardRef.current?.scrollIntoView({ block: 'center', behavior: 'smooth' })
+    cardRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onToggle()
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
@@ -331,7 +398,7 @@ function DraftDock({
 
   if (draft.status === 'failed') {
     return (
-      <div className="absolute inset-x-4 bottom-full z-20 mb-3 flex sm:inset-x-6">
+      <div className="mb-3 flex">
         <div className="flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 py-1 pr-1 pl-3 text-xs text-amber-900 shadow-md">
           <AlertTriangle className="size-3.5 text-amber-600" />
           <span className="max-w-[60vw] truncate">{draft.error || 'AI draft unavailable'}</span>
@@ -355,9 +422,9 @@ function DraftDock({
   }
 
   return (
-    <div className="pointer-events-none absolute inset-x-4 bottom-full z-20 mb-3 flex flex-col items-start sm:inset-x-6">
+    <div className="mb-3 flex flex-col items-start">
       {expanded ? (
-        <div ref={cardRef} className="ai-ring pointer-events-auto w-full animate-in rounded-2xl shadow-xl duration-200 fade-in slide-in-from-bottom-2">
+        <div ref={cardRef} className="ai-ring w-full animate-in rounded-2xl shadow-md duration-200 fade-in slide-in-from-bottom-2">
           <div className="overflow-hidden rounded-[calc(var(--radius-2xl)-2px)] bg-card">
             <div className="flex items-center gap-3 border-b px-4 py-3">
               <AiMark className={cn('size-8 rounded-lg', generating && 'animate-pulse')} />
@@ -399,7 +466,7 @@ function DraftDock({
                 <div className="ai-shimmer h-3 w-2/3 rounded-full" />
               </div>
             ) : (
-              <div className="max-h-[min(240px,32vh)] overflow-y-auto px-5 py-4 text-sm leading-relaxed whitespace-pre-wrap text-foreground/90">
+              <div className="max-h-[min(150px,20vh)] overflow-y-auto px-5 py-4 text-sm leading-relaxed whitespace-pre-wrap text-foreground/90">
                 {draft.draft?.content}
               </div>
             )}
@@ -421,7 +488,7 @@ function DraftDock({
         <button
           type="button"
           onClick={onToggle}
-          className="ai-ring pointer-events-auto rounded-full shadow-lg transition-transform hover:-translate-y-0.5"
+          className="ai-ring rounded-full shadow-md transition-transform hover:-translate-y-0.5"
           aria-label="Show AI draft"
         >
           <span className="flex items-center gap-2 rounded-full bg-card py-1.5 pr-3 pl-1.5 text-xs">

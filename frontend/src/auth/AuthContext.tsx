@@ -91,7 +91,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       sessionStore.clear()
       sessionStore.setSession('customer', { access: res.customer.access, refresh: res.customer.refresh }, false)
       sessionStore.setSession('agent', { access: res.agent.access, refresh: res.agent.refresh }, true)
-      const meta = { slug: res.workspace_slug, expiresAt: res.expires_at }
+      const meta = { slug: res.workspace_slug, expiresAt: res.expires_at, template }
       sessionStore.setDemo(meta)
       queryClient.clear()
       setDemo(meta)

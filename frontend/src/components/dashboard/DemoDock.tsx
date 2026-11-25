@@ -1,0 +1,252 @@
+import { useQuery } from '@tanstack/react-query'
+import { AnimatePresence, motion } from 'motion/react'
+import { ChevronUp, Headphones, Loader2, LogOut, RotateCcw, Sparkles, UserRound, X, Zap } from 'lucide-react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { toast } from 'sonner'
+
+import { useAuth } from '@/auth/AuthContext'
+import { useWorkspace } from '@/auth/workspace'
+import { Button } from '@/components/ui/button'
+import { errorMessage } from '@/lib/api'
+import { timeUntil } from '@/lib/format'
+import { cn } from '@/lib/utils'
+
+const DEMO_TTL_MS = 24 * 60 * 60 * 1000
+const TEMPLATE_BY_NAME: Record<string, string> = {
+  'Lumen Analytics': 'saas',
+  'Northstar IT Helpdesk': 'helpdesk',
+  'Tidewater Goods': 'ecommerce',
+}
+const SPRING = { type: 'spring', stiffness: 420, damping: 36, mass: 0.8 } as const
+
+/**
+ * Floating demo control, bottom-left. Collapsed it is a small pill (countdown); on click it morphs into a panel
+ * with the view switcher, expiry, live AI budget and demo actions. Only rendered inside demo workspaces.
+ */
+export function DemoDock() {
+  const { slug, api, brief, isDemo, staff } = useWorkspace()
+  const { demo, activeView, switchView, startDemo, logout } = useAuth()
+  const navigate = useNavigate()
+  const [open, setOpen] = useState(false)
+  const [busy, setBusy] = useState<null | 'view' | 'fresh'>(null)
+  const [, tick] = useState(0)
+  const rootRef = useRef<HTMLDivElement>(null)
+  const pillRef = useRef<HTMLButtonElement>(null)
+  const closeRef = useRef<HTMLButtonElement>(null)
+
+  useEffect(() => {
+    const t = setInterval(() => tick((n) => n + 1), 30_000)
+    return () => clearInterval(t)
+  }, [])
+
+  const usage = useQuery({
+    queryKey: ['ai-usage', slug],
+    queryFn: api.tickets.aiUsage,
+    enabled: isDemo && staff,
+    refetchInterval: 60_000,
+  })
+
+  const close = useCallback(() => {
+    setOpen(false)
+    requestAnimationFrame(() => pillRef.current?.focus())
+  }, [])
+
+  useEffect(() => {
+    if (!open) return
+    closeRef.current?.focus()
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && close()
+    const onPointer = (e: PointerEvent) => {
+      if (rootRef.current && !rootRef.current.contains(e.target as Node)) setOpen(false)
+    }
+    window.addEventListener('keydown', onKey)
+    document.addEventListener('pointerdown', onPointer)
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      document.removeEventListener('pointerdown', onPointer)
+    }
+  }, [open, close])
+
+  if (!isDemo) return null
+
+  const expiresAt = brief?.expires_at ?? demo?.expiresAt ?? null
+  const left = timeUntil(expiresAt)
+  const leftShort = left && left !== 'expired' ? left.replace(/ (\d+m)$/, '') : null
+  const remainingPct = expiresAt ? Math.max(0, Math.min(100, ((new Date(expiresAt).getTime() - Date.now()) / DEMO_TTL_MS) * 100)) : 0
+  const canSwitch = !!demo && demo.slug === slug
+  const u = usage.data
+  const usedPct = u ? Math.min(100, Math.round((u.global_used / Math.max(u.global_cap, 1)) * 100)) : 0
+
+  const flip = async (view: 'agent' | 'customer') => {
+    if (view === activeView || busy) return
+    setBusy('view')
+    try {
+      await switchView(view)
+      setOpen(false)
+      navigate(`/w/${slug}/${view === 'agent' ? 'agent' : 'help'}`)
+    } catch (err) {
+      toast.error(errorMessage(err))
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  const fresh = async () => {
+    setBusy('fresh')
+    try {
+      const template = demo?.template ?? (brief?.name && TEMPLATE_BY_NAME[brief.name]) ?? 'saas'
+      const newSlug = await startDemo(template)
+      setOpen(false)
+      navigate(`/w/${newSlug}/agent`)
+      toast.success('Fresh demo workspace ready')
+    } catch (err) {
+      toast.error(errorMessage(err))
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  const leave = () => {
+    logout()
+    navigate('/')
+  }
+
+  return (
+    <div ref={rootRef} className="pointer-events-none fixed bottom-[max(0.75rem,env(safe-area-inset-bottom))] left-3 z-40 sm:bottom-[max(1rem,env(safe-area-inset-bottom))] sm:left-4">
+      <AnimatePresence initial={false} mode="popLayout">
+        {open ? (
+          <motion.div
+            key="panel"
+            layoutId="demo-dock"
+            transition={SPRING}
+            style={{ borderRadius: 24, transformOrigin: 'bottom left' }}
+            role="dialog"
+            aria-label="Demo controls"
+            className="pointer-events-auto w-[calc(100vw-1.5rem)] overflow-hidden border bg-card text-card-foreground shadow-2xl ring-1 ring-black/5 sm:w-[23rem]"
+          >
+            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.06, duration: 0.2 }}>
+              <header className="flex items-start gap-3 border-b bg-muted/30 px-5 py-4">
+                <span className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                  <Sparkles className="size-[18px]" />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="flex items-center gap-2 text-sm font-semibold">
+                    Live demo
+                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700 ring-1 ring-emerald-600/20 ring-inset">
+                      <span className="size-1.5 rounded-full bg-emerald-500" /> Private sandbox
+                    </span>
+                  </p>
+                  <p className="mt-0.5 truncate text-xs text-muted-foreground">{brief?.name}</p>
+                </div>
+                <Button ref={closeRef} variant="ghost" size="icon-sm" onClick={close} aria-label="Close demo controls" className="-mr-2 -mt-1">
+                  <X />
+                </Button>
+              </header>
+
+              <div className="space-y-5 px-5 py-5">
+                <section aria-label="Time left">
+                  <div className="flex items-baseline justify-between text-xs">
+                    <span className="font-medium text-muted-foreground">Sandbox resets in</span>
+                    <span className="text-sm font-semibold tabular-nums">{left === 'expired' ? 'Expired' : (left ?? '—')}</span>
+                  </div>
+                  <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted" role="progressbar" aria-valuenow={Math.round(remainingPct)} aria-valuemin={0} aria-valuemax={100} aria-label="Time left in sandbox">
+                    <motion.div className="h-full rounded-full bg-primary" initial={false} animate={{ width: `${remainingPct}%` }} transition={{ duration: 0.6 }} />
+                  </div>
+                  <p className="mt-1.5 text-xs text-muted-foreground">Everything you create here is private to you and cleaned up after 24 hours.</p>
+                </section>
+
+                {canSwitch && (
+                  <section aria-label="Switch view">
+                    <p className="mb-2 text-xs font-medium text-muted-foreground">You are viewing as</p>
+                    <div role="radiogroup" aria-label="View" className="grid grid-cols-2 gap-1.5 rounded-2xl bg-muted p-1">
+                      {(
+                        [
+                          ['agent', 'Agent view', 'Triage and reply', Headphones],
+                          ['customer', 'Customer view', 'Ask and track', UserRound],
+                        ] as const
+                      ).map(([view, label, hint, Icon]) => {
+                        const on = activeView === view
+                        return (
+                          <button
+                            key={view}
+                            type="button"
+                            role="radio"
+                            aria-checked={on}
+                            disabled={busy !== null}
+                            onClick={() => flip(view)}
+                            className={cn(
+                              'flex flex-col items-start gap-0.5 rounded-xl px-3 py-2.5 text-left transition-all focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none disabled:opacity-60',
+                              on ? 'bg-card shadow-sm ring-1 ring-black/5' : 'text-muted-foreground hover:bg-card/60 hover:text-foreground',
+                            )}
+                          >
+                            <span className={cn('flex items-center gap-1.5 text-sm font-semibold', on && 'text-primary')}>
+                              {busy === 'view' && !on ? <Loader2 className="size-4 animate-spin" /> : <Icon className="size-4" />} {label}
+                            </span>
+                            <span className="text-[11px] font-normal text-muted-foreground">{hint}</span>
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </section>
+                )}
+
+                {staff ? (
+                  <section aria-label="Live AI budget" className="rounded-2xl border bg-muted/20 p-3.5">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="flex items-center gap-1.5 font-medium">
+                        <Zap className="size-3.5 text-amber-500" /> Live AI calls today
+                      </span>
+                      <span className="font-semibold tabular-nums">{u ? `${u.global_used} / ${u.global_cap}` : '—'}</span>
+                    </div>
+                    <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted" role="progressbar" aria-valuenow={usedPct} aria-valuemin={0} aria-valuemax={100} aria-label="Live AI calls used today">
+                      <div className={cn('h-full rounded-full transition-all', usedPct > 85 ? 'bg-amber-500' : 'bg-primary')} style={{ width: `${usedPct}%` }} />
+                    </div>
+                    <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+                      The free Gemini quota is shared by every visitor{u ? ` (${u.workspace_used}/${u.workspace_cap} used in this workspace)` : ''}. When it runs out, new tickets fall
+                      back to keyword triage and you write replies yourself; the seeded tickets keep their AI results.
+                    </p>
+                  </section>
+                ) : (
+                  <p className="rounded-2xl border bg-muted/20 px-3.5 py-3 text-xs leading-relaxed text-muted-foreground">
+                    <span className="font-medium text-foreground">Tip:</span> send a message here, then switch to Agent view to see it arrive in the queue and reply with AI.
+                  </p>
+                )}
+              </div>
+
+              <footer className="flex items-center gap-2 border-t bg-muted/30 px-5 py-3.5">
+                <Button size="sm" variant="outline" onClick={fresh} disabled={busy !== null}>
+                  {busy === 'fresh' ? <Loader2 className="animate-spin" /> : <RotateCcw />} Start fresh demo
+                </Button>
+                <Button size="sm" variant="ghost" className="ml-auto text-muted-foreground" onClick={leave} disabled={busy !== null}>
+                  <LogOut /> Leave demo
+                </Button>
+              </footer>
+            </motion.div>
+          </motion.div>
+        ) : (
+          <motion.button
+            key="pill"
+            ref={pillRef}
+            layoutId="demo-dock"
+            transition={SPRING}
+            style={{ borderRadius: 999, transformOrigin: 'bottom left' }}
+            type="button"
+            onClick={() => setOpen(true)}
+            aria-expanded={false}
+            aria-haspopup="dialog"
+            aria-label={`Demo controls${leftShort ? `, resets in ${left}` : ''}`}
+            className="pointer-events-auto flex items-center gap-2 border bg-card py-2 pr-2.5 pl-3 text-xs font-medium shadow-lg ring-1 ring-black/5 transition-shadow hover:shadow-xl focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none sm:py-2.5 sm:pr-3 sm:pl-3.5 sm:text-[13px]"
+          >
+            <span className="relative flex size-2">
+              <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-400 opacity-60" />
+              <span className="relative inline-flex size-2 rounded-full bg-emerald-500" />
+            </span>
+            <span>Demo</span>
+            {leftShort && <span className="text-muted-foreground tabular-nums">· {leftShort} left</span>}
+            <ChevronUp className="size-3.5 text-muted-foreground" />
+          </motion.button>
+        )}
+      </AnimatePresence>
+    </div>
+  )
+}
