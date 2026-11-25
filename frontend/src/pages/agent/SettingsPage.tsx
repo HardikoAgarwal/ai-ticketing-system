@@ -57,7 +57,7 @@ export function SettingsPage() {
               type="button"
               onClick={() => go(key)}
               aria-current={tab === key ? 'page' : undefined}
-              className={cn('group flex shrink-0 items-center gap-3 rounded-xl border px-3.5 py-2.5 text-left transition-all lg:w-full', tab === key ? 'border-primary/30 bg-accent text-accent-foreground shadow-xs' : 'border-transparent text-muted-foreground hover:bg-muted/60 hover:text-foreground')}
+              className={cn('group flex shrink-0 items-center gap-3 rounded-lg px-3.5 py-2.5 text-left transition-colors lg:w-full', tab === key ? 'bg-primary/10 text-foreground' : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground')}
             >
               <Icon className={cn('size-[18px] shrink-0', tab === key ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground')} />
               <span className="min-w-0">
@@ -67,7 +67,7 @@ export function SettingsPage() {
             </button>
           ))}
         </nav>
-        <div className="min-w-0">
+        <div className="min-w-0 max-w-3xl lg:border-l lg:pl-10">
           {ws.isLoading ? <ListSkeleton rows={4} /> : ws.isError ? <ErrorState error={ws.error} onRetry={() => ws.refetch()} /> : ws.data && <SettingsBody key={ws.data.id} ws={ws.data} tab={tab} readOnly={readOnly} />}
         </div>
       </div>

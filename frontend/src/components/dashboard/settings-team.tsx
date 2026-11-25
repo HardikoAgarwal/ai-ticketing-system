@@ -27,7 +27,7 @@ const META = Object.fromEntries(ROLES.map((r) => [r.role, r])) as Record<Role, (
 export function RoleBadge({ role }: { role: Role }) {
   const m = META[role]
   return (
-    <span className={cn('inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-medium ring-1 ring-inset', m.pill)}>
+    <span className={cn('inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-medium ring-1 ring-inset', m.pill)}>
       <m.icon className="size-3" /> {m.label}
     </span>
   )
@@ -59,7 +59,7 @@ export function TeamSection({ readOnly }: { readOnly: boolean }) {
   const customers = members.data?.filter((m) => m.role === 'REQUESTER') ?? []
 
   const Person = ({ m }: { m: NonNullable<typeof members.data>[number] }) => (
-    <li className="flex items-center gap-3 rounded-xl border p-3">
+    <li className="flex items-center gap-3 rounded-lg bg-muted/40 p-3">
       <Avatar className="size-9">
         <AvatarFallback className="bg-accent text-xs font-semibold text-accent-foreground">{initials(m.full_name)}</AvatarFallback>
       </Avatar>
@@ -75,7 +75,7 @@ export function TeamSection({ readOnly }: { readOnly: boolean }) {
     <Section id="team" icon={Users} title="Team & roles" description="Who can do what in this workspace. Roles decide what people can see and change.">
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {ROLES.map(({ role: r, label, icon: Icon, pill, can }) => (
-          <div key={r} className="rounded-xl border p-4">
+          <div key={r}>
             <span className={cn('mb-2.5 inline-flex size-8 items-center justify-center rounded-lg ring-1 ring-inset', pill)}>
               <Icon className="size-4" />
             </span>
@@ -114,7 +114,7 @@ export function TeamSection({ readOnly }: { readOnly: boolean }) {
       )}
 
       {!readOnly && (
-        <div className="rounded-xl border bg-muted/20 p-5">
+        <div className="rounded-lg bg-muted/40 p-5">
           <h3 className="flex items-center gap-2 text-sm font-semibold">
             <UserPlus className="size-4 text-primary" /> Invite a teammate
           </h3>
@@ -122,10 +122,10 @@ export function TeamSection({ readOnly }: { readOnly: boolean }) {
             {isDemo ? 'Invites are switched off in demo workspaces. Create your own workspace to try them.' : 'We create a private link. Share it with them and they choose their own password.'}
           </p>
           <div className="grid gap-3 sm:grid-cols-[1fr_9rem_auto] sm:items-end">
-            <Field label="Email" htmlFor="inv-email">
+            <Field stack label="Email" htmlFor="inv-email">
               <Input id="inv-email" type="email" value={email} disabled={isDemo} placeholder="teammate@company.com" onChange={(e) => setEmail(e.target.value)} />
             </Field>
-            <Field label="Role">
+            <Field stack label="Role">
               <Select value={role} onValueChange={setRole} disabled={isDemo}>
                 <SelectTrigger aria-label="Role" className="w-full">
                   <SelectValue />
@@ -145,7 +145,7 @@ export function TeamSection({ readOnly }: { readOnly: boolean }) {
               <p className="mb-2 text-xs font-semibold text-muted-foreground">Pending invites</p>
               <ul className="space-y-2">
                 {invites.data.map((i) => (
-                  <li key={i.id} className="flex items-center gap-3 rounded-lg border bg-card p-3 text-sm">
+                  <li key={i.id} className="flex items-center gap-3 rounded-md bg-card p-3 text-sm">
                     <span className="min-w-0 flex-1 truncate">{i.email}</span>
                     <RoleBadge role={i.role} />
                     <Button variant="outline" size="sm" onClick={() => copy(i.token)}>

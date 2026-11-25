@@ -83,7 +83,7 @@ export function TicketHeader({
             Queue
           </Link>
           <ChevronRight className="size-4 text-muted-foreground/60" />
-          <span className="rounded-md bg-card px-2 py-1 font-mono text-[13px] font-semibold shadow-xs ring-1 ring-slate-200">{ticket.reference}</span>
+          <span className="rounded-md bg-card px-2 py-1 font-mono text-[13px] font-semibold shadow-xs ring-1 ring-border">{ticket.reference}</span>
         </nav>
         <div className="ml-auto flex items-center gap-2">
           {canResolve && (
@@ -97,10 +97,10 @@ export function TicketHeader({
         </div>
       </div>
 
-      <div className="grid items-stretch gap-4 xl:grid-cols-[minmax(0,1fr)_340px]">
-        {/* ticket card */}
-        <Surface aria-label="Ticket summary" className="flex flex-col">
-          <div className="flex-1 px-5 pt-5 pb-6 sm:px-7 sm:pt-6">
+      <Surface aria-label="Ticket summary and customer" className="grid xl:grid-cols-[minmax(0,1fr)_340px]">
+        {/* ticket column */}
+        <div className="flex min-w-0 flex-col">
+          <div className="flex-1 border-b border-primary/10 bg-primary/[0.06] px-5 pt-5 pb-6 sm:px-7 sm:pt-6">
             <div className="flex flex-wrap items-center gap-2">
               {states.map((s) => (
                 <StateBadge key={s.kind} kind={s.kind} label={s.label} pulse={s.pulse} />
@@ -117,7 +117,7 @@ export function TicketHeader({
           </div>
 
           {/* key facts */}
-          <div className="grid grid-cols-2 gap-px border-y border-slate-200/80 bg-slate-200/70 sm:grid-cols-6">
+          <div className="grid grid-cols-2 gap-px border-b border-border bg-border sm:grid-cols-6">
             <Fact icon={UserRound} label="Owner" className="col-span-2">
               {ticket.assigned_to ? (
                 <span className="flex items-center gap-2">
@@ -182,7 +182,7 @@ export function TicketHeader({
           </div>
 
           {/* AI triage: slim banner */}
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 bg-violet-50/70 px-5 py-3.5 text-sm sm:px-7">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 bg-violet-500/10 px-5 py-3.5 text-sm sm:px-7">
             <span className="flex shrink-0 items-center gap-2 text-[13px] font-semibold text-violet-800">
               <span className="flex size-6 items-center justify-center rounded-md bg-violet-600 text-white">
                 <Sparkles className="size-3.5" />
@@ -200,15 +200,15 @@ export function TicketHeader({
               Reasoning &amp; overrides
             </button>
           </div>
-        </Surface>
+        </div>
 
-        {/* customer card */}
-        <Surface aria-label="Customer">
-          <SurfaceHeader icon={UserRound} tone="blue" title="Customer" />
+        {/* customer column */}
+        <aside aria-label="Customer" className="border-t border-border bg-muted/40 xl:border-t-0 xl:border-l">
+          <SurfaceHeader icon={UserRound} tone="blue" title="Customer" className="bg-blue-500/10" />
           <div className="p-5">
             <div className="flex items-center gap-3.5">
-              <Avatar className="size-14 ring-4 ring-slate-100">
-                <AvatarFallback className="bg-gradient-to-br from-slate-100 to-slate-200 text-base font-semibold text-slate-700">{initials(rp.name)}</AvatarFallback>
+              <Avatar className="size-14 ring-4 ring-blue-500/15">
+                <AvatarFallback className="bg-blue-100 text-base font-semibold text-blue-700">{initials(rp.name)}</AvatarFallback>
               </Avatar>
               <div className="min-w-0">
                 <p className="truncate text-lg leading-tight font-semibold">{rp.name}</p>
@@ -218,7 +218,7 @@ export function TicketHeader({
               </div>
             </div>
 
-            <dl className="mt-4 divide-y divide-slate-200/80 rounded-xl border border-slate-200/80 bg-slate-50/50 px-4 sm:grid sm:grid-cols-2 sm:gap-x-10 sm:divide-y-0 xl:block xl:divide-y">
+            <dl className="mt-4 divide-y divide-border rounded-xl border border-border bg-card px-4 sm:grid sm:grid-cols-2 sm:gap-x-10 sm:divide-y-0 xl:block xl:divide-y">
               {rp.company && (
                 <ProfileRow label="Company">
                   <span className="inline-flex items-center gap-1.5">
@@ -278,8 +278,8 @@ export function TicketHeader({
               </Popover>
             )}
           </div>
-        </Surface>
-      </div>
+        </aside>
+      </Surface>
     </header>
   )
 }

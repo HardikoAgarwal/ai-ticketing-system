@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { BookOpen, Lock, Plus, Search, SearchX } from 'lucide-react'
+import { BookOpen, Layers, Lock, Plus, Search, SearchX, Tags } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
@@ -8,13 +9,14 @@ import { PageHeader } from '@/components/common'
 import { ConfirmDialog, type ConfirmOptions } from '@/components/ConfirmDialog'
 import { KbEditor } from '@/components/dashboard/kb-editor'
 import { KbIntro } from '@/components/dashboard/kb-intro'
-import { ArticleCard, KbStats } from '@/components/dashboard/kb-parts'
+import { ArticleCard, KbStats, type StatusFilter } from '@/components/dashboard/kb-parts'
 import { KbPlayground } from '@/components/dashboard/kb-playground'
 import { CardGridSkeleton, EmptyState, ErrorState } from '@/components/states'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { cn } from '@/lib/utils'
 import { errorMessage } from '@/lib/api'
+import { categoryTone } from '@/lib/constants'
 
 const ALL = '__all__'
 
@@ -25,6 +27,7 @@ export function KnowledgePage() {
   const [confirm, setConfirm] = useState<ConfirmOptions | null>(null)
   const [filter, setFilter] = useState('')
   const [category, setCategory] = useState(ALL)
+  const [status, setStatus] = useState<StatusFilter>('all')
 
   const list = useQuery({ queryKey: ['articles', slug], queryFn: api.articles })
   const remove = useMutation({
@@ -38,26 +41,40 @@ export function KnowledgePage() {
 
   const articles = useMemo(() => list.data ?? [], [list.data])
   const categories = useMemo(() => {
-    const seen = new Map<number, string>()
-    articles.forEach((a) => a.category && a.category_name && seen.set(a.category, a.category_name))
+    const seen = new Map<number, { name: string; count: number }>()
+    articles.forEach((a) => {
+      if (!a.category || !a.category_name) return
+      const cur = seen.get(a.category)
+      seen.set(a.category, { name: a.category_name, count: (cur?.count ?? 0) + 1 })
+    })
     return [...seen.entries()]
   }, [articles])
   const shown = useMemo(() => {
     const needle = filter.trim().toLowerCase()
-    return articles.filter((a) => (category === ALL || String(a.category) === category) && (!needle || `${a.title} ${a.excerpt}`.toLowerCase().includes(needle)))
-  }, [articles, filter, category])
+    const ok = (a: (typeof articles)[number]) => status === 'all' || (status === 'internal' ? a.is_internal : status === 'draft' ? !a.is_published : !a.indexed)
+    return articles.filter((a) => ok(a) && (category === ALL || String(a.category) === category) && (!needle || `${a.title} ${a.excerpt}`.toLowerCase().includes(needle)))
+  }, [articles, filter, category, status])
 
   return (
-    <div className="mx-auto max-w-6xl">
+    <div className="mx-auto max-w-7xl">
       <PageHeader
         title="Knowledge base"
         description="The articles behind every AI draft and every self-service suggestion your customers see."
         actions={
-          manager && (
-            <Button onClick={() => setEditing('new')}>
-              <Plus /> New article
-            </Button>
-          )
+          <>
+            {manager && (
+              <Button variant="outline" size="lg" asChild>
+                <Link to={`/w/${slug}/agent/settings?tab=categories`}>
+                  <Tags /> Manage categories
+                </Link>
+              </Button>
+            )}
+            {manager && (
+              <Button size="lg" onClick={() => setEditing('new')}>
+                <Plus /> New article
+              </Button>
+            )}
+          </>
         }
       />
       {!manager && (
@@ -74,54 +91,66 @@ export function KnowledgePage() {
         <ErrorState error={list.error} onRetry={() => list.refetch()} />
       ) : (
         <>
-          <KbStats articles={articles} />
+          <KbStats articles={articles} status={status} onStatus={setStatus} />
           <KbPlayground />
 
-          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
-            <h2 className="text-base font-semibold sm:mr-auto">
-              Articles <span className="ml-1 text-sm font-normal text-muted-foreground">{shown.length === articles.length ? articles.length : `${shown.length} of ${articles.length}`}</span>
-            </h2>
-            <div className="relative sm:w-64">
-              <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-              <Input value={filter} onChange={(e) => setFilter(e.target.value)} placeholder="Filter articles" aria-label="Filter articles" className="pl-9" />
-            </div>
-            <Select value={category} onValueChange={setCategory}>
-              <SelectTrigger className="sm:w-48" aria-label="Filter by category">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={ALL}>All categories</SelectItem>
-                {categories.map(([id, name]) => (
-                  <SelectItem key={id} value={String(id)}>
-                    {name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          <div className="grid gap-6 lg:grid-cols-[14rem_minmax(0,1fr)] lg:items-start">
+            <nav aria-label="Categories" className="-mx-4 flex gap-1.5 overflow-x-auto px-4 pb-1 lg:sticky lg:top-6 lg:mx-0 lg:flex-col lg:overflow-visible lg:px-0 [&::-webkit-scrollbar]:hidden">
+              <p className="hidden px-3 pb-1 text-xs font-semibold tracking-wide text-muted-foreground uppercase lg:block">Categories</p>
+              {[[ALL, { name: 'All articles', count: articles.length }] as const, ...categories].map(([id, c]) => {
+                const key = String(id)
+                const on = category === key
+                return (
+                  <button key={key} type="button" aria-pressed={on} onClick={() => setCategory(key)} className={cn('flex shrink-0 items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm font-medium whitespace-nowrap transition-colors lg:w-full', on ? 'bg-primary/10 text-foreground' : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground')}>
+                    {key === ALL ? <Layers className={cn('size-4', on && 'text-primary')} /> : <span className={cn('size-2.5 rounded-full', categoryTone(key, c.name).dot)} />}
+                    <span className="flex-1 truncate">{c.name}</span>
+                    <span className="text-xs tabular-nums opacity-70">{c.count}</span>
+                  </button>
+                )
+              })}
+            </nav>
 
-          {articles.length === 0 ? (
-            <EmptyState
-              icon={BookOpen}
-              title="Teach the AI your answers"
-              description="Start with the questions customers ask most: refunds, delivery times, how to reset a password. One short article per topic."
-              action={manager ? <Button onClick={() => setEditing('new')}><Plus /> Write your first article</Button> : undefined}
-            />
-          ) : shown.length === 0 ? (
-            <EmptyState icon={SearchX} title="No articles match" description="Try a different word or clear the category filter." />
-          ) : (
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-              {shown.map((a) => (
-                <ArticleCard
-                  key={a.id}
-                  a={a}
-                  canEdit={manager}
-                  onOpen={() => setEditing(a.id)}
-                  onDelete={() => setConfirm({ title: 'Delete article?', description: `"${a.title}" will no longer be used in AI drafts or suggestions.`, confirmLabel: 'Delete', destructive: true, onConfirm: () => remove.mutate(a.id) })}
+            <div className="min-w-0">
+              <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
+                <h2 className="text-lg font-semibold sm:mr-auto">
+                  Articles <span className="ml-1 text-sm font-normal text-muted-foreground">{shown.length === articles.length ? articles.length : `${shown.length} of ${articles.length}`}</span>
+                </h2>
+                <div className="relative sm:w-72">
+                  <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input value={filter} onChange={(e) => setFilter(e.target.value)} placeholder="Search articles" aria-label="Search articles" className="h-10 pl-9" />
+                </div>
+              </div>
+              {status !== 'all' && (
+                <p className="mb-4 flex items-center gap-2 rounded-lg bg-primary/5 px-3.5 py-2.5 text-sm">
+                  Showing <span className="font-semibold">{status === 'internal' ? 'internal-only' : status === 'draft' ? 'draft' : 'not-yet-indexed'}</span> articles.
+                  <button type="button" className="ml-auto font-medium text-primary hover:underline" onClick={() => setStatus('all')}>Clear</button>
+                </p>
+              )}
+
+              {articles.length === 0 ? (
+                <EmptyState
+                  icon={BookOpen}
+                  title="Teach the AI your answers"
+                  description="Start with the questions customers ask most: refunds, delivery times, how to reset a password. One short article per topic."
+                  action={manager ? <Button onClick={() => setEditing('new')}><Plus /> Write your first article</Button> : undefined}
                 />
-              ))}
+              ) : shown.length === 0 ? (
+                <EmptyState icon={SearchX} title="No articles match" description="Try a different word or clear the filters." />
+              ) : (
+                <div className="space-y-3">
+                  {shown.map((a) => (
+                    <ArticleCard
+                      key={a.id}
+                      a={a}
+                      canEdit={manager}
+                      onOpen={() => setEditing(a.id)}
+                      onDelete={() => setConfirm({ title: 'Delete article?', description: `"${a.title}" will no longer be used in AI drafts or suggestions.`, confirmLabel: 'Delete', destructive: true, onConfirm: () => remove.mutate(a.id) })}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
-          )}
+          </div>
         </>
       )}
 

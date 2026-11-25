@@ -36,22 +36,22 @@ export function KbIntro() {
     }
   }
   return (
-    <section className="mb-6 overflow-hidden rounded-2xl border bg-card shadow-xs">
-      <button type="button" onClick={toggle} aria-expanded={open} className="flex w-full items-center gap-3 px-5 py-4 text-left transition-colors hover:bg-muted/40">
-        <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-accent text-accent-foreground">
-          <BookOpenCheck className="size-[18px]" />
+    <section className="mb-6 overflow-hidden rounded-xl border border-primary/20 bg-primary/5">
+      <button type="button" onClick={toggle} aria-expanded={open} className="flex w-full items-center gap-3 px-5 py-4 text-left transition-colors hover:bg-primary/5">
+        <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+          <BookOpenCheck className="size-5" />
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block text-sm font-semibold">What is the knowledge base?</span>
-          <span className="block text-xs text-muted-foreground">The articles your AI is allowed to quote. If it isn't written here, the AI won't claim it.</span>
+          <span className="block text-base font-semibold">How the knowledge base powers AI drafts</span>
+          <span className="block text-sm text-muted-foreground">The articles your AI is allowed to quote. If it isn't written here, the AI won't claim it.</span>
         </span>
         <ChevronDown className={cn('size-4 shrink-0 text-muted-foreground transition-transform duration-300', open && 'rotate-180')} />
       </button>
       <div className={cn('grid transition-[grid-template-rows] duration-300 ease-out', open ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]')}>
         <div className="overflow-hidden">
-          <ol className="grid gap-px border-t bg-border sm:grid-cols-2 lg:grid-cols-4">
+          <ol className="grid gap-px border-t border-primary/15 bg-primary/15 sm:grid-cols-2 lg:grid-cols-4">
             {STEPS.map(({ icon: Icon, title, body }, i) => (
-              <li key={title} className="relative bg-card p-5">
+              <li key={title} className="relative bg-card/80 p-5">
                 <div className="mb-3 flex items-center gap-2">
                   <span className="flex size-6 items-center justify-center rounded-full bg-primary text-[11px] font-semibold text-primary-foreground">{i + 1}</span>
                   <Icon className="size-4 text-primary" />

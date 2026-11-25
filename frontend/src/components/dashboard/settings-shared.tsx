@@ -5,43 +5,45 @@ import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
 
-/** A titled settings section with an icon, a plain-language description and a body. */
+/** A settings section: a plain heading, then rows separated by hairlines. No card chrome. */
 export function Section({ id, icon: Icon, title, description, children, aside }: { id: string; icon: typeof Lock; title: string; description: ReactNode; children: ReactNode; aside?: ReactNode }) {
   return (
-    <section id={id} aria-labelledby={`${id}-h`} className="overflow-hidden rounded-2xl border bg-card shadow-xs">
-      <header className="flex items-start gap-3.5 border-b px-6 py-5">
-        <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-accent text-accent-foreground">
+    <section id={id} aria-labelledby={`${id}-h`}>
+      <header className="flex items-start gap-4 border-b pb-5">
+        <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
           <Icon className="size-5" />
         </span>
         <div className="min-w-0 flex-1">
-          <h2 id={`${id}-h`} className="text-base font-semibold tracking-tight">
+          <h2 id={`${id}-h`} className="text-xl font-semibold tracking-tight">
             {title}
           </h2>
-          <p className="mt-0.5 text-sm leading-relaxed text-muted-foreground">{description}</p>
+          <p className="mt-1 max-w-2xl text-sm leading-relaxed text-muted-foreground">{description}</p>
         </div>
         {aside}
       </header>
-      <div className="space-y-6 p-6">{children}</div>
+      <div className="divide-y [&>*]:py-6">{children}</div>
     </section>
   )
 }
 
-/** One setting: label, control and a helper line that says what it means. */
-export function Field({ label, htmlFor, hint, children, className }: { label: string; htmlFor?: string; hint?: ReactNode; children: ReactNode; className?: string }) {
+/** One setting row: label and explanation on the left, control on the right. `stack` puts a wide control underneath. */
+export function Field({ label, htmlFor, hint, children, className, stack }: { label: string; htmlFor?: string; hint?: ReactNode; children: ReactNode; className?: string; stack?: boolean }) {
   return (
-    <div className={cn('space-y-1.5', className)}>
-      <Label htmlFor={htmlFor} className="text-sm font-medium">
-        {label}
-      </Label>
-      {children}
-      {hint && <p className="text-xs leading-relaxed text-muted-foreground">{hint}</p>}
+    <div className={cn('grid gap-x-10 gap-y-2.5', stack ? 'grid-cols-1' : 'md:grid-cols-[minmax(0,16rem)_minmax(0,1fr)]', className)}>
+      <div>
+        <Label htmlFor={htmlFor} className="text-sm font-semibold">
+          {label}
+        </Label>
+        {hint && <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{hint}</p>}
+      </div>
+      <div className="min-w-0 space-y-1.5">{children}</div>
     </div>
   )
 }
 
 export function ReadOnlyBanner({ children }: { children?: ReactNode }) {
   return (
-    <p className="mb-5 flex items-center gap-2.5 rounded-xl border bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
+    <p className="mb-5 flex items-center gap-2.5 rounded-lg bg-muted/60 px-4 py-3 text-sm text-muted-foreground">
       <Lock className="size-4 shrink-0" />
       {children ?? 'You can view these settings. Only workspace owners and admins can change them.'}
     </p>

@@ -19,7 +19,7 @@ export function CustomerLayout() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-30 border-b border-border bg-card/85 backdrop-blur">
+      <header className="sticky top-0 z-30 border-b border-border bg-card/90 shadow-[0_1px_0_0_var(--border)] backdrop-blur">
         <div className="mx-auto flex h-16 max-w-6xl items-center gap-4 px-4 sm:gap-6 sm:px-6">
           <Link to={base} aria-label={`${brief?.name ?? 'Help'} home`} className="flex items-center gap-3 rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-ring">
             <WorkspaceMark name={brief?.name} />
@@ -41,7 +41,7 @@ export function CustomerLayout() {
             >
               <Ticket className="size-4" /> My tickets
               {unread > 0 && (
-                <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-[11px] font-semibold text-primary-foreground tabular-nums">{unread}</span>
+                <span className="inline-flex min-w-5 items-center justify-center rounded-md bg-primary px-1.5 text-[11px] font-semibold text-primary-foreground tabular-nums">{unread}</span>
               )}
             </NavLink>
           </nav>

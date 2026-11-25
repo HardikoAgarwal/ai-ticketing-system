@@ -31,14 +31,14 @@ function CategoryForm({ initial, busy, submitLabel, onSubmit, onCancel }: { init
   return (
     <div className="space-y-4">
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Name" htmlFor={`${id}-name`} hint="Shown on tickets and in analytics.">
+        <Field stack label="Name" htmlFor={`${id}-name`} hint="Shown on tickets and in analytics.">
           <Input id={`${id}-name`} value={name} maxLength={80} placeholder="e.g. Shipping & Delivery" onChange={(e) => setName(e.target.value)} />
         </Field>
-        <Field label="Keywords" htmlFor={`${id}-kw`} hint="Comma separated. They power instant rule-based sorting when AI is off or unavailable.">
+        <Field stack label="Keywords" htmlFor={`${id}-kw`} hint="Comma separated. They power instant rule-based sorting when AI is off or unavailable.">
           <Input id={`${id}-kw`} value={keywords} placeholder="shipping, delivery, tracking" onChange={(e) => setKeywords(e.target.value)} />
         </Field>
       </div>
-      <Field label="Description" htmlFor={`${id}-desc`} hint="Plain words. The AI reads this to decide which tickets belong here.">
+      <Field stack label="Description" htmlFor={`${id}-desc`} hint="Plain words. The AI reads this to decide which tickets belong here.">
         <Input id={`${id}-desc`} value={description} maxLength={300} placeholder="Late, lost or damaged deliveries and tracking questions." onChange={(e) => setDescription(e.target.value)} />
       </Field>
       <div className="flex gap-2">
@@ -109,7 +109,7 @@ export function CategoriesSection({ readOnly }: { readOnly: boolean }) {
       }
     >
       {adding && (
-        <div className="rounded-xl border border-primary/30 bg-accent/30 p-4">
+        <div className="rounded-lg bg-accent/40 p-4">
           <p className="mb-3 text-sm font-semibold">New category</p>
           <CategoryForm busy={create.isPending} submitLabel="Add category" onSubmit={(v) => create.mutate(v)} onCancel={() => setAdding(false)} />
         </div>
@@ -120,12 +120,12 @@ export function CategoriesSection({ readOnly }: { readOnly: boolean }) {
       ) : isError ? (
         <ErrorState error={error} onRetry={() => refetch()} />
       ) : (
-        <ul className="space-y-2.5">
+        <ul className="divide-y [&>li]:py-5 [&>li:first-child]:pt-0">
           {data?.map((c) => {
             const tone = categoryTone(c.key, c.name)
             const kws = Object.keys(c.keywords)
             return (
-              <li key={c.id} className="rounded-xl border p-4 transition-colors hover:bg-muted/20">
+              <li key={c.id}>
                 {editing === c.id ? (
                   <CategoryForm initial={c} busy={update.isPending} submitLabel="Save" onSubmit={(v) => update.mutate({ id: c.id, ...v })} onCancel={() => setEditing(null)} />
                 ) : (
@@ -144,7 +144,7 @@ export function CategoriesSection({ readOnly }: { readOnly: boolean }) {
                       {kws.length > 0 && (
                         <div className="mt-2 flex flex-wrap gap-1.5">
                           {kws.slice(0, 10).map((k) => (
-                            <span key={k} className="rounded-md bg-muted px-1.5 py-0.5 text-[11px] text-muted-foreground">
+                            <span key={k} className="rounded-md bg-muted px-2 py-0.5 text-xs text-muted-foreground">
                               {k}
                             </span>
                           ))}

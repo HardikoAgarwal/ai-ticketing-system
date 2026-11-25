@@ -1,11 +1,11 @@
 import { Check, ChevronDown, ListFilter, Search, SlidersHorizontal, X, type LucideIcon } from 'lucide-react'
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import type { Tone } from '@/lib/constants'
 import { cn } from '@/lib/utils'
 
@@ -122,10 +122,10 @@ export function ActiveFilterChips({ specs, values, onChange, onClear, extra }: {
   )
   if (!chips.length && !extra?.length) return null
   return (
-    <div className="flex flex-wrap items-center gap-2 border-t border-slate-200/80 pt-4">
-      <span className="mr-1 text-xs font-semibold tracking-wide text-muted-foreground uppercase">Active</span>
+    <div className="flex flex-wrap items-center gap-2">
+      <span className="mr-1 text-xs font-semibold tracking-wide text-muted-foreground uppercase">Applied</span>
       {extra?.map((e) => (
-        <button key={e.label} type="button" onClick={e.onRemove} className="inline-flex h-8 items-center gap-1.5 rounded-full bg-foreground pr-2 pl-3 text-[13px] font-medium text-background transition-colors hover:bg-foreground/80 focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none">
+        <button key={e.label} type="button" onClick={e.onRemove} className="inline-flex h-8 items-center gap-1.5 rounded-md bg-foreground pr-2 pl-3 text-[13px] font-medium text-background transition-colors hover:bg-foreground/80 focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none">
           {e.label} <X className="size-3.5 opacity-80" />
         </button>
       ))}
@@ -135,7 +135,7 @@ export function ActiveFilterChips({ specs, values, onChange, onClear, extra }: {
           type="button"
           onClick={() => onChange(spec.key, toggle(spec, values[spec.key], value))}
           aria-label={`Remove ${spec.label} filter ${label}`}
-          className="inline-flex h-8 items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 pr-2 pl-3 text-[13px] font-medium text-primary transition-colors hover:bg-primary/15 focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none"
+          className="inline-flex h-8 items-center gap-1.5 rounded-md border border-primary/30 bg-primary/10 pr-2 pl-3 text-[13px] font-medium text-primary transition-colors hover:bg-primary/15 focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none"
         >
           <span className="text-primary/70">{spec.label}:</span> {label} <X className="size-3.5" />
         </button>
@@ -158,7 +158,7 @@ export const SORT_OPTIONS = [
 export function SortSelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   return (
     <Select value={value} onValueChange={onChange}>
-      <SelectTrigger aria-label="Sort tickets" className="h-11 w-full min-w-48 rounded-xl border-slate-200 bg-card font-medium shadow-xs sm:w-auto">
+      <SelectTrigger aria-label="Sort tickets" className="h-10 w-full min-w-44 rounded-lg border-border bg-card font-medium shadow-xs sm:w-auto">
         <ListFilter className="size-4 text-muted-foreground" />
         <span className="text-muted-foreground">Sort:</span>
         <SelectValue />
@@ -190,17 +190,17 @@ export function SearchBox({ value, onChange }: { value: string; onChange: (v: st
     return () => window.removeEventListener('keydown', onKey)
   }, [])
   return (
-    <div className="relative min-w-0 flex-1">
-      <Search className="pointer-events-none absolute top-1/2 left-4 size-[18px] -translate-y-1/2 text-muted-foreground" />
+    <div className="relative min-w-0 flex-1 sm:max-w-xs sm:flex-none sm:basis-72">
+      <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
       <Input
         ref={ref}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
-        placeholder="Search by subject, customer, company or TKT-0001"
+        placeholder="Search tickets"
         aria-label="Search tickets"
-        className="h-11 rounded-xl border-slate-200 bg-card pr-14 pl-11 text-[15px] shadow-xs"
+        className="h-10 rounded-lg border-border bg-card pr-12 pl-9 text-sm shadow-xs"
       />
       {value ? (
         <button type="button" onClick={() => { onChange(''); ref.current?.focus() }} aria-label="Clear search" className="absolute top-1/2 right-3 flex size-6 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground hover:bg-muted">
@@ -231,7 +231,7 @@ export function QuickViews({ views, value, onChange }: { views: QuickView[]; val
     if (el && ref.current) ref.current.scrollTo({ left: el.offsetLeft - 24, behavior: 'smooth' })
   }, [value])
   return (
-    <div ref={ref} role="tablist" aria-label="Ticket views" className="flex max-w-full gap-1 overflow-x-auto rounded-xl bg-slate-100 p-1 ring-1 ring-slate-200/70 ring-inset [&::-webkit-scrollbar]:hidden">
+    <div ref={ref} role="tablist" aria-label="Ticket views" className="flex max-w-full shrink-0 gap-1 overflow-x-auto rounded-lg bg-muted p-1 ring-1 ring-border ring-inset [&::-webkit-scrollbar]:hidden">
       {views.map((v) => {
         const on = v.key === value
         return (
@@ -241,13 +241,13 @@ export function QuickViews({ views, value, onChange }: { views: QuickView[]; val
             aria-selected={on}
             onClick={() => onChange(v.key)}
             className={cn(
-              'flex h-9 shrink-0 items-center gap-2 rounded-lg px-3.5 text-sm font-medium whitespace-nowrap transition-all focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none',
-              on ? 'bg-card text-foreground shadow-sm ring-1 ring-slate-200' : 'text-muted-foreground hover:text-foreground',
+              'flex h-9 shrink-0 items-center gap-2 rounded-md px-3.5 text-sm font-medium whitespace-nowrap transition-all focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none',
+              on ? 'bg-card text-foreground shadow-sm ring-1 ring-border' : 'text-muted-foreground hover:text-foreground',
             )}
           >
             {v.label}
             {v.count !== undefined && (
-              <span className={cn('rounded-full px-2 py-px text-xs font-semibold tabular-nums', on ? 'bg-primary text-primary-foreground' : 'bg-slate-200/80 text-slate-600')}>{v.count}</span>
+              <span className={cn('rounded-md px-1.5 py-px text-xs font-semibold tabular-nums', on ? 'bg-primary text-primary-foreground' : 'bg-background text-muted-foreground')}>{v.count}</span>
             )}
           </button>
         )
@@ -256,62 +256,87 @@ export function QuickViews({ views, value, onChange }: { views: QuickView[]; val
   )
 }
 
-/** Phone filters: one button that opens a sheet with every filter as toggle pills. */
-export function FilterSheet({ specs, values, onChange, onClear, activeCount, children }: {
+/** All filters live here: one "Filters" button opens a dialog with every filter as toggle pills; nothing applies until "Apply". */
+export function FilterDialog({ specs, values, onApply, activeCount }: {
   specs: FilterSpec[]
   values: Record<string, string | null>
-  onChange: (key: string, v: string | null) => void
-  onClear: () => void
+  onApply: (next: Record<string, string | null>) => void
   activeCount: number
-  children?: ReactNode
 }) {
   const [open, setOpen] = useState(false)
   return (
     <>
-      <Button variant="outline" onClick={() => setOpen(true)} className="h-11 rounded-xl border-slate-200 bg-card px-3.5 shadow-xs">
+      <Button variant="outline" onClick={() => setOpen(true)} className="h-10 shrink-0 rounded-lg border-border bg-card px-3.5 shadow-xs">
         <SlidersHorizontal /> Filters
-        {activeCount > 0 && <span className="rounded-full bg-primary px-1.5 text-xs font-semibold text-primary-foreground">{activeCount}</span>}
+        {activeCount > 0 && <span className="rounded-md bg-primary px-1.5 text-xs font-semibold text-primary-foreground">{activeCount}</span>}
       </Button>
-      <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent side="bottom" className="max-h-[85svh] gap-0 rounded-t-2xl p-0">
-          <SheetHeader className="border-b px-5 py-4">
-            <SheetTitle>Filter tickets</SheetTitle>
-            <SheetDescription>Narrow the list. Filters are saved in the page URL.</SheetDescription>
-          </SheetHeader>
-          <div className="space-y-5 overflow-y-auto px-5 py-5">
-            {children}
-            {specs.map((spec) => (
-              <section key={spec.key}>
-                <p className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">{spec.label}</p>
-                <div className="flex flex-wrap gap-2">
-                  {spec.options.map((o) => {
-                    const on = csv(values[spec.key]).includes(o.value)
-                    return (
-                      <button
-                        key={o.value}
-                        type="button"
-                        aria-pressed={on}
-                        onClick={() => onChange(spec.key, toggle(spec, values[spec.key], o.value))}
-                        className={cn('rounded-full border px-3.5 py-2 text-sm font-medium transition-colors', on ? 'border-primary bg-primary/10 text-primary' : 'bg-card text-foreground/80')}
-                      >
-                        {o.label}
-                      </button>
-                    )
-                  })}
-                </div>
-              </section>
-            ))}
-          </div>
-          <div className="flex gap-2 border-t bg-card px-5 py-3.5">
-            <Button variant="ghost" onClick={onClear} disabled={!activeCount}>
-              Clear all
-            </Button>
-            <Button className="ml-auto" onClick={() => setOpen(false)}>
-              Show results
-            </Button>
-          </div>
-        </SheetContent>
-      </Sheet>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="max-h-[88svh] gap-0 overflow-hidden p-0 sm:max-w-xl">
+          {open && <FilterForm specs={specs} initial={values} onClose={() => setOpen(false)} onApply={onApply} />}
+        </DialogContent>
+      </Dialog>
+    </>
+  )
+}
+
+function FilterForm({ specs, initial, onApply, onClose }: {
+  specs: FilterSpec[]
+  initial: Record<string, string | null>
+  onApply: (next: Record<string, string | null>) => void
+  onClose: () => void
+}) {
+  const [draft, setDraft] = useState(initial)
+  const count = specs.filter((s) => draft[s.key]).length
+  return (
+    <>
+      <DialogHeader className="border-b px-6 py-5">
+        <DialogTitle>Filter tickets</DialogTitle>
+        <DialogDescription>Pick as many as you like, then apply. Active filters show above the list.</DialogDescription>
+      </DialogHeader>
+      <div className="min-h-0 flex-1 space-y-6 overflow-y-auto px-6 py-5">
+        {specs.map((spec) => {
+          const Icon = spec.icon
+          return (
+            <section key={spec.key}>
+              <p className="mb-2.5 flex items-center gap-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                {Icon && <Icon className="size-3.5" />} {spec.label}
+                {spec.multi && <span className="font-normal tracking-normal normal-case">· pick any</span>}
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {spec.options.map((o) => {
+                  const on = csv(draft[spec.key]).includes(o.value)
+                  const OIcon = o.tone?.icon ?? o.icon
+                  return (
+                    <button
+                      key={o.value}
+                      type="button"
+                      aria-pressed={on}
+                      onClick={() => setDraft((d) => ({ ...d, [spec.key]: toggle(spec, d[spec.key], o.value) }))}
+                      className={cn(
+                        'inline-flex h-9 items-center gap-1.5 rounded-md border px-3 text-sm font-medium transition-colors focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none',
+                        on ? 'border-primary bg-primary/10 text-primary' : 'border-border bg-card text-foreground/80 hover:bg-muted',
+                      )}
+                    >
+                      {OIcon && <OIcon className={cn('size-4', on ? 'text-primary' : (o.tone?.iconClass ?? 'text-muted-foreground'))} />}
+                      {o.label}
+                      {on && <Check className="size-3.5" />}
+                    </button>
+                  )
+                })}
+              </div>
+            </section>
+          )
+        })}
+      </div>
+      <DialogFooter className="border-t bg-muted/40 px-6 py-4 sm:justify-between">
+        <Button variant="ghost" onClick={() => setDraft(Object.fromEntries(specs.map((s) => [s.key, null])))} disabled={!count}>
+          Reset
+        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button onClick={() => { onApply(draft); onClose() }}>Apply{count ? ` (${count})` : ''}</Button>
+        </div>
+      </DialogFooter>
     </>
   )
 }

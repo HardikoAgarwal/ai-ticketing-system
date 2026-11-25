@@ -66,7 +66,7 @@ export function ConnectionIndicator() {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <span className="inline-flex items-center gap-1.5 rounded-full border bg-card px-2.5 py-1 text-xs font-medium text-muted-foreground shadow-xs">
+        <span className="inline-flex items-center gap-1.5 rounded-md border bg-card px-2.5 py-1 text-xs font-medium text-muted-foreground shadow-xs">
           <span className={cn('size-2 rounded-full', meta.dot)} />
           {meta.label}
         </span>

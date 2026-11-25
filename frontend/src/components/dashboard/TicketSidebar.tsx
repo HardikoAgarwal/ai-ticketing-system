@@ -110,7 +110,7 @@ export function TicketSidebar({
 
   return (
     <Tabs value={tab} onValueChange={(v) => onTab(v as SidebarTab)} className={cn('gap-4', className)}>
-      <TabsList className="grid h-11 w-full grid-cols-3 rounded-xl bg-card p-1 shadow-sm ring-1 ring-slate-200">
+      <TabsList className="grid h-11 w-full grid-cols-3 rounded-xl bg-card p-1 shadow-sm ring-1 ring-border">
         <TabsTrigger value="workflow">Workflow</TabsTrigger>
         <TabsTrigger value="ai">
           <Sparkles className="size-3.5" /> AI

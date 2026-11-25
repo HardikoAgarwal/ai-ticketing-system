@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { AnimatePresence, motion } from 'motion/react'
-import { ChevronUp, Headphones, Loader2, LogOut, RotateCcw, Sparkles, UserRound, X, Zap } from 'lucide-react'
+import { ChevronDown, ChevronUp, Headphones, Loader2, LogOut, RotateCcw, Sparkles, UserRound, Zap } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -18,20 +18,34 @@ const TEMPLATE_BY_NAME: Record<string, string> = {
   'Northstar IT Helpdesk': 'helpdesk',
   'Tidewater Goods': 'ecommerce',
 }
+const OPEN_KEY = 'helpdesk.dock'
 const SPRING = { type: 'spring', stiffness: 420, damping: 36, mass: 0.8 } as const
 
 /**
- * Floating demo control, bottom-left. Collapsed it is a small pill (countdown); on click it morphs into a panel
+ * Floating demo control, bottom-right. Open on first visit (remembers if you collapse it). Collapsed it is a small pill (countdown); on click it morphs into a panel
  * with the view switcher, expiry, live AI budget and demo actions. Only rendered inside demo workspaces.
  */
 export function DemoDock() {
   const { slug, api, brief, isDemo, staff } = useWorkspace()
   const { demo, activeView, switchView, startDemo, logout } = useAuth()
   const navigate = useNavigate()
-  const [open, setOpen] = useState(false)
+  const [open, setOpenRaw] = useState(() => {
+    try {
+      return sessionStorage.getItem(OPEN_KEY) !== 'closed'
+    } catch {
+      return true
+    }
+  })
+  const setOpen = useCallback((v: boolean) => {
+    setOpenRaw(v)
+    try {
+      sessionStorage.setItem(OPEN_KEY, v ? 'open' : 'closed')
+    } catch {
+      /* ignore */
+    }
+  }, [])
   const [busy, setBusy] = useState<null | 'view' | 'fresh'>(null)
   const [, tick] = useState(0)
-  const rootRef = useRef<HTMLDivElement>(null)
   const pillRef = useRef<HTMLButtonElement>(null)
   const closeRef = useRef<HTMLButtonElement>(null)
 
@@ -50,21 +64,13 @@ export function DemoDock() {
   const close = useCallback(() => {
     setOpen(false)
     requestAnimationFrame(() => pillRef.current?.focus())
-  }, [])
+  }, [setOpen])
 
   useEffect(() => {
     if (!open) return
-    closeRef.current?.focus()
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && close()
-    const onPointer = (e: PointerEvent) => {
-      if (rootRef.current && !rootRef.current.contains(e.target as Node)) setOpen(false)
-    }
     window.addEventListener('keydown', onKey)
-    document.addEventListener('pointerdown', onPointer)
-    return () => {
-      window.removeEventListener('keydown', onKey)
-      document.removeEventListener('pointerdown', onPointer)
-    }
+    return () => window.removeEventListener('keydown', onKey)
   }, [open, close])
 
   if (!isDemo) return null
@@ -112,41 +118,41 @@ export function DemoDock() {
   }
 
   return (
-    <div ref={rootRef} className="pointer-events-none fixed bottom-[max(0.75rem,env(safe-area-inset-bottom))] left-3 z-40 sm:bottom-[max(1rem,env(safe-area-inset-bottom))] sm:left-4">
+    <div className="pointer-events-none fixed right-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-40 sm:right-5 sm:bottom-[max(1.25rem,env(safe-area-inset-bottom))]">
       <AnimatePresence initial={false} mode="popLayout">
         {open ? (
           <motion.div
             key="panel"
             layoutId="demo-dock"
             transition={SPRING}
-            style={{ borderRadius: 24, transformOrigin: 'bottom left' }}
+            style={{ borderRadius: 18, transformOrigin: 'bottom right' }}
             role="dialog"
             aria-label="Demo controls"
-            className="pointer-events-auto w-[calc(100vw-1.5rem)] overflow-hidden border bg-card text-card-foreground shadow-2xl ring-1 ring-black/5 sm:w-[23rem]"
+            className="pointer-events-auto w-[calc(100vw-1.5rem)] overflow-hidden border bg-card text-card-foreground shadow-2xl ring-1 ring-black/5 sm:w-[24rem]"
           >
             <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.06, duration: 0.2 }}>
-              <header className="flex items-start gap-3 border-b bg-muted/30 px-5 py-4">
-                <span className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+              <header className="flex items-start gap-3 border-b bg-primary px-5 py-4 text-primary-foreground">
+                <span className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-xl bg-white/15 text-white">
                   <Sparkles className="size-[18px]" />
                 </span>
                 <div className="min-w-0 flex-1">
                   <p className="flex items-center gap-2 text-sm font-semibold">
                     Live demo
-                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700 ring-1 ring-emerald-600/20 ring-inset">
+                    <span className="inline-flex items-center gap-1.5 rounded-md bg-white/15 px-2 py-1 text-[11px] font-medium text-white">
                       <span className="size-1.5 rounded-full bg-emerald-500" /> Private sandbox
                     </span>
                   </p>
-                  <p className="mt-0.5 truncate text-xs text-muted-foreground">{brief?.name}</p>
+                  <p className="mt-0.5 truncate text-xs text-primary-foreground/75">{brief?.name}</p>
                 </div>
-                <Button ref={closeRef} variant="ghost" size="icon-sm" onClick={close} aria-label="Close demo controls" className="-mr-2 -mt-1">
-                  <X />
+                <Button ref={closeRef} variant="ghost" size="icon-sm" onClick={close} aria-label="Collapse demo controls" className="-mr-2 -mt-1 text-white hover:bg-white/15 hover:text-white">
+                  <ChevronDown />
                 </Button>
               </header>
 
               <div className="space-y-5 px-5 py-5">
                 <section aria-label="Time left">
                   <div className="flex items-baseline justify-between text-xs">
-                    <span className="font-medium text-muted-foreground">Sandbox resets in</span>
+                    <span className="font-medium text-muted-foreground">Sandbox expires in</span>
                     <span className="text-sm font-semibold tabular-nums">{left === 'expired' ? 'Expired' : (left ?? '—')}</span>
                   </div>
                   <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted" role="progressbar" aria-valuenow={Math.round(remainingPct)} aria-valuemin={0} aria-valuemax={100} aria-label="Time left in sandbox">
@@ -158,7 +164,7 @@ export function DemoDock() {
                 {canSwitch && (
                   <section aria-label="Switch view">
                     <p className="mb-2 text-xs font-medium text-muted-foreground">You are viewing as</p>
-                    <div role="radiogroup" aria-label="View" className="grid grid-cols-2 gap-1.5 rounded-2xl bg-muted p-1">
+                    <div role="radiogroup" aria-label="View" className="grid grid-cols-2 gap-1.5 rounded-xl bg-muted p-1">
                       {(
                         [
                           ['agent', 'Agent view', 'Triage and reply', Headphones],
@@ -175,7 +181,7 @@ export function DemoDock() {
                             disabled={busy !== null}
                             onClick={() => flip(view)}
                             className={cn(
-                              'flex flex-col items-start gap-0.5 rounded-xl px-3 py-2.5 text-left transition-all focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none disabled:opacity-60',
+                              'flex flex-col items-start gap-0.5 rounded-lg px-3 py-2.5 text-left transition-all focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none disabled:opacity-60',
                               on ? 'bg-card shadow-sm ring-1 ring-black/5' : 'text-muted-foreground hover:bg-card/60 hover:text-foreground',
                             )}
                           >
@@ -213,7 +219,7 @@ export function DemoDock() {
                 )}
               </div>
 
-              <footer className="flex items-center gap-2 border-t bg-muted/30 px-5 py-3.5">
+              <footer className="flex items-center gap-2 border-t bg-muted/40 px-5 py-3.5">
                 <Button size="sm" variant="outline" onClick={fresh} disabled={busy !== null}>
                   {busy === 'fresh' ? <Loader2 className="animate-spin" /> : <RotateCcw />} Start fresh demo
                 </Button>
@@ -229,7 +235,7 @@ export function DemoDock() {
             ref={pillRef}
             layoutId="demo-dock"
             transition={SPRING}
-            style={{ borderRadius: 999, transformOrigin: 'bottom left' }}
+            style={{ borderRadius: 999, transformOrigin: 'bottom right' }}
             type="button"
             onClick={() => setOpen(true)}
             aria-expanded={false}

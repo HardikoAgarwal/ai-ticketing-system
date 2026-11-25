@@ -70,7 +70,7 @@ export function UserMenu({ variant = 'avatar', collapsed = false }: { variant?: 
           <button
             aria-label="Account menu"
             className={cn(
-              'flex w-full items-center gap-2.5 rounded-xl border border-border bg-background/60 p-2 text-left transition-colors outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring',
+              'flex w-full items-center gap-2.5 rounded-xl border border-sidebar-border bg-sidebar-accent/60 p-2 text-left text-sidebar-foreground transition-colors outline-none hover:bg-sidebar-accent focus-visible:ring-2 focus-visible:ring-sidebar-ring',
               collapsed && 'justify-center border-transparent bg-transparent p-1',
             )}
           >
@@ -79,9 +79,9 @@ export function UserMenu({ variant = 'avatar', collapsed = false }: { variant?: 
               <>
                 <span className="min-w-0 flex-1 leading-tight">
                   <span className="block truncate text-[13px] font-semibold">{user.full_name}</span>
-                  <span className="block truncate text-[11px] text-muted-foreground">{roleLabel}</span>
+                  <span className="block truncate text-[11px] text-sidebar-foreground/65">{roleLabel}</span>
                 </span>
-                <ChevronsUpDown className="size-4 shrink-0 text-muted-foreground" />
+                <ChevronsUpDown className="size-4 shrink-0 text-sidebar-foreground/60" />
               </>
             )}
           </button>

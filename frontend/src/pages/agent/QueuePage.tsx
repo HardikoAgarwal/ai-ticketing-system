@@ -1,12 +1,12 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
-import { AlertOctagon, CalendarDays, ChevronLeft, ChevronRight, Clock, Inbox, ListFilter, Loader2, Search, Sparkles, UserRound, UserX } from 'lucide-react'
+import { AlertOctagon, CalendarDays, ChevronLeft, ChevronRight, Clock, Inbox, Loader2, Search, Sparkles, UserRound, UserX } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 
 import { useAuth } from '@/auth/AuthContext'
 import { useWorkspace } from '@/auth/workspace'
 import { PageHeader } from '@/components/common'
-import { ActiveFilterChips, FilterButton, FilterSheet, QuickViews, SearchBox, SortSelect, SORT_OPTIONS, type FilterSpec } from '@/components/dashboard/QueueFilters'
+import { ActiveFilterChips, FilterDialog, QuickViews, SearchBox, SortSelect, SORT_OPTIONS, type FilterSpec } from '@/components/dashboard/QueueFilters'
 import { surface } from '@/components/dashboard/surface'
 import { TicketCard, TicketCardSkeleton } from '@/components/dashboard/TicketCard'
 import { EmptyState, ErrorState } from '@/components/states'
@@ -205,27 +205,34 @@ export function QueuePage() {
         <KpiCard label="Critical open" value={stats.data?.critical} icon={AlertOctagon} tile="bg-orange-100 text-orange-700" ring="ring-orange-300" onClick={() => applyKpi({ priority: 'CRITICAL' })} active={params.get('priority') === 'CRITICAL'} />
       </div>
 
-      <section aria-label="Find and filter tickets" className={cn(surface, 'mb-6 flex flex-col gap-4 p-4 sm:p-5')}>
-        {/* row 1: search + sort (+ filters button on phones) */}
-        <div className="flex flex-wrap items-center gap-3 sm:flex-nowrap">
-          <SearchBox value={search} onChange={setSearch} />
-          <div className="md:hidden">
-            <FilterSheet specs={specs} values={values} onChange={setParam} onClear={clearAll} activeCount={activeCount}>
-              <section>
-                <p className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">Sort by</p>
-                <SortSelect value={sort} onChange={(v) => setParam('sort', v === 'default' ? null : v)} />
-              </section>
-            </FilterSheet>
-          </div>
-          <div className="hidden shrink-0 md:block">
-            <SortSelect value={sort} onChange={(v) => setParam('sort', v === 'default' ? null : v)} />
+      <section aria-label="Find and filter tickets" className="mb-5 space-y-3">
+        <div className={cn(surface, 'flex flex-col gap-3 p-3 sm:p-3.5')}>
+          <div className="flex flex-wrap items-center gap-2.5 2xl:flex-nowrap">
+            <QuickViews views={quickViews} value={view} onChange={(v) => applyKpi(v === 'attention' ? {} : { view: v })} />
+            <div className="ml-auto flex w-full flex-wrap items-center gap-2.5 sm:w-auto sm:flex-nowrap">
+              <SearchBox value={search} onChange={setSearch} />
+              <FilterDialog
+                specs={specs}
+                values={values}
+                activeCount={activeCount}
+                onApply={(next) => {
+                  const p = new URLSearchParams(params)
+                  p.delete('page')
+                  for (const s of specs) {
+                    if (next[s.key]) p.set(s.key, next[s.key]!)
+                    else p.delete(s.key)
+                  }
+                  setParams(p, { replace: true })
+                }}
+              />
+              <SortSelect value={sort} onChange={(v) => setParam('sort', v === 'default' ? null : v)} />
+            </div>
           </div>
         </div>
 
-        {/* row 2: quick views + result count */}
-        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
-          <QuickViews views={quickViews} value={view} onChange={(v) => applyKpi(v === 'attention' ? {} : { view: v })} />
-          <p className="flex items-center gap-2 text-[13px] text-muted-foreground" aria-live="polite">
+        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-1">
+          <ActiveFilterChips specs={specs} values={values} onChange={setParam} onClear={clearAll} />
+          <p className="ml-auto flex items-center gap-2 text-[13px] text-muted-foreground" aria-live="polite">
             {list.isFetching && !list.isLoading && <Loader2 className="size-3.5 animate-spin" />}
             {list.data ? (list.data.count ? (
               <>
@@ -234,21 +241,6 @@ export function QueuePage() {
             ) : '0 tickets') : 'Loading tickets…'}
           </p>
         </div>
-
-        {/* row 3: the filters, one even grid (hidden on phones, where they live in the sheet) */}
-        <div className="hidden border-t border-slate-200/80 pt-4 md:block">
-          <p className="mb-2.5 flex items-center gap-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-            <ListFilter className="size-3.5" /> Filters
-          </p>
-          <div className="grid grid-cols-3 gap-2.5 lg:grid-cols-4 xl:grid-cols-7">
-            {specs.map((s) => (
-              <FilterButton key={s.key} spec={s} value={params.get(s.key)} onChange={(v) => setParam(s.key, v)} />
-            ))}
-          </div>
-        </div>
-
-        {/* row 4: active filters as removable chips (shown on every screen size) */}
-        <ActiveFilterChips specs={specs} values={values} onChange={setParam} onClear={clearAll} />
       </section>
 
       {list.isLoading ? (

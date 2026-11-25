@@ -22,7 +22,7 @@ export function StateBadge({ kind, label, pulse, className }: { kind: StateKind;
   const v = VARIANTS[kind]
   const Icon = v.icon
   return (
-    <span className={cn('inline-flex h-7 items-center gap-1.5 rounded-full px-3 text-[13px] font-semibold whitespace-nowrap shadow-sm', v.cls, className)}>
+    <span className={cn('inline-flex h-8 items-center gap-1.5 rounded-md px-3 text-[13px] font-semibold whitespace-nowrap shadow-sm', v.cls, className)}>
       {pulse ? (
         <span className="relative flex size-2.5 items-center justify-center" aria-hidden>
           <span className="absolute inline-flex size-full animate-ping rounded-full bg-white/70" />

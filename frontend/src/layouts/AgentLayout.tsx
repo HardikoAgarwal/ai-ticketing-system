@@ -9,7 +9,6 @@ import {
   Menu,
   PanelLeftClose,
   PanelLeftOpen,
-  Search,
   Settings,
   UserRound,
 } from 'lucide-react'
@@ -70,7 +69,7 @@ function WorkspaceSwitcher({ collapsed }: { collapsed: boolean }) {
   const body = (
     <button
       className={cn(
-        'flex w-full items-center gap-3 rounded-xl p-1.5 text-left transition-colors outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring',
+        'flex w-full items-center gap-3 rounded-xl p-1.5 text-left transition-colors outline-none hover:bg-sidebar-accent focus-visible:ring-2 focus-visible:ring-sidebar-ring',
         collapsed && 'justify-center',
       )}
       aria-label="Switch workspace"
@@ -80,9 +79,9 @@ function WorkspaceSwitcher({ collapsed }: { collapsed: boolean }) {
         <>
           <span className="min-w-0 flex-1 leading-tight">
             <span className="block truncate text-sm font-semibold tracking-tight">{brief?.name ?? 'Workspace'}</span>
-            <span className="block truncate text-[11px] text-muted-foreground">{roleLabel} workspace</span>
+            <span className="block truncate text-[11px] text-sidebar-foreground/65">{roleLabel} workspace</span>
           </span>
-          {memberships.length > 1 && <ChevronsUpDown className="size-4 shrink-0 text-muted-foreground" />}
+          {memberships.length > 1 && <ChevronsUpDown className="size-4 shrink-0 text-sidebar-foreground/60" />}
         </>
       )}
     </button>
@@ -115,9 +114,9 @@ function SidebarLink({ item, collapsed, onNavigate }: { item: NavItem; collapsed
       className={({ isActive }) => {
         const active = isActive && !item.to.includes('?')
         return cn(
-          'group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors outline-none hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring',
+          'group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-sidebar-foreground/75 transition-colors outline-none hover:bg-sidebar-accent/70 hover:text-sidebar-accent-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring',
           collapsed && 'justify-center px-0',
-          active && 'bg-accent font-semibold text-accent-foreground hover:bg-accent hover:text-accent-foreground',
+          active && 'bg-sidebar-accent font-semibold text-sidebar-accent-foreground shadow-[inset_3px_0_0_0_var(--sidebar-primary)] hover:bg-sidebar-accent',
         )
       }}
     >
@@ -125,9 +124,9 @@ function SidebarLink({ item, collapsed, onNavigate }: { item: NavItem; collapsed
       {!collapsed && <span className="truncate">{item.label}</span>}
       {item.count !== undefined && item.count > 0 && (
         collapsed ? (
-          <span className="absolute top-1 right-1.5 size-2 rounded-full bg-primary ring-2 ring-card" />
+          <span className="absolute top-1 right-1.5 size-2 rounded-full bg-primary ring-2 ring-sidebar" />
         ) : (
-          <span className="ml-auto rounded-full bg-muted px-2 py-0.5 text-[11px] font-semibold text-muted-foreground tabular-nums group-[.bg-accent]:bg-card">{item.count}</span>
+          <span className="ml-auto rounded-md bg-sidebar-foreground/15 px-2 py-0.5 text-[11px] font-semibold text-sidebar-foreground tabular-nums">{item.count}</span>
         )
       )}
     </NavLink>
@@ -150,7 +149,7 @@ function SidebarBody({ groups, collapsed, onNavigate, reserveDock }: { groups: {
       <nav className="mt-6 flex-1 space-y-6 overflow-y-auto" aria-label="Primary">
         {groups.map((g) => (
           <div key={g.label}>
-            {!collapsed && <p className="mb-1.5 px-3 text-[11px] font-semibold tracking-wider text-muted-foreground/80 uppercase">{g.label}</p>}
+            {!collapsed && <p className="mb-1.5 px-3 text-[11px] font-semibold tracking-wider text-sidebar-foreground/50 uppercase">{g.label}</p>}
             <div className="space-y-0.5">
               {g.items.map((item) => (
                 <SidebarLink key={item.to} item={item} collapsed={collapsed} onNavigate={onNavigate} />
@@ -183,7 +182,6 @@ export function AgentLayout() {
   const { data: stats } = useQuery({ queryKey: ['stats', slug], queryFn: api.tickets.stats, refetchInterval })
   const base = `/w/${slug}/agent`
   const crumb = useCrumb(base)
-  const navigate = useNavigate()
   const { pathname } = useLocation()
   const [collapsed, toggleCollapsed] = useCollapsed()
   const [drawer, setDrawer] = useState(false)
@@ -208,18 +206,12 @@ export function AgentLayout() {
     },
   ]
 
-  const openSearch = () => {
-    navigate(base)
-    // the queue listens for "/" to focus its search box
-    setTimeout(() => document.dispatchEvent(new KeyboardEvent('keydown', { key: '/', bubbles: true })), 150)
-  }
-
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <div className="flex min-h-0 flex-1">
         <aside
           className={cn(
-            'sticky top-0 hidden h-screen shrink-0 flex-col self-start border-r border-border bg-card px-3 py-4 transition-[width] duration-200 md:flex',
+            'sticky top-0 hidden h-screen shrink-0 flex-col self-start border-r border-sidebar-border bg-sidebar px-3 py-4 text-sidebar-foreground transition-[width] duration-200 md:flex',
             collapsed ? 'w-[76px]' : 'w-[264px]',
           )}
         >
@@ -227,14 +219,14 @@ export function AgentLayout() {
         </aside>
 
         <Sheet open={drawer} onOpenChange={setDrawer}>
-          <SheetContent side="left" className="w-[280px] gap-0 p-3 sm:max-w-[280px]" showCloseButton={false}>
+          <SheetContent side="left" className="w-[280px] gap-0 border-sidebar-border bg-sidebar p-3 text-sidebar-foreground sm:max-w-[280px]" showCloseButton={false}>
             <SheetTitle className="sr-only">Navigation</SheetTitle>
             <SidebarBody groups={groups} collapsed={false} onNavigate={() => setDrawer(false)} reserveDock={isDemo} />
           </SheetContent>
         </Sheet>
 
         <div className="flex min-w-0 flex-1 flex-col">
-          <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-border bg-card/85 px-4 backdrop-blur md:px-6">
+          <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-border bg-card/90 px-4 shadow-[0_1px_0_0_var(--border)] backdrop-blur md:px-6">
             <button className="flex size-9 items-center justify-center rounded-lg border bg-card text-muted-foreground shadow-xs md:hidden" onClick={() => setDrawer(true)} aria-label="Open navigation">
               <Menu className="size-[18px]" />
             </button>
@@ -253,16 +245,8 @@ export function AgentLayout() {
             </nav>
             <span className="truncate text-sm font-semibold sm:hidden">{crumb}</span>
 
-            <button
-              onClick={openSearch}
-              className="mx-auto hidden h-10 w-full max-w-md items-center gap-2.5 rounded-xl border bg-background px-3.5 text-sm text-muted-foreground shadow-xs transition-colors hover:border-ring/50 hover:text-foreground lg:flex"
-            >
-              <Search className="size-4" />
-              <span className="flex-1 text-left">Search tickets…</span>
-              <kbd className="rounded-md border bg-card px-1.5 font-mono text-xs">/</kbd>
-            </button>
 
-            <div className="ml-auto flex items-center gap-2.5 sm:gap-3 lg:ml-0">
+            <div className="ml-auto flex items-center gap-2.5 sm:gap-3">
               <ConnectionIndicator />
               <NotificationBell />
               <div className="md:hidden">

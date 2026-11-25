@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { ArrowRight, Check, CircleDot, Headphones, Loader2, UserRound } from 'lucide-react'
+import { ArrowRight, Check, Headphones, Loader2, UserRound } from 'lucide-react'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -14,7 +14,13 @@ import { EASE, WordReveal } from './motion'
 
 type Role = 'agent' | 'customer'
 
-const STEPS = ['Creating your private workspace', 'Seeding customers and tickets', 'Teaching the AI the knowledge base', 'Opening your workspace']
+const STEPS: { title: string; hint: string }[] = [
+  { title: 'Creating your private workspace', hint: 'A fresh, isolated sandbox just for you' },
+  { title: 'Seeding customers and tickets', hint: 'Realistic conversations, SLAs and history' },
+  { title: 'Indexing the knowledge base', hint: 'Articles the AI will cite in its answers' },
+  { title: 'Warming up the AI', hint: 'Triage, sentiment and draft replies' },
+  { title: 'Opening your workspace', hint: 'Taking you to the desk' },
+]
 const isColdStart = (err: unknown) => err instanceof ApiError && (err.status === 0 || err.status >= 502)
 
 /** One solid colour per company, taken from the page palette. `bg`/`fg` colour the icon badge and the Try demo button. */
@@ -89,34 +95,94 @@ function RoleToggle({ role, onChange }: { role: Role; onChange: (r: Role) => voi
 }
 
 function Overlay({ name, step, progress, waking, error, onClose }: { name: string; step: number; progress: number; waking: boolean; error: string | null; onClose: () => void }) {
+  const reduce = useReducedMotion()
+  const blobs = [
+    { c: '#6a4df4', x: ['-10%', '8%', '-10%'], y: ['-12%', '6%', '-12%'], s: 'left-[8%] top-[10%] size-[34rem]' },
+    { c: '#2dd4bf', x: ['6%', '-8%', '6%'], y: ['8%', '-6%', '8%'], s: 'right-[4%] bottom-[6%] size-[30rem]' },
+    { c: '#f472b6', x: ['0%', '10%', '0%'], y: ['6%', '-8%', '6%'], s: 'right-[30%] top-[-8%] size-[22rem]' },
+  ]
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[60] flex items-center justify-center bg-(--lp-paper) p-6 text-(--lp-ink)" role="status" aria-live="polite">
-      <div className="relative w-full max-w-md">
-        <p className="text-center text-sm font-semibold text-(--lp-muted)">Building your sandbox</p>
-        <h3 className="mt-2 text-center text-4xl font-semibold tracking-[-0.04em]">{name}</h3>
-        <ol className="mt-9 space-y-3.5">
-          {STEPS.map((s, i) => (
-            <li key={s} className={cn('flex items-center gap-3 text-[15px] transition-colors', i <= step ? 'text-(--lp-ink)' : 'text-(--lp-muted)/45')}>
-              <span className="flex size-6 shrink-0 items-center justify-center">
-                {i < step ? <Check className="size-5 text-(--lp-violet)" /> : i === step ? <Loader2 className="size-5 animate-spin text-(--lp-violet)" /> : <CircleDot className="size-4" />}
-              </span>
-              {s}
-            </li>
-          ))}
-        </ol>
-        <div className="mt-8 h-2 overflow-hidden rounded-full bg-black/10">
-          <motion.div className="h-full rounded-full bg-(--lp-violet)" animate={{ width: `${progress}%` }} transition={{ duration: 0.5, ease: 'easeOut' }} />
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[60] flex items-center justify-center overflow-hidden bg-[#0d0b24] p-6 text-white" role="status" aria-live="polite">
+      {/* drifting colour fields + faint grid */}
+      <div className="pointer-events-none absolute inset-0" aria-hidden>
+        {blobs.map((b, i) => (
+          <motion.div
+            key={i}
+            className={cn('absolute rounded-full opacity-30 blur-[110px]', b.s)}
+            style={{ background: b.c }}
+            animate={reduce ? undefined : { x: b.x, y: b.y }}
+            transition={{ duration: 9 + i * 2, repeat: Infinity, ease: 'easeInOut' }}
+          />
+        ))}
+        <div className="absolute inset-0 opacity-[0.07] [background-image:linear-gradient(white_1px,transparent_1px),linear-gradient(90deg,white_1px,transparent_1px)] [background-size:44px_44px] [mask-image:radial-gradient(ellipse_at_center,black,transparent_70%)]" />
+      </div>
+
+      <motion.div initial={{ opacity: 0, y: 16, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ duration: 0.45, ease: EASE }} className="relative w-full max-w-lg">
+        <div className="flex flex-col items-center text-center">
+          <div className="relative flex size-16 items-center justify-center">
+            <motion.span className="absolute inset-0 rounded-2xl border border-white/30" animate={reduce ? undefined : { scale: [1, 1.5], opacity: [0.6, 0] }} transition={{ duration: 1.8, repeat: Infinity, ease: 'easeOut' }} />
+            <span className="relative flex size-16 items-center justify-center rounded-2xl bg-white/10 text-2xl font-semibold ring-1 ring-white/25 backdrop-blur">{name.trim().charAt(0)}</span>
+          </div>
+          <p className="mt-6 text-xs font-semibold tracking-[0.18em] text-white/55 uppercase">Building your sandbox</p>
+          <h3 className="mt-2 text-4xl font-semibold tracking-[-0.04em] sm:text-5xl">{name}</h3>
         </div>
-        {waking && !error && <p className="mt-5 text-center text-sm text-(--lp-muted)">The demo runs on a free server that naps when idle. Waking it up can take up to a minute the first time.</p>}
+
+        <ol className="mt-10 space-y-2.5 rounded-2xl bg-white/[0.06] p-3 ring-1 ring-white/10 backdrop-blur-md">
+          {STEPS.map((s, i) => {
+            const active = i === step && !error
+            const complete = i < step
+            return (
+              <motion.li
+                key={s.title}
+                initial={false}
+                animate={{ opacity: i <= step ? 1 : 0.4, backgroundColor: active ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0)' }}
+                transition={{ duration: 0.35 }}
+                className="flex items-center gap-3.5 rounded-xl px-3.5 py-3"
+              >
+                <span className={cn('flex size-8 shrink-0 items-center justify-center rounded-lg transition-colors', complete ? 'bg-emerald-400 text-[#06281f]' : active ? 'bg-white text-[#2a1d7a]' : 'bg-white/10 text-white/60')}>
+                  {complete ? (
+                    <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 500, damping: 18 }}>
+                      <Check className="size-[18px]" strokeWidth={3} />
+                    </motion.span>
+                  ) : active ? (
+                    <Loader2 className="size-[18px] animate-spin" />
+                  ) : (
+                    <span className="text-xs font-semibold">{i + 1}</span>
+                  )}
+                </span>
+                <span className="min-w-0 leading-tight">
+                  <span className="block text-[15px] font-semibold">{s.title}</span>
+                  <AnimatePresence initial={false}>
+                    {active && (
+                      <motion.span initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="block overflow-hidden text-[13px] text-white/60">
+                        <span className="block pt-0.5">{s.hint}</span>
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
+                </span>
+              </motion.li>
+            )
+          })}
+        </ol>
+
+        <div className="mt-7 flex items-center gap-4">
+          <div className="relative h-2 flex-1 overflow-hidden rounded-full bg-white/15">
+            <motion.div className="h-full rounded-full bg-gradient-to-r from-[#8b74ff] via-[#5eead4] to-[#f9a8d4]" animate={{ width: `${progress}%` }} transition={{ duration: 0.6, ease: 'easeOut' }} />
+            {!reduce && <motion.span className="absolute inset-y-0 w-24 bg-gradient-to-r from-transparent via-white/40 to-transparent" animate={{ x: ['-6rem', '36rem'] }} transition={{ duration: 1.8, repeat: Infinity, ease: 'linear' }} />}
+          </div>
+          <span className="w-10 text-right text-sm font-semibold tabular-nums">{Math.round(progress)}%</span>
+        </div>
+
+        {waking && !error && <p className="mt-5 text-center text-sm text-white/60">The demo runs on a free server that naps when idle. Waking it up can take up to a minute the first time.</p>}
         {error && (
-          <div className="mt-6 rounded-2xl bg-(--lp-rose) p-4 text-center ring-1 ring-(--lp-rose-2)">
-            <p role="alert" className="text-sm text-[#7a1636]">{error}</p>
-            <button type="button" onClick={onClose} className="lp-focus mt-3 rounded-full bg-(--lp-violet) px-5 py-2 text-sm font-semibold text-white">
+          <div className="mt-6 rounded-2xl bg-rose-500/15 p-4 text-center ring-1 ring-rose-400/40">
+            <p role="alert" className="text-sm text-rose-100">{error}</p>
+            <button type="button" onClick={onClose} className="lp-focus mt-3 rounded-lg bg-white px-5 py-2 text-sm font-semibold text-[#1b1352]">
               Back to the demos
             </button>
           </div>
         )}
-      </div>
+      </motion.div>
     </motion.div>
   )
 }
@@ -156,8 +222,9 @@ export function Demo({ notice }: { notice?: string | null }) {
     }
   }, [busy, error])
 
-  const step = done ? STEPS.length - 1 : Math.min(Math.floor(elapsed / 1.1), STEPS.length - 1)
-  const progress = done ? 100 : Math.min(92, 8 + elapsed * 14)
+  // steps advance on a timer, but the last one only lights up once the API call has really finished
+  const step = done ? STEPS.length - 1 : Math.min(Math.floor(elapsed / 1.4), STEPS.length - 2)
+  const progress = done ? 100 : Math.min(90, 6 + elapsed * 11)
 
   const launch = async (t: TemplateMeta, role: Role) => {
     if (busy) return

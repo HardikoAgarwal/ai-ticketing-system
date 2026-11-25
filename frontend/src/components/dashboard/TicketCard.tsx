@@ -1,4 +1,4 @@
-import { CircleCheck, Clock, Loader2, Sparkles, UserCheck, UserX } from 'lucide-react'
+import { CircleCheck, Clock, Loader2, Sparkles, UserX } from 'lucide-react'
 import { forwardRef } from 'react'
 import { Link } from 'react-router-dom'
 
@@ -47,15 +47,21 @@ export const TicketCard = forwardRef<HTMLAnchorElement, { ticket: StaffTicket; t
         surface,
         'group block px-5 py-5 transition-all duration-150 outline-none sm:px-6',
         'hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-lg focus-visible:ring-3 focus-visible:ring-ring/50',
-        unread && 'border-blue-200 bg-blue-50/60 hover:border-blue-300',
+        unread && 'border-primary/30 bg-primary/[0.04] hover:border-primary/50',
         closed && 'bg-card/80',
-        selected && 'ring-2 ring-primary/60 ring-offset-2 ring-offset-slate-50',
+        selected && 'ring-2 ring-primary/60 ring-offset-2 ring-offset-background',
       )}
     >
-      {/* header: reference + age on the left, the state that needs attention on the right */}
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-        <span className="rounded-md bg-slate-100 px-2 py-1 font-mono text-xs font-semibold text-slate-600">{ticket.reference}</span>
-        <RelativeTime value={ticket.created_at} className="text-[13px] text-muted-foreground" />
+      {/* row 1: identity + every classification, colored */}
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="rounded-md border bg-muted px-2 py-1 font-mono text-xs font-semibold text-muted-foreground">{ticket.reference}</span>
+        <StatusBadge status={ticket.status} size="card" />
+        {!hasCritical && <PriorityBadge priority={ticket.priority} source={ticket.priority_source} size="card" />}
+        {!triaging && <CategoryBadge category={ticket.category} source={ticket.category_source} size="card" />}
+        <SentimentBadge sentiment={ticket.sentiment} size="card" />
+        {triaging && (
+          <Pill tone={{ label: 'AI triaging', icon: Loader2, pill: 'bg-violet-50 text-violet-700 ring-violet-600/20 dark:bg-violet-500/15 dark:text-violet-300', tint: '', iconClass: '', dot: '' }} size="card" />
+        )}
         <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
           {states.map((s) => (
             <StateBadge key={s.kind} kind={s.kind} label={s.label} pulse={s.pulse} />
@@ -63,61 +69,44 @@ export const TicketCard = forwardRef<HTMLAnchorElement, { ticket: StaffTicket; t
         </div>
       </div>
 
-      <h3 className={cn('mt-3.5 line-clamp-1 text-lg tracking-tight sm:text-[1.1rem]', unread ? 'font-bold' : 'font-semibold')}>{ticket.subject}</h3>
-      <p className="mt-1.5 line-clamp-2 max-w-4xl text-[15px] leading-relaxed text-muted-foreground">{ticket.description}</p>
+      {/* row 2: what it's about */}
+      <h3 className={cn('mt-4 line-clamp-1 text-lg tracking-tight', unread ? 'font-bold' : 'font-semibold')}>{ticket.subject}</h3>
+      <p className="mt-1.5 line-clamp-2 max-w-4xl text-[15px] leading-relaxed text-muted-foreground">{ticket.ai_summary || ticket.description}</p>
 
-      {/* meta: calm info badges */}
-      <div className="mt-4 flex flex-wrap items-center gap-2">
-        <StatusBadge status={ticket.status} size="card" />
-        {!hasCritical && <PriorityBadge priority={ticket.priority} source={ticket.priority_source} size="card" />}
-        {!triaging && <CategoryBadge category={ticket.category} source={ticket.category_source} size="card" />}
-        <SentimentBadge sentiment={ticket.sentiment} size="card" />
-        {triaging && (
-          <Pill tone={{ label: 'AI triaging', icon: Loader2, pill: 'bg-violet-50 text-violet-700 ring-violet-600/20', tint: '', iconClass: '', dot: '' }} size="card" />
-        )}
-        {ticket.ai_status === 'COMPLETED' && (
-          <Pill
-            tone={{ label: `AI triaged${ticket.ai_confidence !== null ? ` · ${Math.round(ticket.ai_confidence * 100)}%` : ''}`, icon: Sparkles, pill: 'bg-violet-50 text-violet-700 ring-violet-600/20', tint: '', iconClass: '', dot: '' }}
-            size="card"
-          />
-        )}
-      </div>
-
-      {/* footer: who it's from, who owns it, how long they have */}
-      <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2.5 border-t border-slate-200/80 pt-4">
-        <div className="flex min-w-0 items-center gap-3">
-          <Avatar className="size-9">
-            <AvatarFallback className="bg-slate-100 text-xs font-semibold text-slate-700">{initials(ticket.requester.name)}</AvatarFallback>
+      {/* row 3: who, who owns it, signals */}
+      <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2.5 rounded-lg border bg-muted/50 px-3.5 py-2.5">
+        <div className="flex min-w-0 items-center gap-2.5">
+          <Avatar className="size-8">
+            <AvatarFallback className="bg-primary/10 text-xs font-semibold text-primary">{initials(ticket.requester.name)}</AvatarFallback>
           </Avatar>
           <p className="min-w-0 truncate text-sm leading-tight">
             <span className="font-semibold">{ticket.requester.name}</span>
-            {ticket.record && (
-              <span className="block truncate text-[13px] text-muted-foreground sm:inline">
-                <span className="hidden sm:inline"> · </span>
-                {ticket.record.title}
-              </span>
-            )}
+            {ticket.record && <span className="block truncate text-[13px] text-muted-foreground sm:inline"><span className="hidden sm:inline"> · </span>{ticket.record.title}</span>}
           </p>
         </div>
-        <div className="ml-auto flex shrink-0 flex-wrap items-center justify-end gap-x-4 gap-y-2">
+        <div className="ml-auto flex flex-wrap items-center justify-end gap-x-4 gap-y-2 text-[13px] text-muted-foreground">
+          {ticket.ai_draft_status === 'COMPLETED' && !closed && (
+            <span className="inline-flex items-center gap-1.5 font-medium text-violet-700 dark:text-violet-300">
+              <Sparkles className="size-4" /> AI draft ready
+            </span>
+          )}
+          {ticket.ai_status === 'COMPLETED' && ticket.ai_confidence !== null && (
+            <span className="hidden items-center gap-1.5 md:inline-flex"><Sparkles className="size-3.5" /> {Math.round(ticket.ai_confidence * 100)}% confident</span>
+          )}
           <SlaText ticket={ticket} />
           {ticket.assigned_to ? (
             <span className="inline-flex items-center gap-2">
-              {mine && (
-                <span className="hidden items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary sm:inline-flex">
-                  <UserCheck className="size-3.5" /> Yours
-                </span>
-              )}
-              {!mine && <span className="hidden text-[13px] text-muted-foreground sm:inline">{ticket.assigned_to.full_name.split(' ')[0]}</span>}
-              <Avatar className="size-8">
-                <AvatarFallback className={cn('text-[11px] font-semibold', mine ? 'bg-primary text-primary-foreground' : 'bg-accent text-accent-foreground')}>{initials(ticket.assigned_to.full_name)}</AvatarFallback>
+              <Avatar className="size-6">
+                <AvatarFallback className={cn('text-[10px] font-semibold', mine ? 'bg-primary text-primary-foreground' : 'bg-accent text-accent-foreground')}>{initials(ticket.assigned_to.full_name)}</AvatarFallback>
               </Avatar>
+              <span className={cn(mine && 'font-semibold text-primary')}>{mine ? 'Yours' : ticket.assigned_to.full_name.split(' ')[0]}</span>
             </span>
           ) : (
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-dashed border-slate-300 px-3 py-1 text-[13px] text-muted-foreground">
+            <span className="inline-flex items-center gap-1.5 rounded-md border border-dashed border-border px-2.5 py-1">
               <UserX className="size-4" /> Unassigned
             </span>
           )}
+          <span className="inline-flex items-center gap-1.5"><Clock className="size-3.5" /> <RelativeTime value={ticket.created_at} /></span>
         </div>
       </div>
     </Link>
