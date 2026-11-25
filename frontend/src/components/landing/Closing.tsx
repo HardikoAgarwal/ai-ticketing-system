@@ -64,11 +64,10 @@ export function Faq() {
   const [open, setOpen] = useState<string | null>(FAQ_GROUPS[0].items[0].q)
   let n = 0
   return (
-    <section id="faq" data-nav="light" className="relative -mt-10 rounded-t-[2.5rem] bg-(--lp-paper) pb-32 text-(--lp-ink)">
+    <section id="faq" data-nav="light" className="relative -mt-10 rounded-t-[2.5rem] bg-(--lp-lav) pb-32 text-(--lp-ink)">
       <div className="relative mx-auto grid max-w-6xl gap-12 px-5 pt-24 sm:px-8 sm:pt-32 lg:grid-cols-[0.8fr_1.35fr] lg:gap-16">
         <div className="lg:sticky lg:top-28 lg:self-start">
-          <p className="text-xs font-bold tracking-[0.2em] text-(--lp-violet) uppercase">FAQ</p>
-          <h2 className="mt-4 text-[clamp(2.4rem,5.4vw,4.4rem)] leading-[0.98] font-semibold tracking-[-0.045em]">
+          <h2 className="text-[clamp(2.4rem,5.4vw,4.4rem)] leading-[0.98] font-semibold tracking-[-0.045em]">
             <WordReveal text="Fair questions." />
           </h2>
           <p className="mt-4 max-w-xs text-neutral-600">Short, honest answers about the AI, the demo and your data.</p>
@@ -84,7 +83,7 @@ export function Faq() {
         <div className="space-y-10">
           {FAQ_GROUPS.map((g) => (
             <Reveal key={g.label}>
-              <h3 className="mb-3 text-xs font-bold tracking-[0.18em] text-neutral-500 uppercase">{g.label}</h3>
+              <h3 className="mb-3 text-base font-semibold tracking-tight text-(--lp-muted)">{g.label}</h3>
               <div className="space-y-3">
                 {g.items.map((it) => (
                   <FaqItem key={it.q} n={++n} q={it.q} a={it.a} open={open === it.q} onToggle={() => setOpen(open === it.q ? null : it.q)} />
@@ -122,7 +121,7 @@ export function FinalCta() {
 function Col({ title, children }: { title: string; children: ReactNode }) {
   return (
     <div>
-      <p className="text-xs font-bold tracking-[0.18em] uppercase opacity-60">{title}</p>
+      <p className="text-base font-semibold opacity-60">{title}</p>
       <ul className="mt-4 space-y-2.5 text-[15px] font-medium">{children}</ul>
     </div>
   )

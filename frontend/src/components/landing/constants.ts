@@ -25,6 +25,8 @@ export interface TemplateMeta {
   hue: string
   soft: string
   blurb: string
+  /** Real figures for what a sandbox is seeded with. */
+  stats: { tickets: number; articles: number }
   highlights: string[]
   tickets: PreviewTicket[]
 }
@@ -40,6 +42,7 @@ export const TEMPLATES: TemplateMeta[] = [
     hue: '#7c3aed',
     soft: 'rgba(124,58,237,0.10)',
     blurb: 'Billing disputes, SSO lockouts, API rate limits and a Segment pipeline outage.',
+    stats: { tickets: 53, articles: 11 },
     highlights: ['Enterprise SSO emergency', 'Duplicate charge refund', 'API 429 backfill'],
     tickets: [
       { ref: 'TKT-0001', subject: 'Segment events missing since this morning', priority: 'Critical', category: 'Integrations & API', who: 'Priya Raman', sla: 'Overdue 1h', late: true, mood: 'Frustrated' },
@@ -58,6 +61,7 @@ export const TEMPLATES: TemplateMeta[] = [
     hue: '#0ea5e9',
     soft: 'rgba(14,165,233,0.10)',
     blurb: 'Laptop provisioning, VPN trouble, access requests and a phishing report.',
+    stats: { tickets: 53, articles: 8 },
     highlights: ['Phishing click, treated as critical', 'MFA lockout after phone change', 'New starter laptop'],
     tickets: [
       { ref: 'TKT-0008', subject: 'I clicked a link in a suspicious email', priority: 'Critical', category: 'Accounts & Access', who: 'Maya Chen', sla: 'Reply in 30m', mood: 'Frustrated' },
@@ -76,6 +80,7 @@ export const TEMPLATES: TemplateMeta[] = [
     hue: '#f97316',
     soft: 'rgba(249,115,22,0.10)',
     blurb: 'Late deliveries, damaged items, refunds and a wrong-size exchange.',
+    stats: { tickets: 53, articles: 8 },
     highlights: ['Parcel stuck for two weeks', 'Cracked bowl replacement', 'Charged without confirmation'],
     tickets: [
       { ref: 'TKT-0001', subject: 'Parcel hasn’t moved for two weeks', priority: 'High', category: 'Shipping & Delivery', who: 'Lucas Meyer', sla: 'Reply in 18h', mood: 'Frustrated' },

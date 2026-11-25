@@ -102,7 +102,7 @@ function Panel({ step }: { step: number }) {
     return (
       <div className="space-y-3">
         <div className="rounded-2xl bg-(--lp-lav) px-3.5 py-2.5 text-[13px]">Our card payment failed on the latest invoice. Will the workspace get locked?</div>
-        <div className="rounded-2xl bg-linear-to-br from-(--lp-lav) to-(--lp-rose) p-3.5 ring-1 ring-(--lp-lav-2)">
+        <div className="rounded-2xl bg-(--lp-lav) p-3.5 ring-1 ring-(--lp-lav-2)">
           <p className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold tracking-wide text-(--lp-violet) uppercase">
             <Sparkles className="size-3.5" /> AI draft
           </p>
@@ -220,58 +220,22 @@ function StackedStep({ step, index }: { step: (typeof STEPS)[number]; index: num
 
 const clamp01 = (n: number) => Math.min(1, Math.max(0, n))
 
-/** One row of the left-hand timeline: a node, the connector to the next node (filled by scroll) and the step copy. */
-function TimelineRow({ step, index, active, done, last, progress, onSelect }: { step: (typeof STEPS)[number]; index: number; active: boolean; done: boolean; last: boolean; progress: MotionValue<number>; onSelect: () => void }) {
-  const fill = useTransform(progress, (v) => clamp01(v * STEPS.length - index))
-  return (
-    <li className="relative flex gap-5">
-      <div className="flex w-12 shrink-0 flex-col items-center">
-        <button
-          type="button"
-          onClick={onSelect}
-          aria-label={`Go to step ${index + 1}: ${step.title}`}
-          aria-current={active ? 'step' : undefined}
-          className={cn(
-            'lp-focus relative z-10 flex shrink-0 items-center justify-center rounded-full text-sm font-bold transition-all duration-500',
-            active && 'size-12 bg-white text-(--lp-violet) shadow-[0_10px_30px_-8px_rgba(91,61,245,0.55)] ring-[3px] ring-(--lp-violet)',
-            done && 'size-10 bg-(--lp-violet) text-white',
-            !active && !done && 'size-10 bg-white text-(--lp-muted) ring-1 ring-black/15',
-          )}
-        >
-          {done ? <Check className="size-5" strokeWidth={3} /> : index + 1}
-          {active && <span aria-hidden className="lp-pulse-ring absolute inset-0 rounded-full ring-2 ring-(--lp-violet)/50" />}
-        </button>
-        {!last && (
-          <div aria-hidden className="relative my-2 w-0.5 flex-1 overflow-hidden rounded-full bg-black/10">
-            <motion.div style={{ scaleY: fill }} className="absolute inset-0 origin-top rounded-full bg-(--lp-violet)" />
-          </div>
-        )}
-      </div>
-      <div className={cn('min-w-0 flex-1 pt-1.5 transition-opacity duration-500', last ? 'pb-0' : 'pb-7 [@media(max-height:960px)]:pb-4', !active && !done && 'opacity-60')}>
-        <button type="button" onClick={onSelect} className="lp-focus block w-full rounded-lg text-left">
-          <span className={cn('text-[11px] font-bold tracking-[0.18em] uppercase transition-colors', active ? 'text-(--lp-violet)' : 'text-(--lp-muted)')}>Step {step.n}</span>
-          <span className={cn('mt-0.5 block leading-tight font-semibold tracking-[-0.03em] transition-all duration-500', active ? 'text-[clamp(1.5rem,2.3vw,2rem)]' : 'text-xl')}>{step.title}</span>
-        </button>
-        {!active && <p className="mt-1 text-[14px] text-(--lp-muted)">{step.short}</p>}
-        <AnimatePresence initial={false}>
-          {active && (
-            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.45, ease: EASE }} className="overflow-hidden">
-              <p className="mt-2.5 max-w-md text-base leading-relaxed text-(--lp-muted)">{step.body}</p>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-    </li>
-  )
-}
-
-/** Desktop: a pinned stage. About 100vh of scroll per step. Left: heading, a scroll-filled timeline and a step counter. Right: the mock on a tilting colour plate. */
+/** Desktop: a pinned stage. About 100vh of scroll per step. Left: ONLY the active step, swapped with a spring as you scroll, plus a compact progress bar.
+ *  Right: the mock on a tilting colour plate. */
 function StoryPinned() {
   const ref = useRef<HTMLDivElement>(null)
   const { scrollYProgress } = useScroll({ target: ref, offset: ['start start', 'end end'] })
   const smooth = useSpring(scrollYProgress, { stiffness: 120, damping: 28, mass: 0.4 })
   const [step, setStep] = useState(0)
-  useMotionValueEvent(scrollYProgress, 'change', (v) => setStep(Math.min(STEPS.length - 1, Math.max(0, Math.floor(v * STEPS.length * 0.999)))))
+  const [dir, setDir] = useState(1)
+  const last = useRef(0)
+  useMotionValueEvent(scrollYProgress, 'change', (v) => {
+    const next = Math.min(STEPS.length - 1, Math.max(0, Math.floor(v * STEPS.length * 0.999)))
+    if (next === last.current) return
+    setDir(next > last.current ? 1 : -1)
+    last.current = next
+    setStep(next)
+  })
   const current = STEPS[step]
 
   const goTo = (i: number) => {
@@ -286,28 +250,51 @@ function StoryPinned() {
     <div ref={ref} className="relative" style={{ height: `${(STEPS.length + 1) * 100}svh` }}>
       <div className="sticky top-0 flex h-svh items-center pt-24 pb-8">
         <div className="mx-auto grid w-full max-w-6xl items-center gap-14 px-8 lg:grid-cols-[0.9fr_1.1fr] xl:gap-24">
-          {/* left: heading + timeline */}
+          {/* left: heading, the ACTIVE step only, progress */}
           <div>
-            <p className="text-xs font-bold tracking-[0.2em] text-(--lp-violet) uppercase">How it works</p>
-            <h2 className="mt-3 max-w-xl text-[clamp(2rem,3.4vw,3rem)] leading-[1.02] font-semibold tracking-[-0.04em] text-balance [@media(max-height:960px)]:text-[clamp(1.7rem,2.5vw,2.3rem)]">From “help!” to “thank you” in four moves.</h2>
-            <p className="mt-3 max-w-md text-[15px] text-(--lp-muted) [@media(max-height:960px)]:hidden">Scroll to follow one ticket from the customer’s first message to a rated, resolved reply.</p>
+            <h2 className="max-w-xl text-[clamp(1.9rem,3vw,2.7rem)] leading-[1.04] font-semibold tracking-[-0.04em] text-balance">From “help!” to “thank you” in four moves.</h2>
 
-            <ol className="mt-8 [@media(max-height:960px)]:mt-5" aria-label="Steps">
-              {STEPS.map((s, i) => (
-                <TimelineRow key={s.n} step={s} index={i} active={i === step} done={i < step} last={i === STEPS.length - 1} progress={smooth} onSelect={() => goTo(i)} />
-              ))}
-            </ol>
+            <div className="relative mt-10 min-h-[17rem] [@media(max-height:900px)]:mt-6 [@media(max-height:900px)]:min-h-[14rem]">
+              <AnimatePresence mode="wait" custom={dir} initial={false}>
+                <motion.div
+                  key={current.n}
+                  custom={dir}
+                  variants={{
+                    enter: (d: number) => ({ opacity: 0, y: 36 * d }),
+                    center: { opacity: 1, y: 0 },
+                    exit: (d: number) => ({ opacity: 0, y: -36 * d }),
+                  }}
+                  initial="enter"
+                  animate="center"
+                  exit="exit"
+                  transition={{ type: 'spring', stiffness: 260, damping: 28, mass: 0.7 }}
+                  className="relative"
+                  aria-live="polite"
+                >
+                  <span aria-hidden className="block text-[clamp(5rem,9vw,8rem)] leading-[0.85] font-semibold tracking-[-0.06em]" style={{ color: STEP_COLORS[step] === '#c8f560' ? '#9bc72e' : STEP_COLORS[step] }}>
+                    {current.n}
+                  </span>
+                  <h3 className="mt-4 text-[clamp(1.9rem,3vw,2.7rem)] leading-[1.04] font-semibold tracking-[-0.035em]">{current.title}</h3>
+                  <p className="mt-4 max-w-md text-lg leading-relaxed text-(--lp-muted)">{current.body}</p>
+                </motion.div>
+              </AnimatePresence>
+            </div>
 
-            <div className="mt-6 flex items-center gap-4 [@media(max-height:960px)]:mt-3">
-              <p className="text-sm font-semibold tabular-nums">
-                Step {step + 1} <span className="text-(--lp-muted)">of {STEPS.length}</span>
+            {/* compact progress: four segments that fill with scroll, a counter and prev/next */}
+            <div className="mt-8 flex items-center gap-4 [@media(max-height:900px)]:mt-5">
+              <ol className="flex flex-1 gap-2" aria-label="Steps">
+                {STEPS.map((s, i) => (
+                  <Segment key={s.n} index={i} active={i === step} title={s.title} progress={smooth} onSelect={() => goTo(i)} />
+                ))}
+              </ol>
+              <p className="shrink-0 text-sm font-semibold tabular-nums">
+                {step + 1} <span className="text-(--lp-muted)">/ {STEPS.length}</span>
               </p>
-              <div className="h-px flex-1 bg-black/10" aria-hidden />
-              <div className="flex gap-2">
-                <button type="button" onClick={() => goTo(step - 1)} disabled={step === 0} aria-label="Previous step" className="lp-focus flex size-9 items-center justify-center rounded-full bg-white ring-1 ring-black/15 transition hover:ring-black/40 disabled:opacity-35">
+              <div className="flex shrink-0 gap-2">
+                <button type="button" onClick={() => goTo(step - 1)} disabled={step === 0} aria-label="Previous step" className="lp-focus flex size-10 items-center justify-center rounded-full bg-white ring-1 ring-black/15 transition hover:ring-black/40 disabled:opacity-35">
                   <ChevronUp className="size-4" />
                 </button>
-                <button type="button" onClick={() => goTo(step + 1)} disabled={step === STEPS.length - 1} aria-label="Next step" className="lp-focus flex size-9 items-center justify-center rounded-full bg-(--lp-violet) text-white transition hover:bg-(--lp-violet-2) disabled:opacity-35">
+                <button type="button" onClick={() => goTo(step + 1)} disabled={step === STEPS.length - 1} aria-label="Next step" className="lp-focus flex size-10 items-center justify-center rounded-full bg-(--lp-violet) text-white transition hover:bg-(--lp-violet-2) disabled:opacity-35">
                   <ChevronDown className="size-4" />
                 </button>
               </div>
@@ -331,6 +318,20 @@ function StoryPinned() {
   )
 }
 
+/** One of the four progress segments: a track that fills as the scroll moves through its step. Clicking jumps there. */
+function Segment({ index, active, title, progress, onSelect }: { index: number; active: boolean; title: string; progress: MotionValue<number>; onSelect: () => void }) {
+  const fill = useTransform(progress, (v) => clamp01(v * STEPS.length - index))
+  return (
+    <li className="flex-1">
+      <button type="button" onClick={onSelect} aria-label={`Go to step ${index + 1}: ${title}`} aria-current={active ? 'step' : undefined} className="lp-focus group block w-full rounded-full py-2">
+        <span className={cn('relative block h-2 overflow-hidden rounded-full bg-black/10 transition-all', active ? 'h-2.5' : 'group-hover:bg-black/20')}>
+          <motion.span style={{ scaleX: fill }} className="absolute inset-0 origin-left rounded-full bg-(--lp-violet)" />
+        </span>
+      </button>
+    </li>
+  )
+}
+
 export function Story() {
   const reduce = useReducedMotion()
   const desktop = useIsDesktop()
@@ -339,8 +340,7 @@ export function Story() {
     <section id="story" data-nav="light" className="relative -mt-10 rounded-t-[2.5rem] bg-(--lp-paper) text-(--lp-ink)">
       {stacked && (
         <div className="relative mx-auto max-w-6xl px-5 pt-28 pb-20 text-center sm:px-8 sm:pt-40 sm:pb-28">
-          <p className="text-xs font-bold tracking-[0.2em] text-(--lp-violet) uppercase">How it works</p>
-          <h2 className="mx-auto mt-4 max-w-4xl text-[clamp(2.2rem,6vw,4.6rem)] leading-[1] font-semibold tracking-[-0.04em] text-balance">
+          <h2 className="mx-auto max-w-4xl text-[clamp(2.2rem,6vw,4.6rem)] leading-[1] font-semibold tracking-[-0.04em] text-balance">
             <WordReveal text="From “help!” to “thank you” in four moves." />
           </h2>
           <p className="mx-auto mt-6 max-w-xl text-lg text-(--lp-muted)">Follow one ticket from the customer’s first message to a rated, resolved reply.</p>

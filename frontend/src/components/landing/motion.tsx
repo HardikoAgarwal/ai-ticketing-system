@@ -1,5 +1,5 @@
 import { animate, motion, useInView, useMotionValue, useReducedMotion, useTransform, type MotionValue } from 'motion/react'
-import { useEffect, useRef, useState, type CSSProperties, type MouseEvent, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 
 import { cn } from '@/lib/utils'
 
@@ -59,26 +59,6 @@ export function Counter({ to, prefix = '', suffix = '', className }: { to: numbe
   )
 }
 
-export function SectionHeading({
-  eyebrow,
-  title,
-  intro,
-  align = 'center',
-}: {
-  eyebrow: string
-  title: ReactNode
-  intro?: string
-  align?: 'center' | 'left'
-}) {
-  return (
-    <Reveal className={cn('max-w-2xl', align === 'center' && 'mx-auto text-center')}>
-      <p className="text-xs font-semibold tracking-[0.16em] text-primary uppercase">{eyebrow}</p>
-      <h2 className="mt-3 text-3xl font-semibold tracking-tight text-balance sm:text-4xl md:text-[2.75rem] md:leading-[1.1]">{title}</h2>
-      {intro && <p className="mt-4 text-base text-muted-foreground sm:text-lg">{intro}</p>}
-    </Reveal>
-  )
-}
-
 export { EASE }
 
 
@@ -125,16 +105,6 @@ export function useParallax(progress: MotionValue<number>, range: number): Motio
   return useTransform(progress, [0, 1], reduce ? [0, 0] : [0, range])
 }
 
-/** Cursor-follow spotlight: sets --mx/--my on the element so a radial gradient can track the pointer. */
-export function useSpotlight() {
-  const onMouseMove = (e: MouseEvent<HTMLElement>) => {
-    const r = e.currentTarget.getBoundingClientRect()
-    e.currentTarget.style.setProperty('--mx', `${e.clientX - r.left}px`)
-    e.currentTarget.style.setProperty('--my', `${e.clientY - r.top}px`)
-  }
-  return { onMouseMove, style: { '--mx': '50%', '--my': '30%' } as CSSProperties }
-}
-
 /** Types `text` out once `active` is true; returns the visible slice. Instant under reduced-motion. */
 export function useTypewriter(text: string, active = true, speed = 22) {
   const reduce = useReducedMotion()
@@ -153,20 +123,4 @@ export function useTypewriter(text: string, active = true, speed = 22) {
     return () => window.clearInterval(id)
   }, [text, active, reduce, speed])
   return { shown: text.slice(0, n), done: n >= text.length }
-}
-
-/** Infinite horizontal marquee of text chips. */
-export function Marquee({ items, className, itemClassName }: { items: string[]; className?: string; itemClassName?: string | string[] }) {
-  const row = [...items, ...items]
-  return (
-    <div className={cn('relative flex overflow-hidden [mask-image:linear-gradient(90deg,transparent,#000_8%,#000_92%,transparent)]', className)} aria-hidden>
-      <div className="lp-marquee flex shrink-0 gap-3 pr-3">
-        {row.map((t, i) => (
-          <span key={i} className={cn('shrink-0 rounded-full px-5 py-2 text-sm font-medium whitespace-nowrap', Array.isArray(itemClassName) ? itemClassName[i % itemClassName.length] : itemClassName)}>
-            {t}
-          </span>
-        ))}
-      </div>
-    </div>
-  )
 }

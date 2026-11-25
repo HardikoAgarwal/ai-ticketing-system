@@ -9,7 +9,7 @@ import { ApiError, errorMessage } from '@/lib/api'
 import { demoApi } from '@/lib/endpoints'
 import { cn } from '@/lib/utils'
 
-import { TEMPLATES, type TemplateMeta } from './constants'
+import { MOOD_STYLE, PRIORITY_STYLE, TEMPLATES, type TemplateMeta } from './constants'
 import { EASE, WordReveal } from './motion'
 
 type Role = 'agent' | 'customer'
@@ -19,88 +19,138 @@ const isColdStart = (err: unknown) => err instanceof ApiError && (err.status ===
 
 const PRIORITY_DOT: Record<string, string> = { Critical: '#ef4444', High: '#f97316', Medium: '#f59e0b', Low: '#38bdf8' }
 
-/** Three identical horizontal row cards: one structure, one surface colour; only the small icon tint differs per company. */
-function DemoRow({ t, index, busy, active, onStart }: { t: TemplateMeta; index: number; busy: boolean; active: boolean; onStart: (t: TemplateMeta, role: Role) => void }) {
+/** One solid colour per company, taken from the page palette. `bg`/`fg` fill the selected card; `tint` washes the preview panel. */
+const THEMES: Record<string, { bg: string; fg: string; tint: string; check: string }> = {
+  saas: { bg: '#6a4df4', fg: '#ffffff', tint: '#ece8ff', check: '#5b3df5' },
+  helpdesk: { bg: '#c8f560', fg: '#0b0a1d', tint: '#effad0', check: '#4d7a0a' },
+  ecommerce: { bg: '#ffb3cc', fg: '#0b0a1d', tint: '#ffe8ef', check: '#c2325f' },
+}
+const themeOf = (t: TemplateMeta) => THEMES[t.key] ?? { bg: t.hue, fg: '#ffffff', tint: t.soft, check: t.hue }
+
+/** Equal-size selector card. Unselected: white with a coloured icon badge. Selected: the company's colour, lifted, with a check. */
+function Selector({ t, selected, index, onSelect }: { t: TemplateMeta; selected: boolean; index: number; onSelect: () => void }) {
   const reduce = useReducedMotion()
+  const th = themeOf(t)
   const Icon = t.icon
   return (
-    <motion.article
-      data-demo-row
-      initial={reduce ? false : { opacity: 0, y: 40 }}
+    <motion.button
+      type="button"
+      role="radio"
+      aria-checked={selected}
+      onClick={onSelect}
+      initial={reduce ? false : { opacity: 0, y: 36 }}
       whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: '-60px' }}
-      transition={{ duration: 0.7, delay: index * 0.08, ease: EASE }}
-      whileHover={reduce || busy ? undefined : { y: -4 }}
+      viewport={{ once: true, margin: '-40px' }}
+      transition={{ duration: 0.6, delay: index * 0.08, ease: EASE }}
+      whileHover={reduce ? undefined : { y: selected ? -10 : -5 }}
+      animate={reduce ? undefined : { y: selected ? -8 : 0 }}
+      style={selected ? { backgroundColor: th.bg, color: th.fg } : undefined}
       className={cn(
-        'group grid w-full min-w-0 grid-cols-1 gap-6 rounded-3xl bg-white p-6 text-(--lp-ink) shadow-[0_26px_60px_-34px_rgba(120,60,20,0.55)] ring-1 transition-[box-shadow,--tw-ring-color] duration-300 hover:shadow-[0_36px_70px_-30px_rgba(120,60,20,0.6)] sm:p-7 md:grid-cols-2 md:gap-x-8 md:gap-y-6 xl:min-h-[15.5rem] xl:grid-cols-[1.1fr_1fr_1.25fr_13.5rem] xl:items-center xl:gap-x-8',
-        active ? 'ring-2 ring-(--lp-violet)' : 'ring-black/5 hover:ring-2 hover:ring-(--lp-violet)/60',
+        'lp-focus relative flex h-full min-h-[14.5rem] w-full min-w-0 flex-col rounded-[var(--lp-radius)] p-6 text-left ring-1 transition-[box-shadow,background-color,color] duration-300',
+        selected ? 'shadow-[0_30px_60px_-24px_rgba(11,10,29,0.55)] ring-2 ring-(--lp-ink)/80' : 'bg-white text-(--lp-ink) shadow-(--lp-shadow) ring-black/[0.06] hover:shadow-[0_30px_60px_-26px_rgba(11,10,29,0.45)]',
       )}
     >
-      {/* 1 · identity */}
-      <div className="min-w-0">
-        <div className="flex items-center gap-3">
-          <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl" style={{ background: t.soft, color: t.hue }}>
-            <Icon className="size-6" />
-          </span>
-          <span className="rounded-full bg-(--lp-lav) px-3 py-1 text-[11px] font-semibold tracking-wide text-(--lp-muted) uppercase">{t.industry}</span>
-        </div>
-        <h3 className="mt-4 line-clamp-2 min-h-[3.2rem] text-[1.6rem] leading-[1.12] font-semibold tracking-[-0.03em]">{t.name}</h3>
-        <p className="mt-1.5 line-clamp-2 min-h-[2.5rem] text-sm leading-snug text-(--lp-muted)">{t.tagline}</p>
+      <span className="flex items-start justify-between">
+        <span className="flex size-16 items-center justify-center rounded-[1.4rem]" style={{ backgroundColor: selected ? th.fg : th.bg, color: selected ? th.bg : th.fg }}>
+          <Icon className="size-8" />
+        </span>
+        <span
+          aria-hidden
+          className={cn('flex size-8 items-center justify-center rounded-full ring-2 transition-all duration-300', selected ? 'scale-100 bg-white text-(--lp-ink) ring-white' : 'scale-90 bg-transparent text-transparent ring-black/15')}
+        >
+          <Check className="size-4" strokeWidth={3} />
+        </span>
+      </span>
+      <span className="mt-5 block text-[1.55rem] leading-[1.1] font-semibold tracking-[-0.03em]">{t.name}</span>
+      <span className={cn('mt-1.5 line-clamp-2 min-h-[2.5rem] text-sm leading-snug', selected ? 'opacity-85' : 'text-(--lp-muted)')}>{t.tagline}</span>
+      <span className={cn('mt-auto block pt-4 text-[13px] font-semibold', selected ? 'opacity-90' : 'text-(--lp-muted)')}>
+        {t.stats.tickets} tickets · {t.stats.articles} articles
+      </span>
+    </motion.button>
+  )
+}
+
+const list = { hidden: {}, show: { transition: { staggerChildren: 0.07, delayChildren: 0.1 } } }
+const row = { hidden: { opacity: 0, x: -18 }, show: { opacity: 1, x: 0, transition: { duration: 0.4, ease: EASE } } }
+
+/** The big preview: a browser window showing the selected company's queue, what to try, and the two ways in. */
+function Preview({ t, busy, loadingNote, onStart }: { t: TemplateMeta; busy: TemplateMeta | null; loadingNote: boolean; onStart: (t: TemplateMeta, role: Role) => void }) {
+  const th = themeOf(t)
+  const slug = t.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+  const working = busy?.key === t.key
+  return (
+    <div className="overflow-hidden rounded-[2rem] bg-white text-(--lp-ink) shadow-[0_40px_90px_-36px_rgba(11,10,29,0.55)] ring-1 ring-black/[0.06]">
+      <div className="flex items-center gap-3 border-b border-black/[0.07] bg-(--lp-paper) px-4 py-3">
+        <span className="size-3 rounded-full bg-(--lp-rose-2)" />
+        <span className="size-3 rounded-full bg-(--lp-butter-2)" />
+        <span className="size-3 rounded-full bg-(--lp-mint-2)" />
+        <span className="mx-auto w-full max-w-sm truncate rounded-full bg-white px-4 py-1 text-center text-xs font-medium text-(--lp-muted) ring-1 ring-black/[0.06]">helpdesk.ai/w/{slug}/agent</span>
+        <span className="hidden w-12 sm:block" />
       </div>
 
-      {/* 2 · highlights */}
-      <div className="min-w-0">
-        <p className="mb-2 text-[10.5px] font-bold tracking-wide text-(--lp-muted) uppercase">What you can try</p>
-        <ul className="space-y-1.5">
-          {t.highlights.map((h) => (
-            <li key={h} className="flex min-h-8 items-center gap-2.5 text-sm font-medium">
-              <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-(--lp-violet)/10 text-(--lp-violet)">
-                <Check className="size-3" strokeWidth={3} />
-              </span>
-              <span className="line-clamp-2 min-w-0 leading-snug">{h}</span>
-            </li>
-          ))}
-        </ul>
-      </div>
+      <AnimatePresence mode="wait" initial={false}>
+        <motion.div key={t.key} initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.3, ease: EASE }} className="grid lg:min-h-[28rem] lg:grid-cols-[1.4fr_1fr]">
+          {/* queue */}
+          <div className="min-w-0 p-5 sm:p-7">
+            <p className="mb-3 flex items-center justify-between text-xs font-bold tracking-wide text-(--lp-muted) uppercase">
+              <span>Queue</span>
+              <span className="font-semibold normal-case">{t.stats.tickets} open and resolved</span>
+            </p>
+            <motion.ul variants={list} initial="hidden" animate="show" className="space-y-2">
+              {t.tickets.map((k) => (
+                <motion.li key={k.ref} variants={row} className="flex items-center gap-3 rounded-2xl border border-black/[0.07] bg-white px-3.5 py-3">
+                  <span className="size-2.5 shrink-0 rounded-full" style={{ background: PRIORITY_DOT[k.priority] }} aria-hidden />
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-[13.5px] font-semibold">{k.subject}</span>
+                    <span className="mt-0.5 block truncate text-xs text-(--lp-muted)">
+                      {k.ref} · {k.who} · {k.category}
+                    </span>
+                  </span>
+                  <span className="hidden shrink-0 items-center gap-1.5 sm:flex">
+                    {k.mood && <span className={cn('rounded-full px-2 py-0.5 text-[11px] font-semibold ring-1 ring-inset', MOOD_STYLE[k.mood])}>{k.mood}</span>}
+                    <span className={cn('rounded-full px-2 py-0.5 text-[11px] font-semibold ring-1 ring-inset', PRIORITY_STYLE[k.priority])}>{k.priority}</span>
+                  </span>
+                </motion.li>
+              ))}
+            </motion.ul>
+          </div>
 
-      {/* 3 · mini queue window */}
-      <div className="min-w-0 overflow-hidden rounded-2xl bg-(--lp-paper) ring-1 ring-black/[0.06]">
-        <div className="flex items-center gap-1.5 border-b border-black/[0.06] px-3 py-2">
-          <span className="size-2 rounded-full bg-black/15" />
-          <span className="size-2 rounded-full bg-black/15" />
-          <span className="size-2 rounded-full bg-black/15" />
-          <p className="ml-2 truncate text-[10.5px] font-bold tracking-wide text-(--lp-muted) uppercase">Queue · 53 tickets</p>
-        </div>
-        <div className="p-1.5">
-          {t.tickets.slice(0, 3).map((k, i) => (
-            <div key={k.ref} style={{ transitionDelay: `${i * 50}ms` }} className={cn('h-9 items-center gap-2.5 rounded-lg px-2 text-[12px] transition-transform duration-300 group-hover:translate-x-1.5', i === 2 ? 'hidden md:flex' : 'flex')}>
-              <span className="size-2 shrink-0 rounded-full" style={{ background: PRIORITY_DOT[k.priority] }} />
-              <span className="min-w-0 flex-1 truncate font-medium">{k.subject}</span>
-              <span className="w-12 shrink-0 text-right text-[10.5px] font-semibold text-(--lp-muted)">{k.priority}</span>
+          {/* what to try + actions */}
+          <div className="flex min-w-0 flex-col p-5 sm:p-7" style={{ backgroundColor: th.tint }}>
+            <h3 className="text-2xl leading-tight font-semibold tracking-[-0.03em]">{t.name}</h3>
+            <p className="mt-1 text-sm text-(--lp-muted)">{t.blurb}</p>
+            <ul className="mt-5 space-y-2.5">
+              {t.highlights.map((h) => (
+                <li key={h} className="flex items-start gap-2.5 text-sm font-medium">
+                  <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-white" style={{ color: th.check }}>
+                    <Check className="size-3" strokeWidth={3} />
+                  </span>
+                  <span className="min-w-0 leading-snug">{h}</span>
+                </li>
+              ))}
+            </ul>
+            <div className="mt-auto grid gap-3 pt-7">
+              <button type="button" disabled={Boolean(busy)} onClick={() => onStart(t, 'agent')} className="lp-focus group flex h-14 w-full items-center justify-center gap-2 rounded-full bg-(--lp-violet) px-5 text-base font-semibold whitespace-nowrap text-white shadow-[0_14px_30px_-14px_rgba(91,61,245,0.8)] transition-all hover:bg-(--lp-violet-2) active:scale-[0.99] disabled:opacity-60">
+                {working ? <Loader2 className="size-5 animate-spin" /> : <Headphones className="size-5" />} Enter as agent <ArrowRight className="size-5 transition-transform group-hover:translate-x-1" />
+              </button>
+              <button type="button" disabled={Boolean(busy)} onClick={() => onStart(t, 'customer')} className="lp-focus flex h-14 w-full items-center justify-center gap-2 rounded-full bg-white px-5 text-base font-semibold whitespace-nowrap text-(--lp-ink) ring-1 ring-black/20 transition-colors hover:bg-(--lp-paper) disabled:opacity-60">
+                <UserRound className="size-5" /> Enter as customer
+              </button>
+              {loadingNote && <p className="text-center text-xs text-(--lp-muted)">The demo server naps when idle, so the first start can take up to a minute.</p>}
             </div>
-          ))}
-        </div>
-      </div>
-
-      {/* 4 · actions, identical width in every row */}
-      <div className="grid min-w-0 content-center gap-2.5 md:col-span-2 md:grid-cols-2 xl:col-span-1 xl:grid-cols-1">
-        <button type="button" disabled={busy} onClick={() => onStart(t, 'agent')} className="lp-focus group/btn flex h-12 w-full items-center justify-center gap-2 rounded-full bg-(--lp-violet) px-4 text-[15px] font-semibold whitespace-nowrap text-white transition-all hover:bg-(--lp-violet-2) active:scale-[0.99] disabled:opacity-60">
-          {active ? <Loader2 className="size-4 animate-spin" /> : <Headphones className="size-4" />} Enter as agent <ArrowRight className="size-4 transition-transform group-hover/btn:translate-x-1" />
-        </button>
-        <button type="button" disabled={busy} onClick={() => onStart(t, 'customer')} className="lp-focus flex h-12 w-full items-center justify-center gap-2 rounded-full bg-white px-4 text-[15px] font-semibold whitespace-nowrap text-(--lp-ink) ring-1 ring-black/15 transition-colors hover:bg-(--lp-lav) disabled:opacity-60">
-          <UserRound className="size-4" /> Enter as customer
-        </button>
-      </div>
-    </motion.article>
+          </div>
+        </motion.div>
+      </AnimatePresence>
+    </div>
   )
 }
 
 function Overlay({ name, step, progress, waking, error, onClose }: { name: string; step: number; progress: number; waking: boolean; error: string | null; onClose: () => void }) {
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[60] flex items-center justify-center bg-(--lp-paper)/95 p-6 text-(--lp-ink) backdrop-blur-xl" role="status" aria-live="polite">
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[60] flex items-center justify-center bg-(--lp-paper) p-6 text-(--lp-ink)" role="status" aria-live="polite">
       <div className="relative w-full max-w-md">
-        <p className="text-center text-xs font-bold tracking-[0.2em] text-(--lp-violet) uppercase">Building your sandbox</p>
-        <h3 className="mt-3 text-center text-4xl font-semibold tracking-[-0.04em]">{name}</h3>
+        <p className="text-center text-sm font-semibold text-(--lp-muted)">Building your sandbox</p>
+        <h3 className="mt-2 text-center text-4xl font-semibold tracking-[-0.04em]">{name}</h3>
         <ol className="mt-9 space-y-3.5">
           {STEPS.map((s, i) => (
             <li key={s} className={cn('flex items-center gap-3 text-[15px] transition-colors', i <= step ? 'text-(--lp-ink)' : 'text-(--lp-muted)/45')}>
@@ -132,6 +182,7 @@ export function Demo({ notice }: { notice?: string | null }) {
   const { startDemo, switchView } = useAuth()
   const navigate = useNavigate()
   const ref = useRef<HTMLElement>(null)
+  const [selected, setSelected] = useState(0)
   const [busy, setBusy] = useState<TemplateMeta | null>(null)
   const [elapsed, setElapsed] = useState(0)
   const [error, setError] = useState<string | null>(null)
@@ -191,17 +242,15 @@ export function Demo({ notice }: { notice?: string | null }) {
     }
   }
 
-  return (
-    <section id="demo" ref={ref} data-nav="light" className="relative -mt-10 rounded-t-[2.5rem] bg-[linear-gradient(170deg,#ff6a4d_0%,#ff8a4c_45%,#ffb340_100%)] pb-32 text-(--lp-ink)">
+  const current = templates[selected]
 
+  return (
+    <section id="demo" ref={ref} data-nav="light" className="relative -mt-10 rounded-t-[2.5rem] bg-(--lp-demo) pb-32 text-(--lp-ink)">
       <div className="relative mx-auto max-w-6xl px-5 pt-24 sm:px-8 sm:pt-32">
-        <div>
-        <p className="text-xs font-bold tracking-[0.2em] text-(--lp-ink)/70 uppercase">Live demo</p>
-        <h2 className="mt-4 max-w-4xl text-[clamp(2.6rem,7.4vw,6rem)] leading-[0.94] font-semibold tracking-[-0.05em] text-balance">
+        <h2 className="max-w-4xl text-[clamp(2.6rem,7.4vw,6rem)] leading-[0.94] font-semibold tracking-[-0.05em] text-balance">
           <WordReveal text="Pick a desk. Run it yourself." />
         </h2>
         <p className="mt-5 max-w-xl text-lg font-medium text-(--lp-ink)/80">Three ready-made companies, each with real-looking tickets, a knowledge base and AI already at work. Choose one and step inside as the agent or the customer.</p>
-        </div>
 
         {notice && (
           <p role="status" className="mt-6 max-w-xl rounded-2xl bg-white px-4 py-3 text-sm font-medium text-[#5a3d00] ring-1 ring-(--lp-butter-2)">
@@ -209,13 +258,18 @@ export function Demo({ notice }: { notice?: string | null }) {
           </p>
         )}
 
-        {/* three equal-width row cards in one column */}
-        <div className="mx-auto mt-14 flex w-full max-w-[1100px] flex-col gap-5">
+        {/* three equal selector cards: snapping row on phones, equal columns from md up */}
+        <div role="radiogroup" aria-label="Choose a company" className="-mx-5 mt-14 flex snap-x snap-mandatory gap-4 overflow-x-auto px-5 pt-3 pb-5 md:mx-0 md:grid md:grid-cols-3 md:gap-5 md:overflow-visible md:px-0 md:pb-3 [&::-webkit-scrollbar]:hidden">
           {templates.map((t, i) => (
-            <DemoRow key={t.key} t={t} index={i} busy={Boolean(busy)} active={busy?.key === t.key} onStart={launch} />
+            <div key={t.key} className="w-[80%] shrink-0 snap-center sm:w-[60%] md:w-auto md:shrink">
+              <Selector t={t} index={i} selected={i === selected} onSelect={() => setSelected(i)} />
+            </div>
           ))}
         </div>
-        <p className="mt-8 text-center text-sm font-semibold text-(--lp-ink)/80">No signup · private to you · wiped after 24 hours</p>
+
+        <div className="mt-6">
+          <Preview t={current} busy={busy} loadingNote={live.isError} onStart={launch} />
+        </div>
       </div>
 
       <AnimatePresence>
