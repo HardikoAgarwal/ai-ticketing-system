@@ -1,5 +1,5 @@
 import { CheckCheck, Loader2, UserCheck, X } from 'lucide-react'
-import { useEffect, useRef, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 
 import { Button } from '@/components/ui/button'
 import { ErrorState } from '@/components/ds'
@@ -15,7 +15,10 @@ export interface InboxListProps {
   top?: ReactNode
   ordered: StaffTicket[]
   total: number
+  /** First load: nothing to show yet, so show the placeholders at once. */
   loading: boolean
+  /** A filter, tile or sort changed and the previous list is still on screen while the new one loads. */
+  switching: boolean
   fetching: boolean
   error: unknown
   hasNext: boolean
@@ -64,6 +67,18 @@ export function InboxList(p: InboxListProps) {
     scroller.current?.querySelector(`[data-ticket-id="${p.cursor}"]`)?.scrollIntoView({ block: 'nearest' })
   }, [p.cursor])
 
+  // When the list is switching, keep the old one on screen and only swap in placeholders if the answer is slow, so quick filters do not flicker.
+  const [slow, setSlow] = useState(false)
+  useEffect(() => {
+    if (!p.switching) return
+    const t = setTimeout(() => setSlow(true), 350)
+    return () => {
+      clearTimeout(t)
+      setSlow(false)
+    }
+  }, [p.switching])
+  const showSkeleton = p.loading || (p.switching && slow)
+
   const selecting = p.selected.size > 0
   const allSelected = p.ordered.length > 0 && p.selected.size === p.ordered.length
 
@@ -87,7 +102,7 @@ export function InboxList(p: InboxListProps) {
           </div>
         </div>
         <div>
-          {p.loading ? (
+          {showSkeleton ? (
             p.layout === 'cards' ? (
               <div className="flex flex-col gap-6" role="status" aria-label="Loading tickets">
                 {(['rose', 'peach', 'butter', 'slate'] as const).map((hue) => <TicketCardSkeleton key={hue} hue={hue} />)}
@@ -103,7 +118,7 @@ export function InboxList(p: InboxListProps) {
             p.filtered ? <NoMatches onClear={p.onClearFilters} /> : <NothingHere view={p.view} />
           ) : (
             <>
-              <ul aria-label="Tickets" className={p.layout === 'cards' ? 'fade-up flex flex-col gap-6 pb-4' : 'fade-up space-y-3 pb-3'}>
+              <ul aria-label="Tickets" className={p.layout === 'cards' ? 'flex flex-col gap-6 pb-4' : 'space-y-3 pb-3'}>
                 {p.ordered.map((t) => p.layout === 'cards' ? (
                   <TicketCard
                     key={t.id}

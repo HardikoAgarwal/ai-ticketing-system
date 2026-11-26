@@ -142,3 +142,15 @@ export function hueFor(key: string, value: string, label: string): Hue {
   if (key === 'priority') return PRIORITY_HUE[value] ?? 'slate'
   return categoryHue(label)
 }
+
+/**
+ * The colour of each stat tile, taken from the same maps the ticket badges use, so a tile and its badge always match:
+ * Open = the Open status colour, Overdue = the overdue tab colour, Critical = the Critical priority colour.
+ */
+export const TILE_HUE: Record<'open' | 'overdue' | 'unassigned' | 'critical' | 'mine', Hue> = {
+  open: STATUS_HUE.OPEN,
+  overdue: TONE_HUE.red,
+  unassigned: 'lav',
+  critical: PRIORITY_HUE.CRITICAL,
+  mine: 'mint',
+}

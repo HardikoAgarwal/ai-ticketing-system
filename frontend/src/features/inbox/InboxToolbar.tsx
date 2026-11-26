@@ -135,7 +135,7 @@ export function AppliedChips({ specs, params, search, onFilter, onClear }: {
   if (search) chips.push({ id: 'q', text: `“${search}”`, hue: 'slate', remove: () => onFilter('q', null) })
   if (!chips.length) return null
   return (
-    <div className="fade-up flex flex-wrap items-center gap-2.5" role="group" aria-label="Applied filters">
+    <div className="flex flex-wrap items-center gap-2.5" role="group" aria-label="Applied filters">
       <span className="flex items-center gap-2 text-sm font-semibold text-ink-2">
         <ListFilter className="size-4" aria-hidden />
         Filtered by

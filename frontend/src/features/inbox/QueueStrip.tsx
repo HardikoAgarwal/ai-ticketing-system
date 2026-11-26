@@ -4,7 +4,7 @@ import { fill, on, type Hue } from '@/components/ds'
 import type { QueueStats } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
-import type { ViewKey } from './model'
+import { TILE_HUE, type ViewKey } from './model'
 
 interface Tile {
   key: string
@@ -25,8 +25,8 @@ export function QueueStrip({ stats, view, params, onPick }: { stats?: QueueStats
   if (!stats) {
     return (
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-5" role="status" aria-label="Loading queue summary">
-        {(['sky', 'rose', 'lav', 'peach', 'mint'] as const).map((hue) => (
-          <div key={hue} className="sk flex h-[158px] flex-col rounded-panel p-5 sm:p-6 max-lg:last:col-span-2" style={{ background: `color-mix(in srgb, ${fill(hue)} 26%, var(--surface))` }} aria-hidden>
+        {Object.values(TILE_HUE).map((hue, i) => (
+          <div key={i} className="sk flex h-[158px] flex-col rounded-panel p-5 sm:p-6 max-lg:last:col-span-2" style={{ background: `color-mix(in srgb, ${fill(hue)} 26%, var(--surface))` }} aria-hidden>
             <div className="h-5 w-28 rounded-md" style={{ background: `color-mix(in srgb, ${fill(hue)} 42%, transparent)` }} />
             <div className="mt-4 h-11 w-16 rounded-md" style={{ background: `color-mix(in srgb, ${fill(hue)} 50%, transparent)` }} />
             <div className="mt-3 h-3.5 w-32 rounded-md" style={{ background: `color-mix(in srgb, ${fill(hue)} 36%, transparent)` }} />
@@ -38,11 +38,11 @@ export function QueueStrip({ stats, view, params, onPick }: { stats?: QueueStats
   const sla = params.get('sla')
   const prio = params.get('priority')
   const tiles: Tile[] = [
-    { key: 'open', icon: Inbox, hue: 'sky', label: 'Open now', value: stats.open + stats.in_progress, foot: `${stats.in_progress} in progress`, active: view === 'attention' && !sla && !prio, onPick: () => onPick('attention') },
-    { key: 'overdue', icon: Clock, hue: 'rose', label: 'Overdue', value: stats.overdue, foot: stats.overdue ? 'Past the reply target' : 'All within target', active: view === 'attention' && sla === 'overdue', onPick: () => onPick('attention', { sla: 'overdue' }) },
-    { key: 'unassigned', icon: UserX, hue: 'lav', label: 'Unassigned', value: stats.unassigned, foot: stats.unassigned ? 'Waiting for an owner' : 'Everyone has an owner', active: view === 'unassigned', onPick: () => onPick('unassigned') },
-    { key: 'critical', icon: Flame, hue: 'peach', label: 'Critical', value: stats.critical, foot: stats.critical ? 'Highest priority' : 'None open', active: view === 'attention' && prio === 'CRITICAL', onPick: () => onPick('attention', { priority: 'CRITICAL' }) },
-    { key: 'mine', icon: UserCheck, hue: 'mint', label: 'Assigned to me', value: stats.mine, foot: stats.mine ? 'Your open tickets' : 'Nothing assigned to you', active: view === 'mine', onPick: () => onPick('mine') },
+    { key: 'open', icon: Inbox, hue: TILE_HUE.open, label: 'Open now', value: stats.open + stats.in_progress, foot: `${stats.in_progress} in progress`, active: view === 'attention' && !sla && !prio, onPick: () => onPick('attention') },
+    { key: 'overdue', icon: Clock, hue: TILE_HUE.overdue, label: 'Overdue', value: stats.overdue, foot: stats.overdue ? 'Past the reply target' : 'All within target', active: view === 'attention' && sla === 'overdue', onPick: () => onPick('attention', { sla: 'overdue' }) },
+    { key: 'unassigned', icon: UserX, hue: TILE_HUE.unassigned, label: 'Unassigned', value: stats.unassigned, foot: stats.unassigned ? 'Waiting for an owner' : 'Everyone has an owner', active: view === 'unassigned', onPick: () => onPick('unassigned') },
+    { key: 'critical', icon: Flame, hue: TILE_HUE.critical, label: 'Critical', value: stats.critical, foot: stats.critical ? 'Highest priority' : 'None open', active: view === 'attention' && prio === 'CRITICAL', onPick: () => onPick('attention', { priority: 'CRITICAL' }) },
+    { key: 'mine', icon: UserCheck, hue: TILE_HUE.mine, label: 'Assigned to me', value: stats.mine, foot: stats.mine ? 'Your open tickets' : 'Nothing assigned to you', active: view === 'mine', onPick: () => onPick('mine') },
   ]
   return (
     <div className="grid grid-cols-2 gap-3 lg:grid-cols-5" role="group" aria-label="Queue summary. Select one to filter the list">

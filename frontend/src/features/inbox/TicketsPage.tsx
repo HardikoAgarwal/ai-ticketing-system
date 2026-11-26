@@ -109,7 +109,8 @@ export function TicketsPage() {
           }
           ordered={ordered}
           total={inbox.total}
-          loading={list.isLoading || list.isPlaceholderData}
+          loading={list.isLoading}
+          switching={list.isPlaceholderData}
           fetching={list.isFetching && !list.isFetchingNextPage}
           error={list.isError ? list.error : null}
           hasNext={!!list.hasNextPage}

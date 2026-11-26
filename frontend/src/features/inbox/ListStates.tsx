@@ -19,7 +19,7 @@ function Badge({ icon: Icon, hue }: { icon: LucideIcon; hue: Hue }) {
 
 function Message({ icon, hue, title, children, actions }: { icon: LucideIcon; hue: Hue; title: string; children: ReactNode; actions?: ReactNode }) {
   return (
-    <div className="fade-up flex flex-col items-center rounded-panel bg-surface px-6 py-14 text-center shadow-card sm:py-16">
+    <div className="flex flex-col items-center rounded-panel bg-surface px-6 py-14 text-center shadow-card sm:py-16">
       <Badge icon={icon} hue={hue} />
       <h2 className="mt-5 text-xl font-semibold tracking-tight text-ink">{title}</h2>
       <p className="mt-2 max-w-md text-[15px] leading-6 text-ink-2">{children}</p>
