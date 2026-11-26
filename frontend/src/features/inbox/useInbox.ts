@@ -78,12 +78,14 @@ export function useInbox() {
     const ids = new Set(tickets.map((t) => t.id))
     const prev = known.current
     if (prev && prev.key === queryKey && prev.pages === pages) {
-      const added = tickets.filter((t) => !prev.ids.has(t.id) && t.status !== 'RESOLVED' && t.status !== 'CLOSED')
+      // A real arrival is also a recently created ticket, so a list that merely changed (filter, sort, reopened tickets) can never trigger it.
+      const recent = Date.now() - 10 * 60_000
+      const added = tickets.filter((t) => !prev.ids.has(t.id) && t.status !== 'RESOLVED' && t.status !== 'CLOSED' && Date.parse(t.created_at) > recent)
       if (added.length) {
         setFresh((f) => new Set([...f, ...added.map((t) => t.id)]))
         announce(added.length === 1 ? `New ticket ${added[0]!.reference} from ${added[0]!.requester.name}: ${added[0]!.subject}` : `${added.length} new tickets in the inbox`)
         const gone = added.map((t) => t.id)
-        setTimeout(() => setFresh((f) => new Set([...f].filter((id) => !gone.includes(id)))), 7000)
+        setTimeout(() => setFresh((f) => new Set([...f].filter((id) => !gone.includes(id)))), 45_000)
       }
     }
     known.current = { key: queryKey, ids, pages }

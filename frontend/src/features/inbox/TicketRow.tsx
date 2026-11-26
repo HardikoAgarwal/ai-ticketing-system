@@ -7,6 +7,7 @@ import { AiSpark, Avatar, SolidChip } from '@/components/ds'
 import { cn } from '@/lib/utils'
 import type { StaffTicket } from '@/lib/types'
 
+import { NewTag } from './NewTag'
 import { SelectBox } from './SelectBox'
 import { attentionOf, categoryHue, PRIORITY_HUE, PRIORITY_LOOK, STATUS_CHIP, STATUS_HUE, TONE_HUE } from './model'
 
@@ -61,7 +62,6 @@ export const TicketRow = forwardRef<HTMLLIElement, TicketRowProps>(function Tick
         'group relative rounded-panel border bg-surface shadow-card transition-colors',
         checked ? 'border-line bg-violet-soft/50' : 'border-line hover:border-line-strong',
         cursor && 'ring-2 ring-violet ring-inset',
-        fresh && 'ring-2 ring-ai motion-safe:animate-pulse',
         closed && 'opacity-80',
       )}
     >
@@ -148,6 +148,7 @@ export const TicketRow = forwardRef<HTMLLIElement, TicketRowProps>(function Tick
         </span>
       </Link>
 
+      {fresh && <NewTag size="sm" className="absolute -top-3 right-4" />}
       <span
         className={cn(
           'absolute left-4 flex size-8 items-center justify-center',

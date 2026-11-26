@@ -6,6 +6,7 @@ import { Avatar, CHIP_TONES, fill, SolidChip, type Hue } from '@/components/ds'
 import { cn } from '@/lib/utils'
 
 import { attentionTabs, PRIORITY_HUE, PRIORITY_LOOK, STATUS_CHIP, STATUS_HUE } from './model'
+import { NewTag } from './NewTag'
 import { SelectBox } from './SelectBox'
 import type { TicketRowProps } from './TicketRow'
 
@@ -40,7 +41,7 @@ export const TicketCard = forwardRef<HTMLLIElement, TicketRowProps>(function Tic
   const main: CSSProperties | undefined = checked ? { background: 'color-mix(in srgb, var(--violet) 7%, var(--surface))' } : undefined
   return (
     <li ref={ref} data-ticket-id={ticket.id} className={cn('group relative', tabs.length > 0 && 'mt-10')}>
-      <div className={cn('relative rounded-panel [--stub-w:23rem]', cursor && 'ring-2 ring-ink ring-offset-2 ring-offset-canvas', fresh && 'ring-2 ring-ai ring-offset-2 ring-offset-canvas motion-safe:animate-pulse')}>
+      <div className={cn('relative rounded-panel [--stub-w:23rem]', cursor && 'ring-2 ring-ink ring-offset-2 ring-offset-canvas')}>
         <div className="drop-shadow-[0_1px_2px_rgb(60_40_20/0.10)] drop-shadow-[0_14px_22px_rgb(60_40_20/0.10)]">
           <article className={cn('ticket-notch overflow-hidden rounded-panel bg-surface')}>
             <Link to={to} aria-label={`${ticket.reference}: ${ticket.subject}`} className="grid outline-none focus-visible:ring-2 focus-visible:ring-violet focus-visible:ring-inset lg:grid-cols-[minmax(0,1fr)_var(--stub-w)]">
@@ -134,6 +135,7 @@ export const TicketCard = forwardRef<HTMLLIElement, TicketRowProps>(function Tic
             ))}
           </span>
         )}
+        {fresh && <NewTag className="absolute -top-[22px] right-6" />}
         <SelectBox checked={checked} onChange={() => onToggle(ticket.id)} label={`Select ${ticket.reference}`} className="absolute top-1/2 -left-3.5 z-10 -translate-y-1/2" />
       </div>
     </li>
