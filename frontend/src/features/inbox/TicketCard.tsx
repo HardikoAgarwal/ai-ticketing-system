@@ -40,7 +40,7 @@ export const TicketCard = forwardRef<HTMLLIElement, TicketRowProps>(function Tic
   const main: CSSProperties | undefined = checked ? { background: 'color-mix(in srgb, var(--violet) 7%, var(--surface))' } : undefined
   return (
     <li ref={ref} data-ticket-id={ticket.id} className={cn('group relative', tabs.length > 0 && 'mt-10')}>
-      <div className={cn('relative rounded-panel [--stub-w:23rem]', checked && 'ring-2 ring-violet', cursor && 'ring-2 ring-ink ring-offset-2 ring-offset-canvas', fresh && 'ring-2 ring-ai ring-offset-2 ring-offset-canvas motion-safe:animate-pulse')}>
+      <div className={cn('relative rounded-panel [--stub-w:23rem]', cursor && 'ring-2 ring-ink ring-offset-2 ring-offset-canvas', fresh && 'ring-2 ring-ai ring-offset-2 ring-offset-canvas motion-safe:animate-pulse')}>
         <div className="drop-shadow-[0_1px_2px_rgb(60_40_20/0.10)] drop-shadow-[0_14px_22px_rgb(60_40_20/0.10)]">
           <article className={cn('ticket-notch overflow-hidden rounded-panel bg-surface')}>
             <Link to={to} aria-label={`${ticket.reference}: ${ticket.subject}`} className="grid outline-none focus-visible:ring-2 focus-visible:ring-violet focus-visible:ring-inset lg:grid-cols-[minmax(0,1fr)_var(--stub-w)]">

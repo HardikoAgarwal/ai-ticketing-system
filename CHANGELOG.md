@@ -2,6 +2,7 @@
 
 ## Unreleased: Helpdesk AI rewrite (from the BookLeaf author portal)
 ### Changed
+- Tickets page v11: a selected card (or table row) no longer gets a green border; it shows the filled check and a light green wash only.
 - Tickets page v10: search (smaller), Filters, Sort and the Cards / Table switch now live in the page header (the "N tickets · N overdue" line is gone), followed by the stat tiles and then the tickets; applied filters show under the tiles. The ticket stub is wider and shows customer and owner names larger. A selected card shows a green border.
 - Tickets page v9: "New message" (green) and "Overdue" (red) are tabs sitting on the top-left edge of a card, side by side, like the Back button tab; the unread dot and the amber badge are gone; cards have no border at all (the white frame around the stub is gone) and a selected card gets a green outline.
 - Tickets page v8: ticket cards have rounded corners again, no visible border (a soft two-layer shadow instead; a selected card gets a green border), and status, category, opened and updated are back as a structured, labelled row at the bottom of the card with the status as a badge.
