@@ -1,18 +1,19 @@
 import type { UseQueryResult } from '@tanstack/react-query'
-import { Clock } from 'lucide-react'
+import { Clock, LayoutDashboard } from 'lucide-react'
 import { useCallback, useMemo, type ReactNode } from 'react'
 import { useSearchParams } from 'react-router-dom'
 
 import { useWorkspace } from '@/auth/workspace'
 import { ErrorState, SegmentedControl, Skeleton } from '@/components/ds'
 import { useRegisterCommands, type Command } from '@/components/shell/commands'
-import { PageTitle } from '@/features/shared/PageTitle'
+import { PageHeader } from '@/features/shared/PageHeader'
 import type { Analytics } from '@/lib/types'
 
 import { AiInsights } from './AiInsights'
-import { CategoryChart, PriorityChart, SentimentChart, SlaChart, VolumeChart } from './Charts'
-import { KpiRow, QueueNow } from './KpiRow'
+import { CategoryChart, PriorityChart, SentimentChart, VolumeChart } from './Charts'
+import { KpiRow } from './KpiRow'
 import { TicketAging, Workload } from './QueueInsights'
+import { SlaGauge } from './SlaGauge'
 import { useHomeData, useWorkload } from './useHomeData'
 
 const RANGES = [
@@ -21,13 +22,13 @@ const RANGES = [
   { value: '90', label: '90 days' },
 ]
 
-/** The workspace home: analytics and stats only. Tickets themselves live under Tickets. */
+/** The workspace home: analytics only. Tickets themselves live under Tickets. */
 export function HomePage() {
   const { slug } = useWorkspace()
   const [params, setParams] = useSearchParams()
   const days = [7, 30, 90].includes(Number(params.get('days'))) ? Number(params.get('days')) : 30
   const setDays = useCallback((v: string) => setParams({ days: v }, { replace: true }), [setParams])
-  const { analytics, stats, open, usage } = useHomeData(days)
+  const { analytics, open, usage } = useHomeData(days)
   const workload = useWorkload(open.data?.results)
   const inbox = useCallback((qs: string) => `/w/${slug}/agent/tickets?${qs}`, [slug])
   const openError = open.isError ? open.error : undefined
@@ -40,43 +41,41 @@ export function HomePage() {
 
   return (
     <div className="mx-auto flex w-full max-w-[1400px] flex-col gap-5 pb-8">
-      <PageTitle
+      <PageHeader
+        icon={LayoutDashboard}
         title="Overview"
         description={`How support is doing over the last ${days} days, compared with the ${days} days before.`}
         actions={<SegmentedControl value={String(days)} onChange={setDays} options={RANGES} ariaLabel="Date range for the figures and charts" />}
       />
 
       <KpiRow analytics={analytics.data} days={days} />
-      <QueueNow stats={stats.data} inbox={inbox} />
 
-      <div className="grid grid-cols-1 gap-5 xl:grid-cols-3">
-        <Gate q={analytics} height="h-[460px]" className="xl:col-span-2">
-          {(a) => <VolumeChart data={a} days={days} />}
-        </Gate>
-        <Gate q={analytics} height="h-[460px]">
-          {(a) => <SlaChart data={a} />}
-        </Gate>
-      </div>
+      <Gate q={analytics} height="h-60">
+        {(a) => <SentimentChart data={a} />}
+      </Gate>
 
-      <div className="grid grid-cols-1 gap-5 xl:grid-cols-3">
-        <Gate q={analytics} height="h-[460px]">
+      <Gate q={analytics} height="h-[500px]">
+        {(a) => <VolumeChart data={a} days={days} />}
+      </Gate>
+
+      <div className="grid grid-cols-1 gap-5 xl:grid-cols-5">
+        <Gate q={analytics} height="h-[500px]" className="xl:col-span-2">
           {(a) => <PriorityChart data={a} />}
         </Gate>
-        <Gate q={analytics} height="h-[460px]" className="xl:col-span-2">
+        <Gate q={analytics} height="h-[500px]" className="xl:col-span-3">
           {(a) => <CategoryChart data={a} />}
         </Gate>
       </div>
 
-      <Gate q={analytics} height="h-56">
-        {(a) => <SentimentChart data={a} />}
-      </Gate>
-
-      <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
+      <div className="grid grid-cols-1 gap-5 xl:grid-cols-3">
+        <Gate q={analytics} height="h-[460px]">
+          {(a) => <SlaGauge data={a} />}
+        </Gate>
         <TicketAging data={open.data} loading={open.isLoading} error={openError} onRetry={() => open.refetch()} />
         <Workload rows={workload} loading={open.isLoading} error={openError} onRetry={() => open.refetch()} inbox={inbox} />
       </div>
 
-      <Gate q={analytics} height="h-72">
+      <Gate q={analytics} height="h-60">
         {(a) => <AiInsights data={a} usage={usage.data} />}
       </Gate>
     </div>

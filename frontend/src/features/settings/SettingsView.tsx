@@ -1,12 +1,12 @@
 import { useQuery } from '@tanstack/react-query'
-import { Bot, Clock, Palette, Tags, Users, type LucideIcon } from 'lucide-react'
+import { Bot, Clock, Palette, Settings as SettingsIcon, Tags, Users, type LucideIcon } from 'lucide-react'
 import { useEffect, useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
 
 import { useWorkspace } from '@/auth/workspace'
 import { ErrorState, SkeletonRows } from '@/components/ds'
 import { useRegisterCommands, type Command } from '@/components/shell/commands'
-import { PageTitle } from '@/features/shared/PageTitle'
+import { PageHeader } from '@/features/shared/PageHeader'
 import type { Workspace } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
@@ -66,7 +66,7 @@ export function SettingsPage() {
 
   return (
     <div className="pb-8">
-      <PageTitle title="Settings" description="Tune how this workspace triages, answers and reports on tickets. Every option explains itself." />
+      <PageHeader icon={SettingsIcon} title="Settings" description="Tune how this workspace triages, answers and reports on tickets. Every option explains itself." />
       <div className="mt-6 grid gap-8 lg:grid-cols-[14.5rem_minmax(0,1fr)] lg:items-start">
         <nav aria-label="Settings sections" className="scroll-quiet -mx-4 flex gap-1 overflow-x-auto px-4 pb-1 lg:sticky lg:top-0 lg:mx-0 lg:flex-col lg:overflow-visible lg:px-0 [&::-webkit-scrollbar]:hidden">
           {SECTIONS.map(({ key, label, hint, icon: Icon }) => {

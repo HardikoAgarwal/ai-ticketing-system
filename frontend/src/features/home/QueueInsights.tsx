@@ -1,22 +1,17 @@
-import { Hourglass, Users } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { Bar, BarChart, Cell, LabelList, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 
-import { Avatar, ErrorState, Panel, PanelHeader, Skeleton } from '@/components/ds'
+import { Avatar, ErrorState, Skeleton } from '@/components/ds'
 import type { Paginated, StaffTicket } from '@/lib/types'
 
-import { BarRows } from './bars'
-import { AXIS, SOLID, TOOLTIP, type Hue } from './chart-tokens'
+import { ChartPanel, Figure } from './chart-kit'
+import { AXIS, fill, TOOLTIP, type Hue } from './chart-tokens'
 import { AGING_BUCKETS, agingOf, type WorkloadRow } from './useHomeData'
 
 const AGING_HUE: Record<string, Hue> = { green: 'mint', blue: 'sky', amber: 'butter', red: 'rose' }
 
-function Frame({ id, title, description, icon, loading, error, onRetry, className, children }: { id: string; title: string; description: string; icon: typeof Users; loading: boolean; error?: unknown; onRetry: () => void; className?: string; children: React.ReactNode }) {
-  return (
-    <Panel aria-labelledby={id} className={className}>
-      <PanelHeader title={<span id={id}>{title}</span>} description={description} icon={icon} divided={false} className="pb-2" />
-      <div className="px-5 pb-5">{error ? <ErrorState error={error} onRetry={onRetry} /> : loading ? <Skeleton className="h-64" /> : children}</div>
-    </Panel>
-  )
+function Pending({ error, onRetry }: { error?: unknown; onRetry: () => void }) {
+  return error ? <ErrorState error={error} onRetry={onRetry} /> : <Skeleton className="h-64" />
 }
 
 /** How long open tickets have been waiting, as columns. A tall column on the right is the thing to act on. */
@@ -24,51 +19,92 @@ export function TicketAging({ data, loading, error, onRetry, className }: { data
   const tickets = data?.results ?? []
   const aging = agingOf(tickets)
   const rows = AGING_BUCKETS.map((b) => ({ key: b.key, label: b.label, value: aging[b.key], hue: AGING_HUE[b.tone] }))
-  const sampled = data && data.count > data.results.length
+  if (loading || error) {
+    return (
+      <div className={className}>
+        <Pending error={error} onRetry={onRetry} />
+      </div>
+    )
+  }
+  const stale = aging.d7p
   return (
-    <Frame id="home-aging" title="How long tickets have waited" description="Age of every open ticket, from the day it arrived." icon={Hourglass} loading={loading} error={error} onRetry={onRetry} className={className}>
-      {!tickets.length ? (
-        <p className="flex h-60 items-center justify-center rounded-control border border-dashed border-line-strong bg-surface-2 text-sm text-ink-3">No open tickets. Nothing is waiting.</p>
-      ) : (
-        <>
-          <div role="img" aria-label={`Open ticket age: ${rows.map((r) => `${r.value} ${r.label}`).join(', ')}`}>
-            <ResponsiveContainer width="100%" height={280}>
-              <BarChart data={rows} margin={{ top: 28, right: 8, left: 8, bottom: 0 }}>
-                <XAxis dataKey="label" {...AXIS} tickMargin={10} />
-                <YAxis hide domain={[0, 'dataMax']} />
-                <Tooltip {...TOOLTIP} />
-                <Bar dataKey="value" name="Open tickets" radius={[10, 10, 4, 4]} maxBarSize={96} isAnimationActive={false} minPointSize={6}>
-                  {rows.map((r) => (
-                    <Cell key={r.key} fill={SOLID[r.hue]} />
-                  ))}
-                  <LabelList dataKey="value" position="top" offset={8} style={{ fill: 'var(--ink)', fontSize: 16, fontWeight: 600 }} />
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-          {sampled && <p className="mt-2 text-xs text-ink-3">Based on the {data.results.length} most urgent of {data.count} open tickets.</p>}
-        </>
-      )}
-    </Frame>
+    <ChartPanel
+      className={className}
+      title="How long tickets have waited"
+      description="Age of every open ticket, from the day it arrived."
+      figure={<Figure value={stale} label="over 7 days" color={fill('rose')} />}
+      summary={`Open ticket age: ${rows.map((r) => `${r.value} ${r.label}`).join(', ')}.`}
+      empty={!tickets.length}
+    >
+      <ResponsiveContainer width="100%" height={300}>
+        <BarChart data={rows} margin={{ top: 28, right: 4, left: 4, bottom: 0 }}>
+          <XAxis dataKey="label" {...AXIS} tickMargin={10} interval={0} />
+          <YAxis hide domain={[0, 'dataMax']} />
+          <Tooltip {...TOOLTIP} />
+          <Bar dataKey="value" name="Open tickets" radius={[12, 12, 4, 4]} maxBarSize={88} isAnimationActive={false} minPointSize={6}>
+            {rows.map((r) => (
+              <Cell key={r.key} fill={fill(r.hue)} />
+            ))}
+            <LabelList dataKey="value" position="top" offset={8} style={{ fill: 'var(--ink)', fontSize: 18, fontWeight: 700 }} />
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+    </ChartPanel>
   )
 }
 
-/** Open tickets per person. "Unassigned" is always first so a pile-up with no owner stands out. */
+/** Open tickets per person, as a ranked list with a solid bar each. "Unassigned" is always first so a pile-up with no owner stands out. */
 export function Workload({ rows, loading, error, onRetry, inbox, className }: { rows: WorkloadRow[]; loading: boolean; error?: unknown; onRetry: () => void; inbox: (qs: string) => string; className?: string }) {
+  if (loading || error) {
+    return (
+      <div className={className}>
+        <Pending error={error} onRetry={onRetry} />
+      </div>
+    )
+  }
+  const max = Math.max(1, ...rows.map((r) => r.count))
+  const total = rows.reduce((n, r) => n + r.count, 0)
   return (
-    <Frame id="home-workload" title="Workload by owner" description="Open tickets per person right now. Select a row to open that list." icon={Users} loading={loading} error={error} onRetry={onRetry} className={className}>
-      <BarRows
-        rowHeight={48}
-        items={rows.map((r) => ({
-          key: String(r.id ?? 'none'),
-          label: r.name,
-          value: r.count,
-          hue: r.id === null ? 'butter' : 'mint',
-          lead: r.id === null ? <span aria-hidden className="flex size-6 items-center justify-center rounded-md border border-dashed border-line-strong text-[10px] text-ink-3">?</span> : <Avatar name={r.name} size="sm" />,
-          note: r.overdue ? <span className="text-rose-ink">{r.overdue} overdue</span> : undefined,
-          to: inbox(`view=${r.id === null ? 'unassigned' : 'all'}&status=OPEN,IN_PROGRESS${r.id === null ? '' : `&assigned=${r.id}`}`),
-        }))}
-      />
-    </Frame>
+    <ChartPanel
+      className={className}
+      title="Workload by owner"
+      description="Open tickets per person right now."
+      figure={<Figure value={total} label="open" />}
+      summary={`Open tickets by owner: ${rows.map((r) => `${r.name} ${r.count}`).join(', ')}.`}
+    >
+      <ul className="space-y-4">
+        {rows.map((r) => {
+          const unassigned = r.id === null
+          return (
+            <li key={r.id ?? 'none'}>
+              <Link
+                to={inbox(`view=${unassigned ? 'unassigned' : 'all'}&status=OPEN,IN_PROGRESS${unassigned ? '' : `&assigned=${r.id}`}`)}
+                className="group flex items-center gap-3 rounded-control focus-visible:ring-2 focus-visible:ring-violet focus-visible:ring-offset-4 focus-visible:ring-offset-surface focus-visible:outline-none"
+              >
+                {unassigned ? (
+                  <span aria-hidden className="flex size-8 shrink-0 items-center justify-center rounded-control border border-dashed border-line-strong text-xs text-ink-3">
+                    ?
+                  </span>
+                ) : (
+                  <Avatar name={r.name} size="md" />
+                )}
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-baseline justify-between gap-2 text-sm">
+                    <span className={unassigned ? 'font-medium text-ink-2 italic' : 'truncate font-semibold text-ink group-hover:underline'}>{r.name}</span>
+                    <span className="flex items-baseline gap-2">
+                      {r.overdue > 0 && <span className="text-xs font-semibold text-rose-ink">{r.overdue} overdue</span>}
+                      <span className="text-base font-semibold text-ink tabular-nums">{r.count}</span>
+                    </span>
+                  </div>
+                  <div className="mt-1.5 h-2.5 overflow-hidden rounded-full bg-sunken">
+                    <div className="h-full rounded-full transition-[width] duration-500 motion-reduce:transition-none" style={{ width: `${(r.count / max) * 100}%`, background: fill(unassigned ? 'butter' : 'mint') }} />
+                  </div>
+                </div>
+              </Link>
+            </li>
+          )
+        })}
+      </ul>
+    </ChartPanel>
   )
 }

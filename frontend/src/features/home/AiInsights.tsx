@@ -1,102 +1,57 @@
-import { Sparkles } from 'lucide-react'
+import { Sparkles, TriangleAlert } from 'lucide-react'
+import type { ReactNode } from 'react'
 
-import { AiChip, AiSurface, ProgressBar, ProgressRing } from '@/components/ds'
+import { AiChip, AiSurface, ProgressBar } from '@/components/ds'
 import { formatNumber } from '@/lib/format'
 import type { AIUsage, Analytics } from '@/lib/types'
 
 const pct = (v: number | null | undefined) => (v === null || v === undefined ? '—' : `${Math.round(v * 100)}%`)
 const ratio = (a: number, b: number) => (b > 0 ? a / b : null)
 
-/** The one AI block on the home page: how much the team leans on the AI, how often they correct it, and today's call budget. */
+function Stat({ label, value, note, children }: { label: string; value: ReactNode; note: string; children?: ReactNode }) {
+  return (
+    <div className="min-w-0 px-5 first:pl-0 last:pr-0 max-sm:px-0">
+      <dt className="text-sm font-medium text-ink-2">{label}</dt>
+      <dd className="mt-1.5 text-4xl leading-10 font-semibold tracking-tight text-ink tabular-nums">{value}</dd>
+      {children}
+      <p className="mt-1.5 text-xs text-ink-2">{note}</p>
+    </div>
+  )
+}
+
+/** The AI card: four plain numbers (how much the team uses it, how often they keep it, how often they correct it, today's budget). */
 export function AiInsights({ data, usage }: { data: Analytics; usage?: AIUsage }) {
   const { drafts, ai_overrides: o, ai_usage: u } = data
   const used = drafts.ai_as_is + drafts.ai_edited
-  const adoption = ratio(used, drafts.total)
-  const asIs = ratio(drafts.ai_as_is, used)
   const failRate = ratio(u.failures, u.calls)
-  const manual = Math.max(0, drafts.total - used)
-  const feature = (f: string) => u.by_feature.find((x) => x.feature === f)?.calls ?? 0
-
-  const lines: string[] = []
-  if (adoption !== null) lines.push(`Agents started from an AI draft in ${pct(adoption)} of replies${asIs !== null ? `, and sent ${pct(asIs)} of those without editing` : ''}.`)
-  else lines.push('No replies were sent in this period, so there is nothing to compare yet.')
-  if (o.classified > 0) lines.push(`Staff changed the AI's category on ${o.category_overridden} of ${o.classified} triaged tickets (${pct(o.category_override_rate)}) and its priority on ${o.priority_overridden} (${pct(o.priority_override_rate)}).`)
-  if (failRate !== null && failRate > 0.1) lines.push(`${pct(failRate)} of AI calls failed. The inbox falls back to keyword rules when that happens.`)
-
   return (
     <AiSurface className="p-5 sm:p-6">
       <div className="flex flex-wrap items-center gap-3">
-        <span className="flex size-9 items-center justify-center rounded-control bg-lav text-ai">
-          <Sparkles className="size-[18px]" aria-hidden />
+        <span className="flex size-10 items-center justify-center rounded-control bg-lav text-ai">
+          <Sparkles className="size-5" aria-hidden />
         </span>
         <div className="min-w-0 flex-1">
-          <h2 className="text-[15px] font-semibold tracking-tight text-ink">AI assistance</h2>
-          <p className="text-[13px] text-ink-2">How the team uses the AI, and how often it gets corrected. Costs are $0 on the Gemini free tier.</p>
+          <h2 className="text-base font-semibold tracking-tight text-ink">AI assistance</h2>
+          <p className="text-[13px] text-ink-2">How much the team relies on the AI, and how often it needs correcting.</p>
         </div>
-        <AiChip size="sm">{formatNumber(u.calls)} calls</AiChip>
+        <AiChip size="sm">{formatNumber(u.calls)} AI calls</AiChip>
       </div>
 
-      {usage && (
-        <div className="mt-5 rounded-control border border-line bg-surface/60 p-3.5">
-          <div className="flex items-baseline justify-between gap-3 text-[13px]">
-            <span className="font-medium text-ink">AI calls today in this workspace</span>
-            <span className="font-semibold text-ink tabular-nums">
-              {usage.workspace_used} <span className="font-normal text-ink-3">of {usage.workspace_cap}</span>
-            </span>
-          </div>
-          <ProgressBar value={usage.workspace_used} max={usage.workspace_cap} tone="ai" label={`AI calls today: ${usage.workspace_used} of ${usage.workspace_cap}`} className="mt-2" />
-          <p className="mt-2 text-xs text-ink-3">
-            {usage.workspace_used >= usage.workspace_cap
-              ? 'Daily AI budget reached. New tickets use keyword triage until it resets.'
-              : 'When the daily budget runs out, new tickets fall back to keyword triage automatically.'}
-          </p>
-        </div>
+      <dl className="mt-6 grid gap-6 sm:grid-cols-2 sm:gap-y-8 lg:grid-cols-4 lg:gap-y-0 lg:divide-x lg:divide-line">
+        <Stat label="Replies using a draft" value={pct(ratio(used, drafts.total))} note={`${used} of ${drafts.total} replies started from an AI draft`} />
+        <Stat label="Drafts sent as written" value={pct(ratio(drafts.ai_as_is, used))} note={`${drafts.ai_as_is} of ${used} drafts needed no edits`} />
+        <Stat label="Triage corrected" value={pct(o.category_override_rate)} note={`${o.category_overridden} of ${o.classified} categories changed by staff`} />
+        <Stat label="AI calls today" value={usage ? <>{usage.workspace_used}<span className="text-xl font-medium text-ink-3"> / {usage.workspace_cap}</span></> : '—'} note={usage && usage.workspace_used >= usage.workspace_cap ? 'Budget reached: keyword triage until it resets' : 'Daily budget for this workspace'}>
+          {usage && <ProgressBar value={usage.workspace_used} max={usage.workspace_cap} tone="ai" label={`AI calls today: ${usage.workspace_used} of ${usage.workspace_cap}`} className="mt-3" />}
+        </Stat>
+      </dl>
+
+      {failRate !== null && failRate > 0.1 && (
+        <p className="mt-5 flex items-center gap-2 rounded-control bg-butter px-3 py-2 text-sm text-butter-ink">
+          <TriangleAlert className="size-4 shrink-0" aria-hidden />
+          {pct(failRate)} of AI calls failed in this period. The inbox falls back to keyword rules when that happens.
+        </p>
       )}
-
-      <div className="mt-5 grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
-        <div>
-          <div className="flex flex-wrap items-center gap-6">
-            {[
-              { label: 'Replies using a draft', value: adoption },
-              { label: 'Drafts sent as-is', value: asIs },
-              { label: 'Category corrected', value: o.category_override_rate },
-            ].map((r) => (
-              <div key={r.label} className="flex items-center gap-3">
-                <ProgressRing value={(r.value ?? 0) * 100} size={52} stroke={5} tone="ai" label={`${r.label}: ${pct(r.value)}`}>
-                  {pct(r.value)}
-                </ProgressRing>
-                <span className="max-w-[6.5rem] text-xs leading-4 font-medium text-ink-2">{r.label}</span>
-              </div>
-            ))}
-          </div>
-          <ul className="mt-5 space-y-2">
-            {lines.map((l) => (
-              <li key={l} className="flex gap-2 text-sm leading-5 text-ink">
-                <Sparkles className="mt-0.5 size-3.5 shrink-0 text-ai" aria-hidden /> {l}
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        <dl className="grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-3">
-          {[
-            ['Triage calls', feature('CLASSIFY')],
-            ['Draft calls', feature('DRAFT')],
-            ['Avg latency', u.avg_latency_ms ? `${(u.avg_latency_ms / 1000).toFixed(1)}s` : '—'],
-            ['Prompt tokens', formatNumber(u.prompt_tokens)],
-            ['Completion tokens', formatNumber(u.completion_tokens)],
-            ['Failure rate', pct(failRate)],
-            ['Drafts as-is', drafts.ai_as_is],
-            ['Drafts edited', drafts.ai_edited],
-            ['Written manually', manual],
-          ].map(([k, v]) => (
-            <div key={k as string}>
-              <dt className="text-xs font-medium text-ink-3">{k}</dt>
-              <dd className="mt-0.5 text-lg leading-6 font-semibold text-ink tabular-nums">{v}</dd>
-            </div>
-          ))}
-        </dl>
-      </div>
     </AiSurface>
   )
 }

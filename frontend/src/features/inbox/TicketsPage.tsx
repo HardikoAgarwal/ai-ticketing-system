@@ -1,4 +1,4 @@
-import { CheckCheck, Columns2, Eraser, Layers, Rows3, UserCheck } from 'lucide-react'
+import { CheckCheck, Columns2, Eraser, Inbox, Layers, Rows3, UserCheck } from 'lucide-react'
 import { useCallback, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 
@@ -7,6 +7,7 @@ import { useWorkspace } from '@/auth/workspace'
 import { useRegisterCommands, type Command } from '@/components/shell/commands'
 import { useShellBleed } from '@/components/shell/shell-context'
 import { useShortcut } from '@/components/shell/shortcuts'
+import { PageHeader } from '@/features/shared/PageHeader'
 
 import { AppliedChips, InboxToolbar } from './InboxToolbar'
 import { InboxList } from './InboxList'
@@ -86,20 +87,19 @@ export function TicketsPage() {
   return (
     <div className="mx-auto flex min-h-0 w-full max-w-[1600px] flex-1 flex-col">
       <div className="space-y-4 px-4 pt-6 pb-3 md:px-8">
-        <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-1">
-          <div>
-            <h1 className="text-[28px] leading-tight font-semibold tracking-tight text-ink">Tickets</h1>
-            <p className="mt-1 text-sm text-ink-2" aria-live="polite">
-              {list.isLoading ? 'Loading tickets…' : (
-                <>
-                  <span className="font-medium text-ink tabular-nums">{inbox.total}</span> {inbox.total === 1 ? 'ticket' : 'tickets'}
-                  {filtered ? ' match your filters' : ''}
-                  {!filtered && open !== undefined && view !== 'all' ? <> · {stats.data?.overdue ? <span className="tabular-nums">{stats.data.overdue} overdue</span> : 'none overdue'}</> : null}
-                </>
-              )}
-            </p>
-          </div>
-        </div>
+        <PageHeader
+          icon={Inbox}
+          title="Tickets"
+          description={
+            list.isLoading ? 'Loading tickets…' : (
+              <>
+                <span className="font-semibold text-ink tabular-nums">{inbox.total}</span> {inbox.total === 1 ? 'ticket' : 'tickets'}
+                {filtered ? ' match your filters' : ''}
+                {!filtered && open !== undefined && view !== 'all' ? <> · {stats.data?.overdue ? <span className="tabular-nums">{stats.data.overdue} overdue</span> : 'none overdue'}</> : null}
+              </>
+            )
+          }
+        />
         <InboxToolbar
           view={view}
           stats={stats.data}

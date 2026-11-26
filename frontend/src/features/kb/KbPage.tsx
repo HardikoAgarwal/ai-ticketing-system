@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { FlaskConical, Lock, Plus, Tags } from 'lucide-react'
+import { BookOpen, FlaskConical, Lock, Plus, Tags } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -11,7 +11,7 @@ import { useRegisterCommands, type Command } from '@/components/shell/commands'
 import { useShortcut } from '@/components/shell/shortcuts'
 import { Button } from '@/components/ui/button'
 import { errorMessage } from '@/lib/api'
-import { PageTitle } from '@/features/shared/PageTitle'
+import { PageHeader } from '@/features/shared/PageHeader'
 
 import { ArticleEditor } from './ArticleEditor'
 import { ArticleList } from './ArticleList'
@@ -102,7 +102,8 @@ export function KnowledgePage() {
 
   return (
     <div className="flex flex-col gap-5">
-      <PageTitle
+      <PageHeader
+        icon={BookOpen}
         title="Knowledge base"
         description="The articles behind every AI draft and every self-service suggestion your customers see."
         actions={

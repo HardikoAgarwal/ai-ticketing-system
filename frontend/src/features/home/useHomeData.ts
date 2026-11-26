@@ -13,14 +13,13 @@ export function useHomeData(days: number) {
   const live = poll || 60_000
 
   const analytics = useQuery({ queryKey: ['analytics', slug, days], queryFn: () => api.analytics(days) })
-  const stats = useQuery({ queryKey: ['queue-stats', slug], queryFn: api.tickets.stats, refetchInterval: live })
   const open = useQuery({
     queryKey: ['home-open-tickets', slug],
     queryFn: () => api.tickets.listStaff({ status: 'OPEN,IN_PROGRESS', page_size: 100 }),
     refetchInterval: live,
   })
   const usage = useQuery({ queryKey: ['ai-usage', slug], queryFn: api.tickets.aiUsage, refetchInterval: live })
-  return { analytics, stats, open, usage }
+  return { analytics, open, usage }
 }
 
 export const AGING_BUCKETS = [

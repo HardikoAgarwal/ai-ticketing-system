@@ -166,6 +166,21 @@
     --chart-3: #7c5cff;
     --chart-4: #d63a64;
     --chart-5: #2b7fbf;
+    /* solid chart fills (viz-*) and the text colour that sits on each (on-*); all pairs >= 4.5:1 */
+    --viz-mint: #0b7a5c;
+    --on-mint: #ffffff;
+    --viz-lav: #5b3df5;
+    --on-lav: #ffffff;
+    --viz-rose: #c4284f;
+    --on-rose: #ffffff;
+    --viz-peach: #c2540f;
+    --on-peach: #ffffff;
+    --viz-butter: #e8a317;
+    --on-butter: #1c1405;
+    --viz-sky: #1f6fae;
+    --on-sky: #ffffff;
+    --viz-slate: #6b665c;
+    --on-slate: #ffffff;
     --radius: 0.625rem;
     --sidebar: var(--surface);
     --sidebar-foreground: var(--ink-2);
@@ -228,6 +243,20 @@
     --chart-3: #a08cff;
     --chart-4: #ff8cc4;
     --chart-5: #6cb6f2;
+    --viz-mint: #4fd1a1;
+    --on-mint: #05231a;
+    --viz-lav: #a08cff;
+    --on-lav: #1a1140;
+    --viz-rose: #ff8aa8;
+    --on-rose: #3a0a18;
+    --viz-peach: #ff9a5c;
+    --on-peach: #3a1403;
+    --viz-butter: #fbbf24;
+    --on-butter: #2e2000;
+    --viz-sky: #6db7f5;
+    --on-sky: #06233f;
+    --viz-slate: #a9a398;
+    --on-slate: #1a1917;
     --sidebar-primary: #f4efe6;
     --sidebar-primary-foreground: #121110;
 
