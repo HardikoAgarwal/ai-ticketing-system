@@ -13,8 +13,8 @@ Not a classic admin: no wide left sidebar of text links, no stack of white cards
 Defined once in `index.css` as CSS variables, exposed to Tailwind. Never hard-code hex in components.
 
 Light:
-- canvas `#f6f1e7` (page), surface `#fffdf8` (panels), surface-2 `#fbf7ee` (inset/hover), sunken `#efe8da`
-- line `#e4dccb`, line-strong `#cfc4ad`
+- canvas `#f8f6f1` (page, warm white), surface `#ffffff` (panels), surface-2 `#f6f3ec` (inset/hover), sunken `#eeeae0`
+- line `#e7e2d6`, line-strong `#d2cbba`
 - ink `#0b0a1d` (text), ink-2 `#3d3b57` (secondary, AA on surface), ink-3 `#6b6985` (tertiary, AA for large/UI only)
 - brand violet `#5b3df5` (focus, links, selection, primary accent), violet-soft `#ece8ff`
 - primary button: ink background, paper text. Secondary: surface + line. Accent button (rare): violet.

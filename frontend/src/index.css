@@ -103,12 +103,12 @@
    --------------------------------------------------------------------------- */
 :root {
     /* surfaces */
-    --canvas: #f6f1e7;
-    --surface: #fffdf8;
-    --surface-2: #fbf7ee;
-    --sunken: #efe8da;
-    --line: #e4dccb;
-    --line-strong: #cfc4ad;
+    --canvas: #f8f6f1;
+    --surface: #ffffff;
+    --surface-2: #f6f3ec;
+    --sunken: #eeeae0;
+    --line: #e7e2d6;
+    --line-strong: #d2cbba;
     /* text (ink-2 ~10:1, ink-3 >= 5:1 on every light surface) */
     --ink: #16130f;
     --ink-2: #433f38;
@@ -150,7 +150,7 @@
     --popover: var(--surface);
     --popover-foreground: var(--ink);
     --primary: var(--ink);
-    --primary-foreground: #f6f1e7;
+    --primary-foreground: #f8f6f1;
     --secondary: var(--surface-2);
     --secondary-foreground: var(--ink);
     --muted: var(--sunken);
@@ -185,7 +185,7 @@
     --sidebar: var(--surface);
     --sidebar-foreground: var(--ink-2);
     --sidebar-primary: var(--ink);
-    --sidebar-primary-foreground: #f6f1e7;
+    --sidebar-primary-foreground: #f8f6f1;
     --sidebar-accent: var(--sunken);
     --sidebar-accent-foreground: var(--ink);
     --sidebar-border: var(--line);
