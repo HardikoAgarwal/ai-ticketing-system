@@ -13,10 +13,10 @@ import { NewTicketPage } from '@/pages/customer/NewTicketPage'
 import { TicketDetailPage } from '@/pages/customer/TicketDetailPage'
 import { TicketsPage } from '@/pages/customer/TicketsPage'
 
-const QueuePage = lazy(() => import('@/pages/agent/QueuePage').then((m) => ({ default: m.QueuePage })))
-const TicketPage = lazy(() => import('@/pages/agent/TicketPage').then((m) => ({ default: m.TicketPage })))
+const InboxLayout = lazy(() => import('@/features/inbox/InboxLayout').then((m) => ({ default: m.InboxLayout })))
 const AnalyticsPage = lazy(() => import('@/pages/agent/AnalyticsPage').then((m) => ({ default: m.AnalyticsPage })))
 const KnowledgePage = lazy(() => import('@/pages/agent/KnowledgePage').then((m) => ({ default: m.KnowledgePage })))
+const DesignSystemPage = lazy(() => import('@/pages/DesignSystemPage').then((m) => ({ default: m.DesignSystemPage })))
 const SettingsPage = lazy(() => import('@/pages/agent/SettingsPage').then((m) => ({ default: m.SettingsPage })))
 
 /** /w/:slug -> the right area for the caller's role. */
@@ -36,6 +36,8 @@ export default function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/invite/:token" element={<InvitePage />} />
+        {/* hidden dev preview of the design system; not linked anywhere */}
+        <Route path="/_design" element={<DesignSystemPage />} />
 
         <Route path="/w/:slug" element={<WorkspaceRedirect />} />
 
@@ -49,8 +51,11 @@ export default function App() {
 
         <Route element={<RequireArea area="agent" />}>
           <Route path="/w/:slug/agent" element={<AgentLayout />}>
-            <Route index element={<QueuePage />} />
-            <Route path="tickets/:id" element={<TicketPage />} />
+            {/* one layout route for list + ticket, so selecting a ticket never remounts the list */}
+            <Route element={<InboxLayout />}>
+              <Route index element={null} />
+              <Route path="tickets/:id" element={null} />
+            </Route>
             <Route path="analytics" element={<AnalyticsPage />} />
             <Route path="knowledge" element={<KnowledgePage />} />
             <Route path="settings" element={<SettingsPage />} />

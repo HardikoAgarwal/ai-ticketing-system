@@ -1,35 +1,37 @@
 import { useQuery } from '@tanstack/react-query'
-import { ArrowRight, Boxes, Cloud, Headphones, Loader2, ServerCog, ShoppingBag, Sparkles, type LucideIcon } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { ArrowRight, Boxes, Cloud, Headphones, RotateCcw, ServerCog, ShoppingBag, UserRound, type LucideIcon } from 'lucide-react'
+import { AnimatePresence } from 'motion/react'
+import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import { useAuth } from '@/auth/AuthContext'
+import { Chip, SegmentedControl, Skeleton, type ChipTone } from '@/components/ds'
 import { Button } from '@/components/ui/button'
-import { ApiError, errorMessage } from '@/lib/api'
+import { SetupScreen } from '@/features/auth/SetupScreen'
+import { useColdStartRetry, useSetupProgress } from '@/features/auth/useSandboxSetup'
+import { friendlyError } from '@/features/auth/errors'
 import { demoApi } from '@/lib/endpoints'
 import type { DemoTemplate } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
-const ICONS: Record<string, LucideIcon> = { saas: Cloud, helpdesk: ServerCog, ecommerce: ShoppingBag }
-const BLURBS: Record<string, string> = {
-  saas: 'Billing disputes, SSO lockouts, API rate limits and a Segment pipeline outage.',
-  helpdesk: 'Laptop provisioning, VPN trouble, access requests and a phishing report.',
-  ecommerce: 'Late deliveries, damaged items, refunds and a wrong-size exchange.',
+type Role = 'agent' | 'customer'
+
+const META: Record<string, { icon: LucideIcon; tile: string; tone: ChipTone; blurb: string }> = {
+  saas: { icon: Cloud, tile: 'bg-lav text-lav-ink', tone: 'violet', blurb: 'Billing disputes, SSO lockouts, API limits and a pipeline outage.' },
+  helpdesk: { icon: ServerCog, tile: 'bg-mint text-mint-ink', tone: 'green', blurb: 'Laptop provisioning, VPN trouble, access requests and a phishing report.' },
+  ecommerce: { icon: ShoppingBag, tile: 'bg-peach text-peach-ink', tone: 'peach', blurb: 'Late deliveries, damaged items, refunds and a wrong-size exchange.' },
 }
 
-const STEPS = ['Creating your private workspace', 'Seeding customers, tickets and AI triage', 'Indexing the knowledge base', 'Almost there']
-
-function isColdStart(err: unknown) {
-  return err instanceof ApiError && (err.status === 0 || err.status >= 502)
-}
-
-/** Template picker + one-click demo start. Copes with a sleeping free-tier API (retries with a friendly message). */
+/** Template picker + one-click demo start. Copes with a sleeping free-tier API and shows the setup screen while the sandbox is built. */
 export function DemoLauncher({ className }: { className?: string }) {
-  const { startDemo } = useAuth()
+  const { startDemo, switchView } = useAuth()
   const navigate = useNavigate()
-  const [busy, setBusy] = useState<string | null>(null)
-  const [elapsed, setElapsed] = useState(0)
+  const withRetry = useColdStartRetry()
+  const [role, setRole] = useState<Role>('agent')
+  const [busy, setBusy] = useState<DemoTemplate | null>(null)
+  const [done, setDone] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const trigger = useRef<HTMLElement | null>(null)
 
   const templates = useQuery({
     queryKey: ['demo-templates'],
@@ -38,102 +40,112 @@ export function DemoLauncher({ className }: { className?: string }) {
     retryDelay: (n) => Math.min(8000, 1500 * (n + 1)),
     staleTime: 5 * 60_000,
   })
+  const progress = useSetupProgress({ active: !!busy, done, error: !!error })
 
-  useEffect(() => {
-    if (!busy && !templates.isLoading) return
-    const t = setInterval(() => setElapsed((s) => s + 1), 1000)
-    return () => {
-      clearInterval(t)
-      setElapsed(0)
-    }
-  }, [busy, templates.isLoading])
-
-  const launch = async (key: string) => {
+  const launch = async (t: DemoTemplate) => {
+    if (busy && !error) return
+    if (document.activeElement instanceof HTMLElement && document.activeElement !== document.body) trigger.current = document.activeElement
     setError(null)
-    setBusy(key)
+    setDone(false)
+    setBusy(t)
     try {
-      let slug: string | null = null
-      for (let attempt = 0; attempt < 4 && !slug; attempt++) {
-        try {
-          slug = await startDemo(key)
-        } catch (err) {
-          if (!isColdStart(err) || attempt === 3) throw err
-          await new Promise((r) => setTimeout(r, 4000))
-        }
-      }
-      if (slug) navigate(`/w/${slug}/agent`)
+      const slug = await withRetry(() => startDemo(t.key))
+      if (role === 'customer') await switchView('customer')
+      setDone(true)
+      await new Promise((r) => setTimeout(r, 450))
+      navigate(`/w/${slug}/${role === 'customer' ? 'help' : 'agent'}`)
     } catch (err) {
-      setError(errorMessage(err))
-      setBusy(null)
+      setError(friendlyError(err))
     }
   }
+  const close = () => {
+    setBusy(null)
+    setError(null)
+    setDone(false)
+    // hand focus back to the card that started the setup
+    window.setTimeout(() => trigger.current?.focus(), 0)
+  }
 
-  const waking = (busy && elapsed > 6) || (templates.isLoading && elapsed > 4) || templates.failureCount > 0
+  const waking = templates.isLoading && templates.failureCount > 0
 
   return (
     <div className={className}>
-      {waking && (
-        <p role="status" className="mb-4 flex items-center gap-2 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900">
-          <Loader2 className="size-4 shrink-0 animate-spin" />
-          The demo runs on a free server that naps when idle. Waking it up now, this takes up to a minute the first time.
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <p id="demo-role-label" className="text-[13px] font-semibold text-ink">
+          Enter as
         </p>
-      )}
-      {error && (
-        <p role="alert" className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-          {error}
+        <SegmentedControl<Role>
+          ariaLabel="Enter the demo as"
+          size="sm"
+          value={role}
+          onChange={setRole}
+          options={[
+            { value: 'agent', label: 'Agent', icon: Headphones },
+            { value: 'customer', label: 'Customer', icon: UserRound },
+          ]}
+        />
+      </div>
+
+      {waking && (
+        <p role="status" className="mb-3 rounded-control border border-sky-line bg-sky px-3 py-2.5 text-[13px] font-medium text-sky-ink">
+          The demo server naps when idle. Waking it up can take up to a minute the first time.
         </p>
       )}
 
       {templates.isLoading ? (
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="space-y-2.5" role="status" aria-label="Loading demos">
           {[0, 1, 2].map((i) => (
-            <div key={i} className="h-48 animate-pulse rounded-2xl border bg-muted/50" />
+            <Skeleton key={i} className="h-[4.5rem] rounded-panel" />
           ))}
         </div>
       ) : templates.isError ? (
-        <div className="rounded-2xl border border-dashed p-8 text-center text-sm text-muted-foreground">
-          Couldn't reach the demo server.
+        <div className="rounded-panel border border-dashed border-line-strong bg-surface-2 p-6 text-center text-sm text-ink-2">
+          We couldn't reach the demo server.
           <div className="mt-3">
             <Button variant="outline" size="sm" onClick={() => templates.refetch()}>
-              Try again
+              <RotateCcw aria-hidden /> Try again
             </Button>
           </div>
         </div>
       ) : (
-        <div className="grid gap-4 md:grid-cols-3">
-          {templates.data?.map((t: DemoTemplate) => {
-            const Icon = ICONS[t.key] ?? Boxes
-            const loading = busy === t.key
+        <ul className="space-y-2.5">
+          {templates.data?.map((t) => {
+            const m = META[t.key] ?? { icon: Boxes, tile: 'bg-sunken text-ink-2', tone: 'slate' as ChipTone, blurb: '' }
+            const Icon = m.icon
             return (
-              <button
-                key={t.key}
-                onClick={() => launch(t.key)}
-                disabled={!!busy}
-                className={cn(
-                  'group relative flex flex-col rounded-2xl border bg-card p-5 text-left shadow-xs transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-lg focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none disabled:opacity-60',
-                  loading && 'border-primary ring-2 ring-primary/20',
-                )}
-              >
-                <span className="flex size-11 items-center justify-center rounded-xl bg-accent text-accent-foreground">
-                  <Icon className="size-5" />
-                </span>
-                <p className="mt-4 text-xs font-medium tracking-wide text-muted-foreground uppercase">{t.industry}</p>
-                <p className="mt-0.5 text-lg font-semibold tracking-tight">{t.name}</p>
-                <p className="mt-1 text-sm text-muted-foreground">{t.tagline}</p>
-                <p className="mt-3 text-xs leading-relaxed text-muted-foreground/90">{BLURBS[t.key]}</p>
-                <span className="mt-5 inline-flex items-center gap-1.5 text-sm font-medium text-primary">
-                  {loading ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
-                  {loading ? STEPS[Math.min(Math.floor(elapsed / 3), STEPS.length - 1)] : 'Open this demo'}
-                  {!loading && <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />}
-                </span>
-              </button>
+              <li key={t.key}>
+                <button
+                  type="button"
+                  onClick={() => launch(t)}
+                  disabled={!!busy}
+                  className={cn(
+                    'group flex w-full items-center gap-3.5 rounded-panel border border-line bg-surface p-3.5 text-left shadow-card transition-all',
+                    'hover:border-line-strong hover:shadow-pop focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet disabled:opacity-60',
+                  )}
+                >
+                  <span className={cn('flex size-11 shrink-0 items-center justify-center rounded-control', m.tile)}>
+                    <Icon className="size-5" aria-hidden />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                      <span className="text-[15px] font-semibold tracking-tight text-ink">{t.name}</span>
+                      <Chip tone={m.tone} size="sm">{t.industry}</Chip>
+                    </span>
+                    <span className="mt-0.5 block text-[13px] leading-snug text-ink-2">{m.blurb || t.tagline}</span>
+                  </span>
+                  <ArrowRight className="size-4 shrink-0 text-ink-3 transition-transform group-hover:translate-x-0.5 group-hover:text-ink" aria-hidden />
+                  <span className="sr-only">Open this demo as {role}</span>
+                </button>
+              </li>
             )
           })}
-        </div>
+        </ul>
       )}
-      <p className="mt-4 flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
-        <Headphones className="size-3.5" /> No signup. You get a private workspace with sample data that resets after 24 hours.
-      </p>
+      <p className="mt-3 text-[13px] text-ink-3">No signup needed. You get a private workspace with sample data that resets after 24 hours.</p>
+
+      <AnimatePresence>
+        {busy && <SetupScreen name={busy.name} step={progress.step} progress={progress.progress} waking={progress.waking} error={error} onRetry={() => launch(busy)} onBack={close} />}
+      </AnimatePresence>
     </div>
   )
 }

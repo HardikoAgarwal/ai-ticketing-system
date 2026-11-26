@@ -28,10 +28,10 @@ import { useFallbackInterval } from '@/realtime/RealtimeProvider'
 const baseTitle = () => document.title.replace(/^\(\d+\+?\)\s*/, '')
 
 const KIND_META: Record<NotificationKind, { icon: LucideIcon; tint: string; title: (n: AppNotification) => string }> = {
-  staff_reply: { icon: MessageCircle, tint: 'bg-primary/10 text-primary', title: (n) => `${n.actor_name} replied` },
-  resolved: { icon: CheckCircle2, tint: 'bg-emerald-100 text-emerald-700', title: () => 'Marked as resolved. Please confirm' },
-  new_ticket: { icon: Inbox, tint: 'bg-sky-100 text-sky-700', title: (n) => `New ticket from ${n.actor_name}` },
-  requester_reply: { icon: MessageSquareReply, tint: 'bg-violet-100 text-violet-700', title: (n) => `${n.actor_name} replied` },
+  staff_reply: { icon: MessageCircle, tint: 'bg-lav text-lav-ink', title: (n) => `${n.actor_name} replied` },
+  resolved: { icon: CheckCircle2, tint: 'bg-mint text-mint-ink', title: () => 'Marked as resolved. Please confirm' },
+  new_ticket: { icon: Inbox, tint: 'bg-sky text-sky-ink', title: (n) => `New ticket from ${n.actor_name}` },
+  requester_reply: { icon: MessageSquareReply, tint: 'bg-lav text-lav-ink', title: (n) => `${n.actor_name} replied` },
 }
 
 const URGENT = new Set(['CRITICAL', 'HIGH'])
@@ -41,7 +41,7 @@ function NotificationItem({ item, onOpen }: { item: AppNotification; onOpen: () 
   const urgent = item.kind === 'new_ticket' && item.priority && URGENT.has(item.priority)
   return (
     <button onClick={onOpen} className="flex w-full gap-3 px-4 py-3.5 text-left transition-colors hover:bg-muted/60 focus-visible:bg-muted/60 focus-visible:outline-none">
-      <span className={cn('flex size-9 shrink-0 items-center justify-center rounded-full', urgent ? 'bg-red-100 text-red-700' : meta.tint)}>
+      <span className={cn('flex size-9 shrink-0 items-center justify-center rounded-control', urgent ? 'bg-rose text-rose-ink' : meta.tint)}>
         <meta.icon className="size-4" />
       </span>
       <span className="min-w-0 flex-1">
@@ -58,12 +58,12 @@ function NotificationItem({ item, onOpen }: { item: AppNotification; onOpen: () 
         {(urgent || item.owner === 'unassigned') && (
           <span className="mt-2 flex gap-1.5">
             {urgent && (
-              <span className="rounded-md bg-red-50 px-2 py-0.5 text-[10px] font-semibold text-red-700 ring-1 ring-red-200 ring-inset">
+              <span className="rounded-chip border border-rose-line bg-rose px-2 py-0.5 text-[11px] font-semibold text-rose-ink">
                 {item.priority === 'CRITICAL' ? 'Critical' : 'High'} priority
               </span>
             )}
             {item.owner === 'unassigned' && (
-              <span className="rounded-md bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground ring-1 ring-border ring-inset">Unassigned</span>
+              <span className="rounded-chip border border-line bg-sunken px-2 py-0.5 text-[11px] font-medium text-ink-2">Unassigned</span>
             )}
           </span>
         )}
@@ -101,7 +101,7 @@ function DesktopAlertsRow() {
   )
 }
 
-export function NotificationBell() {
+export function NotificationBell({ variant = 'icon', rowClassName, labelClassName }: { variant?: 'icon' | 'dock'; rowClassName?: string; labelClassName?: string }) {
   const { slug, api, staff } = useWorkspace()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
@@ -137,24 +137,35 @@ export function NotificationBell() {
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative" aria-label={count ? `Notifications, ${count} new` : 'Notifications'}>
-          <Bell className="size-5" />
-          {count > 0 && (
-            <span className="absolute -top-0.5 -right-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-semibold text-white ring-2 ring-background">
-              {count > 9 ? '9+' : count}
+        {variant === 'dock' ? (
+          <button type="button" className={rowClassName} aria-label={count ? `Notifications, ${count} new` : 'Notifications'}>
+            <span className="relative flex size-[18px] shrink-0 items-center justify-center">
+              <Bell className="size-[18px]" aria-hidden />
+              {count > 0 && <span className="absolute -top-1 -right-1.5 size-2 rounded-full bg-rose-ink ring-2 ring-surface" aria-hidden />}
             </span>
-          )}
-        </Button>
+            <span className={labelClassName}>Notifications{count > 0 ? ` (${count})` : ''}</span>
+          </button>
+        ) : (
+          <Button variant="ghost" size="icon-sm" className="relative" aria-label={count ? `Notifications, ${count} new` : 'Notifications'}>
+            <Bell className="size-[18px]" />
+            {count > 0 && (
+              <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-md bg-rose-ink px-1 text-[10px] leading-none font-semibold text-canvas ring-2 ring-canvas">
+                {count > 9 ? '9+' : count}
+              </span>
+            )}
+          </Button>
+        )}
       </PopoverTrigger>
       <PopoverContent
-        align="end"
+        align={variant === 'dock' ? 'end' : 'end'}
+        side={variant === 'dock' ? 'right' : 'bottom'}
         sideOffset={8}
         onOpenAutoFocus={(e) => e.preventDefault()}
-        className="w-[400px] max-w-[calc(100vw-1.5rem)] gap-0 overflow-hidden rounded-xl p-0">
+        className="w-[400px] max-w-[calc(100vw-1.5rem)] gap-0 overflow-hidden rounded-panel p-0">
         <div className="flex items-center justify-between gap-3 border-b px-4 py-3">
           <p className="flex items-center gap-2 text-sm font-semibold">
             Notifications
-            {count > 0 && <span className="rounded-md bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">{count} new</span>}
+            {count > 0 && <span className="rounded-chip bg-lav px-2 py-0.5 text-[11px] font-semibold text-lav-ink">{count} new</span>}
           </p>
           {hasReadable && (
             <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => markAll.mutate()} disabled={markAll.isPending}>
@@ -165,7 +176,7 @@ export function NotificationBell() {
 
         {items.length === 0 ? (
           <div className="flex flex-col items-center px-6 py-10 text-center">
-            <span className="flex size-11 items-center justify-center rounded-full bg-muted text-muted-foreground">
+            <span className="flex size-11 items-center justify-center rounded-panel bg-sunken text-muted-foreground">
               <BellOff className="size-5" />
             </span>
             <p className="mt-3 text-sm font-semibold">You're all caught up</p>

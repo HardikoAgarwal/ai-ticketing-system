@@ -1,16 +1,16 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { ArrowLeft, BookOpen, Check, Lightbulb, Loader2, Package, Send, UserRound } from 'lucide-react'
+import { ArrowLeft, BookOpen, Check, Loader2, Package, Send, UserRound } from 'lucide-react'
 import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 
 import { useWorkspace } from '@/auth/workspace'
-import { PageHeader } from '@/components/common'
+import { AiChip, AiSurface, Chip, KeyValue, KeyValueList, Panel, PanelHeader, SkeletonText } from '@/components/ds'
+import { announce } from '@/components/shell/announce'
 import { FileDropzone } from '@/components/tickets/FileDropzone'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Progress } from '@/components/ui/progress'
 import { Textarea } from '@/components/ui/textarea'
 import { ApiError, errorMessage } from '@/lib/api'
 import { formatValue, labelize } from '@/lib/format'
@@ -33,20 +33,37 @@ function RecordCard({ record, selected, onSelect }: { record: WorkspaceRecord | 
       onClick={onSelect}
       aria-pressed={selected}
       className={cn(
-        'flex w-full items-start gap-3 rounded-xl border border-border bg-card p-3.5 text-left shadow-xs transition-all hover:border-primary/50 hover:shadow-sm',
-        selected && 'border-primary bg-primary/[0.04] ring-2 ring-primary/20',
+        'flex min-h-14 w-full items-start gap-3 rounded-control border bg-surface p-3 text-left outline-none transition-colors focus-visible:ring-2 focus-visible:ring-violet focus-visible:ring-offset-2 focus-visible:ring-offset-surface',
+        selected ? 'border-violet bg-lav' : 'border-line hover:border-line-strong hover:bg-surface-2',
       )}
     >
-      <span className={cn('mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg', selected ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground')}>
-        {selected ? <Check className="size-4" /> : record ? <Package className="size-4" /> : <UserRound className="size-4" />}
+      <span className={cn('mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-chip', selected ? 'bg-violet text-white' : 'bg-sunken text-ink-2')}>
+        {selected ? <Check className="size-4" aria-hidden /> : record ? <Package className="size-4" aria-hidden /> : <UserRound className="size-4" aria-hidden />}
       </span>
       <span className="min-w-0">
-        <span className="block truncate text-sm font-medium">{record ? record.title : 'General question'}</span>
-        <span className="block truncate text-xs text-muted-foreground">
+        <span className="block truncate text-sm font-semibold text-ink">{record ? record.title : 'General question'}</span>
+        <span className="block truncate text-xs text-ink-3">
           {record ? `${record.kind}${record.reference ? ` · ${record.reference}` : ''}${record.status ? ` · ${record.status}` : ''}` : 'Not about a specific item'}
         </span>
       </span>
     </button>
+  )
+}
+
+function Step({ n, title, children, last }: { n: number; title: string; children: React.ReactNode; last?: boolean }) {
+  return (
+    <section aria-labelledby={`step-${n}`} className={cn('px-5 py-6 sm:px-7', !last && 'border-b border-line')}>
+      <h2 id={`step-${n}`} className="mb-4 flex items-center gap-2.5 text-[15px] font-semibold text-ink">
+        <span className="flex size-6 items-center justify-center rounded-chip bg-sunken text-xs font-bold text-ink-2" aria-hidden>
+          {n}
+        </span>
+        <span>
+          <span className="sr-only">Step {n}: </span>
+          {title}
+        </span>
+      </h2>
+      {children}
+    </section>
   )
 }
 
@@ -60,7 +77,7 @@ export function NewTicketPage() {
   const [files, setFiles] = useState<File[]>([])
   const [progress, setProgress] = useState(0)
   const [errors, setErrors] = useState<Record<string, string>>({})
-  const [dismissed, setDismissed] = useState(false)
+  const [dismissedFor, setDismissedFor] = useState<string | null>(null)
 
   const records = useQuery({ queryKey: ['records', slug], queryFn: api.records })
   const selected = records.data?.find((r) => r.id === recordId) ?? null
@@ -72,10 +89,13 @@ export function NewTicketPage() {
     enabled: query.length >= 8,
     staleTime: 60_000,
   })
+  const hits = dismissedFor !== query ? (suggestions.data ?? []) : []
+  const searching = query.length >= 8 && suggestions.isFetching && !suggestions.data
+
+  const hitCount = hits.length
   useEffect(() => {
-    setDismissed(false)
-  }, [query])
-  const hits = !dismissed ? (suggestions.data ?? []) : []
+    if (hitCount > 0) announce(`${hitCount} help article${hitCount === 1 ? '' : 's'} might answer your question.`)
+  }, [hitCount])
 
   const dirty = !!(subject || description || files.length)
   useEffect(() => {
@@ -110,26 +130,30 @@ export function NewTicketPage() {
     if (subject.trim().length < 5) next.subject = 'Give your request a short title (at least 5 characters).'
     if (description.trim().length < 20) next.description = 'Add a few more details (at least 20 characters) so we can help faster.'
     setErrors(next)
-    if (Object.keys(next).length) return
+    if (Object.keys(next).length) {
+      document.getElementById(next.subject ? 'subject' : 'description')?.focus()
+      return
+    }
     setProgress(0)
     create.mutate()
   }
 
   return (
-    <div className="mx-auto max-w-5xl">
-      <Link to={`/w/${slug}/help`} className="mb-4 inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
-        <ArrowLeft className="size-4" /> My tickets
+    <div>
+      <Link to={`/w/${slug}/help`} className="mb-4 inline-flex min-h-9 items-center gap-1.5 rounded-control text-sm font-medium text-ink-2 outline-none hover:text-ink focus-visible:ring-2 focus-visible:ring-violet">
+        <ArrowLeft className="size-4" aria-hidden /> My requests
       </Link>
-      <PageHeader title="How can we help?" description="Tell us what's going on. A few details up front means fewer back-and-forths." />
+      <header className="mb-6">
+        <h1 className="text-[1.75rem] leading-tight font-semibold tracking-tight sm:text-[2rem]">How can we help?</h1>
+        <p className="mt-1.5 max-w-xl text-[15px] text-ink-2">Tell us what&rsquo;s going on. A few details up front means fewer back-and-forths.</p>
+      </header>
 
-      <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
-        <form onSubmit={submit} className="space-y-7 rounded-2xl border border-border bg-card p-5 shadow-card sm:p-7" noValidate>
-          <section aria-labelledby="step1" className="border-b border-border pb-7">
-            <h2 id="step1" className="mb-4 flex items-center gap-2.5 text-[15px] font-semibold">
-              <span className="flex size-7 items-center justify-center rounded-md bg-primary text-xs font-bold text-primary-foreground">1</span> What is this about?
-            </h2>
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+        <form onSubmit={submit} noValidate aria-label="New request">
+        <Panel as="div" className="overflow-hidden">
+          <Step n={1} title="What is this about?">
             {records.isLoading ? (
-              <p className="text-sm text-muted-foreground">Loading your items…</p>
+              <SkeletonText lines={2} />
             ) : (
               <div className="grid gap-2 sm:grid-cols-2">
                 <RecordCard record={null} selected={recordId === null} onSelect={() => setRecordId(null)} />
@@ -138,99 +162,129 @@ export function NewTicketPage() {
                 ))}
               </div>
             )}
-          </section>
+          </Step>
 
-          <section aria-labelledby="step2" className="space-y-4">
-            <h2 id="step2" className="flex items-center gap-2.5 text-[15px] font-semibold">
-              <span className="flex size-7 items-center justify-center rounded-md bg-primary text-xs font-bold text-primary-foreground">2</span> Describe the issue
-            </h2>
-            <div className="space-y-1.5">
-              <Label htmlFor="subject">Title</Label>
-              <Input id="subject" value={subject} onChange={(e) => setSubject(e.target.value)} maxLength={150} placeholder="e.g. I was charged twice this month" aria-invalid={!!errors.subject} />
-              {errors.subject && <p className="text-xs text-red-600">{errors.subject}</p>}
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="description">Details</Label>
-              <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} maxLength={5000} rows={7} placeholder="What happened, when did it start, and what have you tried?" aria-invalid={!!errors.description} />
-              <div className="flex justify-between text-xs">
-                <span className="text-red-600">{errors.description}</span>
-                <span className="text-muted-foreground">{description.length}/5000</span>
+          <Step n={2} title="Describe the issue">
+            <div className="space-y-5">
+              <div className="space-y-1.5">
+                <Label htmlFor="subject">Title</Label>
+                <Input
+                  id="subject"
+                  value={subject}
+                  onChange={(e) => setSubject(e.target.value)}
+                  maxLength={150}
+                  placeholder="e.g. I was charged twice this month"
+                  aria-invalid={!!errors.subject}
+                  aria-describedby={errors.subject ? 'subject-err' : undefined}
+                  className="h-11"
+                />
+                {errors.subject && (
+                  <p id="subject-err" role="alert" className="text-xs font-medium text-rose-ink">
+                    {errors.subject}
+                  </p>
+                )}
               </div>
-            </div>
-
-            {hits.length > 0 && (
-              <div className="rounded-xl border border-amber-200 bg-amber-50/60 p-4" role="region" aria-label="Suggested articles">
-                <p className="flex items-center gap-2 text-sm font-semibold text-amber-900">
-                  <Lightbulb className="size-4" /> These might answer your question
-                </p>
-                <ul className="mt-2 space-y-2">
-                  {hits.map((h) => (
-                    <li key={h.article_id} className="rounded-lg bg-card p-3 text-sm shadow-xs">
-                      <p className="flex items-center gap-1.5 font-medium">
-                        <BookOpen className="size-3.5 text-muted-foreground" /> {h.title}
-                      </p>
-                      <p className="mt-1 text-xs leading-relaxed whitespace-pre-line text-muted-foreground">{h.excerpt}</p>
-                    </li>
-                  ))}
-                </ul>
-                <div className="mt-3 flex flex-wrap items-center gap-2 text-sm">
-                  <span className="text-amber-900">Does this answer your question?</span>
-                  <Button type="button" size="sm" variant="outline" onClick={() => navigate(`/w/${slug}/help`)}>
-                    Yes, that solved it
-                  </Button>
-                  <Button type="button" size="sm" variant="ghost" onClick={() => setDismissed(true)}>
-                    No, continue
-                  </Button>
+              <div className="space-y-1.5">
+                <Label htmlFor="description">Details</Label>
+                <Textarea
+                  id="description"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  maxLength={5000}
+                  rows={7}
+                  placeholder="What happened, when did it start, and what have you tried?"
+                  aria-invalid={!!errors.description}
+                  aria-describedby={errors.description ? 'description-err' : undefined}
+                />
+                <div className="flex justify-between gap-3 text-xs">
+                  <span id="description-err" role={errors.description ? 'alert' : undefined} className="font-medium text-rose-ink">
+                    {errors.description}
+                  </span>
+                  <span className="text-ink-3 tabular-nums">{description.length}/5000</span>
                 </div>
               </div>
-            )}
 
-            <div className="space-y-1.5">
-              <Label>Attachments (optional)</Label>
-              <FileDropzone files={files} onChange={setFiles} disabled={create.isPending} />
-              {errors.attachments && <p className="text-xs text-red-600">{errors.attachments}</p>}
+              {(searching || hits.length > 0) && (
+                <AiSurface working={searching} tone="bold" as="div" className="p-4" role="region" aria-label="Suggested articles">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <AiChip working={searching}>{searching ? 'Searching our help articles…' : 'These might answer your question'}</AiChip>
+                  </div>
+                  {searching ? (
+                    <SkeletonText lines={2} className="mt-3" />
+                  ) : (
+                    <>
+                      <ul className="mt-3 space-y-2">
+                        {hits.map((h) => (
+                          <li key={h.article_id} className="rounded-control border border-line bg-surface p-3 text-sm">
+                            <p className="flex items-center gap-1.5 font-semibold text-ink">
+                              <BookOpen className="size-3.5 text-ink-3" aria-hidden /> {h.title}
+                            </p>
+                            <p className="mt-1 text-[13px] leading-relaxed whitespace-pre-line text-ink-2">{h.excerpt}</p>
+                          </li>
+                        ))}
+                      </ul>
+                      <div className="mt-3 flex flex-wrap items-center gap-2 text-sm">
+                        <span className="font-medium text-ink">Does this answer your question?</span>
+                        <Button type="button" size="sm" variant="outline" onClick={() => navigate(`/w/${slug}/help`)}>
+                          Yes, that solved it
+                        </Button>
+                        <Button type="button" size="sm" variant="ghost" onClick={() => setDismissedFor(query)}>
+                          No, continue
+                        </Button>
+                      </div>
+                    </>
+                  )}
+                </AiSurface>
+              )}
+
+              <div className="space-y-1.5">
+                <Label>
+                  Attachments <span className="font-normal text-ink-3">(optional)</span>
+                </Label>
+                <FileDropzone files={files} onChange={setFiles} disabled={create.isPending} uploading={create.isPending} progress={progress} error={errors.attachments} />
+              </div>
             </div>
-          </section>
+          </Step>
 
-          {create.isPending && files.length > 0 && <Progress value={progress} aria-label="Upload progress" />}
-          <div className="flex justify-end gap-2">
+          <div className="flex flex-col-reverse gap-2 border-t border-line bg-surface-2 px-5 py-4 sm:flex-row sm:items-center sm:justify-end sm:px-7">
             <Button type="button" variant="ghost" onClick={() => navigate(`/w/${slug}/help`)} disabled={create.isPending}>
               Cancel
             </Button>
-            <Button type="submit" disabled={create.isPending}>
-              {create.isPending ? <Loader2 className="animate-spin" /> : <Send />} Send request
+            <Button type="submit" size="lg" disabled={create.isPending}>
+              {create.isPending ? <Loader2 className="animate-spin motion-reduce:animate-none" aria-hidden /> : <Send aria-hidden />} {create.isPending ? 'Sending…' : 'Send request'}
             </Button>
           </div>
+        </Panel>
         </form>
 
-        <aside className="space-y-4 lg:sticky lg:top-24 lg:self-start">
-          <div className="rounded-2xl border border-border bg-card p-5 shadow-card">
-            <h3 className="text-sm font-semibold">{selected ? selected.title : 'Selected item'}</h3>
-            {selected ? (
-              <dl className="mt-3 space-y-2 text-sm">
-                <div className="flex justify-between gap-3">
-                  <dt className="text-muted-foreground">Status</dt>
-                  <dd className="font-medium">{selected.status || '—'}</dd>
-                </div>
-                {Object.entries(selected.data).slice(0, 6).map(([k, v]) => (
-                  <div key={k} className="flex justify-between gap-3">
-                    <dt className="text-muted-foreground">{labelize(k)}</dt>
-                    <dd className="text-right font-medium">{formatValue(v)}</dd>
-                  </div>
-                ))}
-              </dl>
-            ) : (
-              <p className="mt-2 text-sm text-muted-foreground">Pick an item to attach its details so we don't have to ask for them.</p>
-            )}
-          </div>
-          <div className="rounded-2xl border border-border bg-muted/50 p-5 text-sm text-muted-foreground">
-            <p className="font-medium text-foreground">Tips for a quick answer</p>
-            <ul className="mt-2 list-disc space-y-1 pl-4">
+        <aside aria-label="Helpful details" className="space-y-4 lg:sticky lg:top-24 lg:self-start">
+          <Panel>
+            <PanelHeader title={selected ? selected.title : 'Selected item'} description={selected ? undefined : 'Nothing attached yet'} icon={Package} />
+            <div className="p-5">
+              {selected ? (
+                <KeyValueList columns={1}>
+                  <KeyValue label="Status">{selected.status ? <Chip tone="slate" size="sm">{selected.status}</Chip> : '—'}</KeyValue>
+                  {Object.entries(selected.data)
+                    .slice(0, 6)
+                    .map(([k, v]) => (
+                      <KeyValue key={k} label={labelize(k)}>
+                        {formatValue(v)}
+                      </KeyValue>
+                    ))}
+                </KeyValueList>
+              ) : (
+                <p className="text-sm text-ink-2">Pick an item to attach its details so we don&rsquo;t have to ask for them.</p>
+              )}
+            </div>
+          </Panel>
+          <Panel tone="sunken" padded>
+            <p className="text-sm font-semibold text-ink">Tips for a quick answer</p>
+            <ul className="mt-2 list-disc space-y-1.5 pl-4 text-sm text-ink-2">
               <li>Say what you expected and what happened instead.</li>
               <li>Include dates, amounts or error messages.</li>
               <li>Add a screenshot if it helps.</li>
             </ul>
-          </div>
+          </Panel>
         </aside>
       </div>
     </div>

@@ -1,267 +1,124 @@
 import { useQuery } from '@tanstack/react-query'
-import {
-  BarChart3,
-  BookOpen,
-  Check,
-  ChevronsUpDown,
-  Inbox,
-  type LucideIcon,
-  Menu,
-  PanelLeftClose,
-  PanelLeftOpen,
-  Settings,
-  UserRound,
-} from 'lucide-react'
-import { Suspense, useEffect, useState } from 'react'
-import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { BarChart3, BookOpen, Inbox, Moon, Monitor, Settings, Sun, Keyboard } from 'lucide-react'
+import { Suspense, useMemo } from 'react'
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 
-import { homeFor, useAuth } from '@/auth/AuthContext'
 import { useWorkspace } from '@/auth/workspace'
-import { ConnectionIndicator, WorkspaceMark } from '@/components/common'
 import { DemoDock } from '@/components/dashboard/DemoDock'
-import { NotificationBell } from '@/components/NotificationBell'
-import { ListSkeleton } from '@/components/states'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
-import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { SkeletonRows } from '@/components/ds/states'
+import { CommandBar } from '@/components/shell/CommandBar'
+import { useRegisterCommands, type Command } from '@/components/shell/commands'
+import { CommandPalette } from '@/components/shell/CommandPalette'
+import { Dock, isItemActive, type DockItem } from '@/components/shell/Dock'
+import { LiveRegion } from '@/components/shell/live'
+import { ShellProvider } from '@/components/shell/ShellContext'
+import { useShell } from '@/components/shell/shell-context'
+import { ShortcutsHelp } from '@/components/shell/ShortcutsHelp'
+import { openShortcutsHelp, useShortcut } from '@/components/shell/shortcuts'
 import { cn } from '@/lib/utils'
 import { useFallbackInterval } from '@/realtime/RealtimeProvider'
+import { useTheme } from '@/theme/ThemeProvider'
 
-import { UserMenu } from './UserMenu'
-
-const COLLAPSE_KEY = 'helpdesk.sidebar'
-
-interface NavItem {
-  to: string
-  label: string
-  icon: LucideIcon
-  end?: boolean
-  count?: number
-}
-
-function useCollapsed() {
-  const [collapsed, setCollapsed] = useState(() => {
-    try {
-      return localStorage.getItem(COLLAPSE_KEY) === '1'
-    } catch {
-      return false
-    }
-  })
-  const toggle = () =>
-    setCollapsed((c) => {
-      try {
-        localStorage.setItem(COLLAPSE_KEY, c ? '0' : '1')
-      } catch {
-        /* ignore */
-      }
-      return !c
-    })
-  return [collapsed, toggle] as const
-}
-
-/** Workspace header: tile + name + role, and a switcher when the account belongs to several workspaces. */
-function WorkspaceSwitcher({ collapsed }: { collapsed: boolean }) {
-  const { user } = useAuth()
-  const { brief, slug, role } = useWorkspace()
-  const navigate = useNavigate()
-  const roleLabel = role === 'REQUESTER' ? 'Customer' : (role ?? '').charAt(0) + (role ?? '').slice(1).toLowerCase()
-  const memberships = user?.memberships ?? []
-  const body = (
-    <button
-      className={cn(
-        'flex w-full items-center gap-3 rounded-xl p-1.5 text-left transition-colors outline-none hover:bg-sidebar-accent focus-visible:ring-2 focus-visible:ring-sidebar-ring',
-        collapsed && 'justify-center',
-      )}
-      aria-label="Switch workspace"
-    >
-      <WorkspaceMark name={brief?.name} />
-      {!collapsed && (
-        <>
-          <span className="min-w-0 flex-1 leading-tight">
-            <span className="block truncate text-sm font-semibold tracking-tight">{brief?.name ?? 'Workspace'}</span>
-            <span className="block truncate text-[11px] text-sidebar-foreground/65">{roleLabel} workspace</span>
-          </span>
-          {memberships.length > 1 && <ChevronsUpDown className="size-4 shrink-0 text-sidebar-foreground/60" />}
-        </>
-      )}
-    </button>
-  )
-  if (memberships.length <= 1) return <div>{body}</div>
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>{body}</DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="w-60">
-        <DropdownMenuLabel className="text-xs text-muted-foreground">Your workspaces</DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        {memberships.map((m) => (
-          <DropdownMenuItem key={m.workspace.slug} onClick={() => user && navigate(homeFor(user, m.workspace.slug))}>
-            <WorkspaceMark name={m.workspace.name} className="size-6 rounded-md text-[11px]" />
-            <span className="flex-1 truncate">{m.workspace.name}</span>
-            {m.workspace.slug === slug && <Check className="size-4" />}
-          </DropdownMenuItem>
-        ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
-  )
-}
-
-function SidebarLink({ item, collapsed, onNavigate }: { item: NavItem; collapsed: boolean; onNavigate?: () => void }) {
-  const link = (
-    <NavLink
-      to={item.to}
-      end={item.end}
-      onClick={onNavigate}
-      className={({ isActive }) => {
-        const active = isActive && !item.to.includes('?')
-        return cn(
-          'group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-sidebar-foreground/80 transition-colors outline-none hover:bg-sidebar-accent/70 hover:text-sidebar-accent-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring',
-          collapsed && 'justify-center px-0',
-          active && 'bg-primary/10 font-semibold text-primary hover:bg-primary/15',
-        )
-      }}
-    >
-      <item.icon className="size-[18px] shrink-0" />
-      {!collapsed && <span className="truncate">{item.label}</span>}
-      {item.count !== undefined && item.count > 0 && (
-        collapsed ? (
-          <span className="absolute top-1 right-1.5 size-2 rounded-full bg-primary ring-2 ring-sidebar" />
-        ) : (
-          <span className="ml-auto rounded-md bg-sidebar-foreground/15 px-2 py-0.5 text-[11px] font-semibold text-sidebar-foreground tabular-nums">{item.count}</span>
-        )
-      )}
-    </NavLink>
-  )
-  if (!collapsed) return link
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>{link}</TooltipTrigger>
-      <TooltipContent side="right">{item.label}</TooltipContent>
-    </Tooltip>
-  )
-}
-
-function SidebarBody({ groups, collapsed, onNavigate, reserveDock }: { groups: { label: string; items: NavItem[] }[]; collapsed: boolean; onNavigate?: () => void; reserveDock: boolean }) {
-  return (
-    <>
-      <div className="px-1">
-        <WorkspaceSwitcher collapsed={collapsed} />
-      </div>
-      <nav className="mt-6 flex-1 space-y-6 overflow-y-auto" aria-label="Primary">
-        {groups.map((g) => (
-          <div key={g.label}>
-            {!collapsed && <p className="mb-1.5 px-3 text-[11px] font-semibold tracking-wider text-sidebar-foreground/50 uppercase">{g.label}</p>}
-            <div className="space-y-0.5">
-              {g.items.map((item) => (
-                <SidebarLink key={item.to} item={item} collapsed={collapsed} onNavigate={onNavigate} />
-              ))}
-            </div>
-          </div>
-        ))}
-      </nav>
-      {/* bottom: the account card; extra room under it in demos so the floating demo dock never covers it */}
-      <div className={cn('pt-3', reserveDock && 'mb-14')}>
-        <UserMenu variant="card" collapsed={collapsed} />
-      </div>
-    </>
-  )
-}
-
-/** The page title shown in the top bar, derived from the route. */
-function useCrumb(base: string) {
+/** Bottom tab bar for phones (the dock is hidden below md). */
+function TabBar({ items }: { items: DockItem[] }) {
   const { pathname } = useLocation()
-  if (pathname.startsWith(`${base}/tickets/`)) return 'Ticket'
-  if (pathname.startsWith(`${base}/analytics`)) return 'Analytics'
-  if (pathname.startsWith(`${base}/knowledge`)) return 'Knowledge base'
-  if (pathname.startsWith(`${base}/settings`)) return 'Settings'
-  return 'Ticket queue'
+  return (
+    <nav aria-label="Primary" className="flex shrink-0 items-stretch justify-around border-t border-line bg-surface px-2 pb-[max(0.25rem,env(safe-area-inset-bottom))] md:hidden">
+      {items.map((it) => {
+        const active = isItemActive(it, pathname)
+        return (
+          <Link
+            key={it.to}
+            to={it.to}
+            aria-current={active ? 'page' : undefined}
+            aria-label={it.count ? `${it.label}, ${it.count}` : it.label}
+            className={cn('relative flex h-14 min-w-16 flex-1 flex-col items-center justify-center gap-1 rounded-control text-[11px] font-medium', active ? 'text-ink' : 'text-ink-3')}
+          >
+            <span className={cn('relative flex h-7 w-12 items-center justify-center rounded-control', active && 'bg-ink text-canvas')}>
+              <it.icon className="size-[18px]" aria-hidden />
+              {!!it.count && !active && <span className="absolute top-0.5 right-2 size-2 rounded-full bg-violet" aria-hidden />}
+            </span>
+            {it.label}
+          </Link>
+        )
+      })}
+    </nav>
+  )
 }
 
-export function AgentLayout() {
-  const { slug, api, brief, manager, isDemo } = useWorkspace()
+function Frame() {
+  const { slug, api, manager, isDemo } = useWorkspace()
+  const { bleed } = useShell()
+  const navigate = useNavigate()
+  const { setChoice } = useTheme()
   const refetchInterval = useFallbackInterval()
   const { data: stats } = useQuery({ queryKey: ['stats', slug], queryFn: api.tickets.stats, refetchInterval })
   const base = `/w/${slug}/agent`
-  const crumb = useCrumb(base)
-  const { pathname } = useLocation()
-  const [collapsed, toggleCollapsed] = useCollapsed()
-  const [drawer, setDrawer] = useState(false)
 
-  useEffect(() => setDrawer(false), [pathname])
+  const items = useMemo<DockItem[]>(
+    () => [
+      { to: base, label: 'Inbox', icon: Inbox, end: true, also: [`${base}/tickets`], count: stats ? stats.open + stats.in_progress : undefined },
+      { to: `${base}/analytics`, label: 'Analytics', icon: BarChart3 },
+      { to: `${base}/knowledge`, label: 'Knowledge', icon: BookOpen },
+      { to: `${base}/settings`, label: manager ? 'Settings' : 'Team', icon: Settings },
+    ],
+    [base, stats, manager],
+  )
 
-  const groups = [
-    {
-      label: 'Support',
-      items: [
-        { to: base, label: 'Ticket queue', icon: Inbox, end: true, count: stats ? stats.open + stats.in_progress : undefined },
-        { to: `${base}?view=mine`, label: 'Assigned to me', icon: UserRound, count: stats?.mine },
-      ],
-    },
-    { label: 'Insights', items: [{ to: `${base}/analytics`, label: 'Analytics', icon: BarChart3 }] },
-    {
-      label: 'Workspace',
-      items: [
-        { to: `${base}/knowledge`, label: 'Knowledge base', icon: BookOpen },
-        { to: `${base}/settings`, label: manager ? 'Settings' : 'Team', icon: Settings },
-      ],
-    },
-  ]
+  const commands = useMemo<Command[]>(
+    () => [
+      { id: 'go.inbox', title: 'Go to Inbox', group: 'Navigate', icon: Inbox, shortcut: 'g i', keywords: ['tickets', 'queue'], perform: () => navigate(base) },
+      { id: 'go.mine', title: 'Show tickets assigned to me', group: 'Navigate', icon: Inbox, keywords: ['mine', 'assigned'], perform: () => navigate(`${base}?view=mine`) },
+      { id: 'go.analytics', title: 'Go to Analytics', group: 'Navigate', icon: BarChart3, shortcut: 'g a', keywords: ['stats', 'reports'], perform: () => navigate(`${base}/analytics`) },
+      { id: 'go.kb', title: 'Go to Knowledge base', group: 'Navigate', icon: BookOpen, shortcut: 'g k', keywords: ['articles', 'kb'], perform: () => navigate(`${base}/knowledge`) },
+      { id: 'go.settings', title: manager ? 'Go to Settings' : 'Go to Team', group: 'Navigate', icon: Settings, shortcut: 'g s', keywords: ['team', 'sla', 'categories'], perform: () => navigate(`${base}/settings`) },
+      { id: 'theme.light', title: 'Theme: Light', group: 'Appearance', icon: Sun, keywords: ['appearance'], perform: () => setChoice('light') },
+      { id: 'theme.dark', title: 'Theme: Dark', group: 'Appearance', icon: Moon, keywords: ['appearance'], perform: () => setChoice('dark') },
+      { id: 'theme.system', title: 'Theme: Match system', group: 'Appearance', icon: Monitor, keywords: ['appearance', 'auto'], perform: () => setChoice('system') },
+      { id: 'help.shortcuts', title: 'Keyboard shortcuts', group: 'Help', icon: Keyboard, shortcut: '?', perform: openShortcutsHelp },
+    ],
+    [base, manager, navigate, setChoice],
+  )
+  useRegisterCommands(commands)
+  useShortcut('g i', () => navigate(base), { description: 'Go to Inbox', group: 'Navigate' })
+  useShortcut('g a', () => navigate(`${base}/analytics`), { description: 'Go to Analytics', group: 'Navigate' })
+  useShortcut('g k', () => navigate(`${base}/knowledge`), { description: 'Go to Knowledge base', group: 'Navigate' })
+  useShortcut('g s', () => navigate(`${base}/settings`), { description: 'Go to Settings', group: 'Navigate' })
 
   return (
-    <div className="flex min-h-screen flex-col bg-background">
-      <div className="flex min-h-0 flex-1">
-        <aside
-          className={cn(
-            'sticky top-0 hidden h-screen shrink-0 flex-col self-start border-r border-sidebar-border bg-sidebar px-3 py-4 text-sidebar-foreground transition-[width] duration-200 md:flex',
-            collapsed ? 'w-[76px]' : 'w-[264px]',
-          )}
-        >
-          <SidebarBody groups={groups} collapsed={collapsed} reserveDock={isDemo} />
-        </aside>
-
-        <Sheet open={drawer} onOpenChange={setDrawer}>
-          <SheetContent side="left" className="w-[280px] gap-0 border-sidebar-border bg-sidebar p-3 text-sidebar-foreground sm:max-w-[280px]" showCloseButton={false}>
-            <SheetTitle className="sr-only">Navigation</SheetTitle>
-            <SidebarBody groups={groups} collapsed={false} onNavigate={() => setDrawer(false)} reserveDock={isDemo} />
-          </SheetContent>
-        </Sheet>
-
-        <div className="flex min-w-0 flex-1 flex-col">
-          <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-border bg-card/90 px-4 shadow-[0_1px_0_0_var(--border)] backdrop-blur md:px-6">
-            <button className="flex size-9 items-center justify-center rounded-lg border bg-card text-muted-foreground shadow-xs md:hidden" onClick={() => setDrawer(true)} aria-label="Open navigation">
-              <Menu className="size-[18px]" />
-            </button>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button onClick={toggleCollapsed} className="hidden size-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground md:flex" aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}>
-                  {collapsed ? <PanelLeftOpen className="size-[18px]" /> : <PanelLeftClose className="size-[18px]" />}
-                </button>
-              </TooltipTrigger>
-              <TooltipContent>{collapsed ? 'Expand sidebar' : 'Collapse sidebar'}</TooltipContent>
-            </Tooltip>
-            <nav aria-label="Breadcrumb" className="hidden min-w-0 items-center gap-2 text-sm sm:flex">
-              <Link to={base} className="max-w-40 truncate text-muted-foreground transition-colors hover:text-foreground">{brief?.name}</Link>
-              <span className="text-muted-foreground/50">/</span>
-              <span className="font-semibold">{crumb}</span>
-            </nav>
-            <span className="truncate text-sm font-semibold sm:hidden">{crumb}</span>
-
-
-            <div className="ml-auto flex items-center gap-2.5 sm:gap-3">
-              <ConnectionIndicator />
-              <NotificationBell />
-              <div className="md:hidden">
-                <UserMenu />
-              </div>
-            </div>
-          </header>
-          <main className={cn('mx-auto w-full max-w-[1400px] flex-1 px-4 py-6 md:px-8 md:py-8', isDemo && 'pb-24')}>
-            <Suspense fallback={<ListSkeleton rows={6} />}>
+    <div className="flex h-dvh w-full bg-canvas text-ink">
+      <a href="#main" className="sr-only z-[60] rounded-control bg-ink px-4 py-2.5 text-sm font-medium text-canvas focus:not-sr-only focus:fixed focus:top-3 focus:left-3">
+        Skip to main content
+      </a>
+      <Dock items={items} />
+      <div className="flex min-w-0 flex-1 flex-col">
+        <CommandBar />
+        <main id="main" tabIndex={-1} className={cn('min-h-0 flex-1 outline-none', bleed ? 'flex flex-col overflow-hidden' : 'scroll-quiet overflow-y-auto')}>
+          {/* one stable tree: toggling bleed only changes classes, so the routed page is never remounted */}
+          <div className={cn(bleed ? 'flex min-h-0 flex-1 flex-col' : 'mx-auto w-full max-w-[1400px] px-4 py-6 md:px-8 md:py-8', !bleed && isDemo && 'pb-24')}>
+            <Suspense fallback={<SkeletonRows rows={6} className={bleed ? 'p-6' : undefined} />}>
               <Outlet />
             </Suspense>
-          </main>
-        </div>
+          </div>
+        </main>
+        <TabBar items={items} />
       </div>
+      <CommandPalette />
+      <ShortcutsHelp />
+      <LiveRegion />
       <DemoDock />
     </div>
+  )
+}
+
+/**
+ * Agent shell: dock (left) + command bar (top) + content. Pages render in <Outlet/>.
+ * Default content is a padded, scrolling container; a page can take over the full area by calling `useShellBleed()`.
+ */
+export function AgentLayout() {
+  return (
+    <ShellProvider>
+      <Frame />
+    </ShellProvider>
   )
 }

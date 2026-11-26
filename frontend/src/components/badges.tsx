@@ -29,7 +29,7 @@ export function Pill({ tone, label, size = 'md', className, children }: {
   return (
     <span
       className={cn(
-        'inline-flex items-center rounded-lg font-semibold whitespace-nowrap',
+        'inline-flex items-center rounded-chip font-semibold whitespace-nowrap',
         SIZES[size].pill,
         tone.pill,
         className,
@@ -64,7 +64,7 @@ export function CategoryBadge({ category, source, size, subtle }: {
   if (!category) return <span className="text-xs text-muted-foreground">Uncategorised</span>
   const tone = categoryTone(category.key, category.name)
   return (
-    <Pill tone={tone} size={size} className={subtle ? 'bg-transparent text-foreground/70 ring-border' : undefined}>
+    <Pill tone={tone} size={size} className={subtle ? 'bg-transparent text-ink-2 border-line' : undefined}>
       {source && <SourceMarker source={source} />}
     </Pill>
   )
@@ -82,8 +82,8 @@ export function SourceMarker({ source }: { source: ClassificationSource }) {
     <Tooltip>
       <TooltipTrigger asChild>
         <span className="inline-flex" aria-label={text}>
-          {source === 'AI' && <Sparkles className="size-3 text-violet-500" />}
-          {source === 'STAFF' && <UserCheck className="size-3 text-emerald-600" />}
+          {source === 'AI' && <Sparkles className="size-3 text-violet" />}
+          {source === 'STAFF' && <UserCheck className="size-3 text-mint-ink" />}
           {source === 'FALLBACK' && <span className="text-[10px] opacity-60">~</span>}
         </span>
       </TooltipTrigger>

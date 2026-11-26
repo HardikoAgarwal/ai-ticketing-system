@@ -1,0 +1,120 @@
+import { AlertTriangle, ArrowDown, ArrowUp, CircleCheck, CircleDot, Clock, Flame, Loader2, MessageSquare, Minus, Sparkles, Timer, type LucideIcon } from 'lucide-react'
+
+import { ticketStates } from '@/components/dashboard/badges'
+import type { ChipTone } from '@/components/ds'
+import type { TicketQuery } from '@/lib/endpoints'
+import type { StaffTicket, TicketStatus } from '@/lib/types'
+
+/* ---------- views, sort, filters (all state lives in the URL so it survives selecting a ticket) ---------- */
+
+export const VIEWS = {
+  attention: { label: 'Needs attention', query: { status: 'OPEN,IN_PROGRESS' } },
+  mine: { label: 'Mine', query: { status: 'OPEN,IN_PROGRESS', assigned: 'me' } },
+  unassigned: { label: 'Unassigned', query: { status: 'OPEN,IN_PROGRESS', assigned: 'unassigned' } },
+  all: { label: 'All', query: { ordering: '-created_at' } },
+} as const
+export type ViewKey = keyof typeof VIEWS
+
+export const SORT_OPTIONS = [
+  { value: 'default', label: 'Urgency, then oldest', ordering: undefined },
+  { value: 'newest', label: 'Newest first', ordering: '-created_at' },
+  { value: 'oldest', label: 'Oldest first', ordering: 'created_at' },
+  { value: 'updated', label: 'Recently updated', ordering: '-updated_at' },
+  { value: 'sla', label: 'SLA due soonest', ordering: 'sla_due_at' },
+] as const
+
+export const FILTER_KEYS = ['status', 'priority', 'category', 'assigned', 'sla'] as const
+export type FilterKey = (typeof FILTER_KEYS)[number]
+/** URL params owned by the inbox. Anything else (e.g. the ticket pane's `tab`) is never copied between tickets. */
+export const INBOX_PARAMS = ['view', 'q', 'sort', 'density', ...FILTER_KEYS] as const
+
+export const PAGE_SIZE = 25
+
+export function viewFromParams(params: URLSearchParams): ViewKey {
+  const v = params.get('view') as ViewKey | null
+  return v && v in VIEWS ? v : 'attention'
+}
+
+export function buildQuery(params: URLSearchParams): TicketQuery {
+  const q: TicketQuery = { ...VIEWS[viewFromParams(params)].query }
+  for (const key of [...FILTER_KEYS, 'q'] as const) {
+    const v = params.get(key)
+    if (v) q[key] = v
+  }
+  const sort = SORT_OPTIONS.find((o) => o.value === (params.get('sort') ?? 'default'))
+  if (sort?.ordering) q.ordering = sort.ordering
+  return q
+}
+
+/** Keep only the params the inbox owns, so links between tickets preserve the list state and drop pane state. */
+export function inboxSearch(params: URLSearchParams): string {
+  const next = new URLSearchParams()
+  for (const k of INBOX_PARAMS) {
+    const v = params.get(k)
+    if (v) next.set(k, v)
+  }
+  const s = next.toString()
+  return s ? `?${s}` : ''
+}
+
+/* ---------- per-ticket presentation helpers (status/attention/grouping) ---------- */
+
+export const STATUS_CHIP: Record<TicketStatus, { tone: ChipTone; icon: LucideIcon; label: string }> = {
+  OPEN: { tone: 'blue', icon: CircleDot, label: 'Open' },
+  IN_PROGRESS: { tone: 'violet', icon: Loader2, label: 'In progress' },
+  RESOLVED: { tone: 'green', icon: CircleCheck, label: 'Resolved' },
+  CLOSED: { tone: 'slate', icon: CircleCheck, label: 'Closed' },
+}
+
+export const PRIORITY_LOOK: Record<string, { icon: LucideIcon; cls: string; label: string }> = {
+  CRITICAL: { icon: Flame, cls: 'text-rose-ink', label: 'Critical' },
+  HIGH: { icon: ArrowUp, cls: 'text-peach-ink', label: 'High' },
+  MEDIUM: { icon: Minus, cls: 'text-butter-ink', label: 'Medium' },
+  LOW: { icon: ArrowDown, cls: 'text-ink-3', label: 'Low' },
+}
+
+export interface Attention {
+  tone: ChipTone
+  icon: LucideIcon
+  label: string
+  /** Spoken equivalent for assistive tech, since the chip colour alone must not carry meaning. */
+  working?: boolean
+}
+
+/** The single most important thing about this ticket right now, or null when nothing needs attention. */
+export function attentionOf(ticket: StaffTicket): Attention | null {
+  if (ticket.status === 'RESOLVED' || ticket.status === 'CLOSED') return null
+  const states = ticketStates(ticket)
+  const find = (kind: string) => states.find((s) => s.kind === kind)
+  const overdue = find('overdue')
+  if (overdue) return { tone: 'red', icon: Timer, label: overdue.label }
+  const msg = find('message')
+  if (msg) return { tone: 'blue', icon: MessageSquare, label: msg.label }
+  const risk = find('atrisk')
+  if (risk) return { tone: 'amber', icon: Clock, label: risk.label }
+  const fresh = find('ticket')
+  if (fresh) return { tone: 'green', icon: CircleDot, label: fresh.label }
+  const failed = find('aifailed')
+  if (failed) return { tone: 'amber', icon: AlertTriangle, label: failed.label }
+  if (ticket.ai_status === 'PENDING' && ticket.category_source !== 'STAFF') return { tone: 'ai', icon: Loader2, label: 'AI triaging', working: true }
+  if (ticket.ai_draft_status === 'COMPLETED') return { tone: 'ai', icon: Sparkles, label: 'Draft ready' }
+  return null
+}
+
+export type TicketBucket = 'overdue' | 'reply' | 'progress' | 'open' | 'done'
+export const BUCKETS: { key: TicketBucket; label: string; dot: string }[] = [
+  { key: 'overdue', label: 'Overdue', dot: 'bg-rose-ink' },
+  { key: 'reply', label: 'Needs reply', dot: 'bg-sky-ink' },
+  { key: 'progress', label: 'In progress', dot: 'bg-violet' },
+  { key: 'open', label: 'Open', dot: 'bg-ink-3' },
+  { key: 'done', label: 'Resolved', dot: 'bg-mint-ink' },
+]
+
+export function ticketBucket(ticket: StaffTicket): TicketBucket {
+  if (ticket.status === 'RESOLVED' || ticket.status === 'CLOSED') return 'done'
+  const states = ticketStates(ticket)
+  if (states.some((s) => s.kind === 'overdue')) return 'overdue'
+  if (ticket.has_unread || states.some((s) => s.kind === 'message')) return 'reply'
+  if (ticket.status === 'IN_PROGRESS') return 'progress'
+  return 'open'
+}

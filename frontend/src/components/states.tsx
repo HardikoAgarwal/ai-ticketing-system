@@ -8,8 +8,11 @@ import { cn } from '@/lib/utils'
 
 export function FullPageLoader() {
   return (
-    <div className="flex min-h-screen items-center justify-center text-muted-foreground">
-      <Loader2 className="size-5 animate-spin" />
+    <div role="status" aria-label="Loading" className="flex min-h-dvh flex-col items-center justify-center gap-3 bg-canvas text-ink-3">
+      <span className="flex size-11 items-center justify-center rounded-panel bg-linear-to-br from-aurora-1 to-aurora-3 text-white shadow-aurora motion-safe:animate-pulse">
+        <Loader2 className="size-5 animate-spin motion-reduce:animate-none" aria-hidden />
+      </span>
+      <span className="text-sm font-medium">Loading…</span>
     </div>
   )
 }

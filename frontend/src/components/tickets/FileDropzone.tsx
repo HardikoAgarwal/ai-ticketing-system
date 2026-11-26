@@ -1,14 +1,29 @@
 import { FileText, ImageIcon, Paperclip, X } from 'lucide-react'
-import { useRef, useState, type DragEvent } from 'react'
+import { useId, useRef, useState, type DragEvent } from 'react'
 
+import { ProgressBar } from '@/components/ds'
 import { ATTACHMENT_MAX_BYTES, ATTACHMENT_MAX_FILES, ATTACHMENT_TYPES } from '@/lib/constants'
 import { formatBytes } from '@/lib/format'
 import { cn } from '@/lib/utils'
 
-export function FileDropzone({ files, onChange, disabled }: { files: File[]; onChange: (files: File[]) => void; disabled?: boolean }) {
+/**
+ * Attachment picker: click, keyboard or drag and drop. Validates type, size and count (errors are announced).
+ * Pass `uploading` + `progress` (0-100) to show upload progress on the files while the form is being sent.
+ */
+export function FileDropzone({ files, onChange, disabled, uploading, progress = 0, error: externalError }: {
+  files: File[]
+  onChange: (files: File[]) => void
+  disabled?: boolean
+  uploading?: boolean
+  progress?: number
+  error?: string
+}) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [dragging, setDragging] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const hintId = useId()
+  const errId = useId()
+  const shownError = error ?? externalError
 
   const add = (incoming: FileList | File[]) => {
     setError(null)
@@ -39,60 +54,79 @@ export function FileDropzone({ files, onChange, disabled }: { files: File[]; onC
 
   return (
     <div>
-      <div
-        role="button"
-        tabIndex={0}
-        onClick={() => !disabled && inputRef.current?.click()}
-        onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && inputRef.current?.click()}
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => inputRef.current?.click()}
         onDragOver={(e) => {
           e.preventDefault()
           setDragging(true)
         }}
         onDragLeave={() => setDragging(false)}
         onDrop={onDrop}
+        aria-describedby={`${hintId}${shownError ? ` ${errId}` : ''}`}
         className={cn(
-          'flex cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed px-4 py-5 text-center transition-colors',
-          dragging ? 'border-primary bg-accent/50' : 'hover:border-primary/50 hover:bg-muted/50',
+          'flex min-h-24 w-full flex-col items-center justify-center rounded-panel border border-dashed px-4 py-5 text-center outline-none transition-colors focus-visible:ring-2 focus-visible:ring-violet focus-visible:ring-offset-2 focus-visible:ring-offset-surface',
+          dragging ? 'border-violet bg-lav' : 'border-line-strong bg-surface-2 hover:border-violet/60 hover:bg-lav/40',
           disabled && 'pointer-events-none opacity-60',
         )}
       >
-        <Paperclip className="size-4 text-muted-foreground" />
-        <p className="mt-1.5 text-sm">
-          <span className="font-medium text-primary">Choose files</span> or drag them here
+        <Paperclip className="size-4 text-ink-3" aria-hidden />
+        <span className="mt-1.5 text-sm text-ink">
+          <span className="font-semibold text-violet">Choose files</span> or drop them here
+        </span>
+        <span id={hintId} className="mt-0.5 text-xs text-ink-3">
+          Screenshots, photos or statements · PDF, PNG, JPG · up to 10 MB each, max {ATTACHMENT_MAX_FILES}
+        </span>
+      </button>
+      <input
+        ref={inputRef}
+        type="file"
+        multiple
+        accept={ATTACHMENT_TYPES.join(',')}
+        className="sr-only"
+        tabIndex={-1}
+        aria-hidden
+        onChange={(e) => {
+          if (e.target.files) add(e.target.files)
+          e.target.value = ''
+        }}
+      />
+      {shownError && (
+        <p id={errId} role="alert" className="mt-1.5 text-xs font-medium text-rose-ink">
+          {shownError}
         </p>
-        <p className="mt-0.5 text-xs text-muted-foreground">Photos of defects, screenshots or statements · PDF, PNG, JPG · up to 10 MB each, max 3</p>
-        <input
-          ref={inputRef}
-          type="file"
-          multiple
-          accept={ATTACHMENT_TYPES.join(',')}
-          className="hidden"
-          onChange={(e) => {
-            if (e.target.files) add(e.target.files)
-            e.target.value = ''
-          }}
-        />
-      </div>
-      {error && <p className="mt-1.5 text-xs text-red-600">{error}</p>}
+      )}
       {files.length > 0 && (
-        <ul className="mt-2 space-y-1.5">
+        <ul className="mt-2 space-y-1.5" aria-label="Files to attach">
           {files.map((f, i) => (
-            <li key={`${f.name}-${i}`} className="flex items-center gap-2 rounded-md border bg-card px-3 py-1.5 text-sm">
-              {f.type.startsWith('image/') ? <ImageIcon className="size-4 text-muted-foreground" /> : <FileText className="size-4 text-muted-foreground" />}
-              <span className="min-w-0 flex-1 truncate">{f.name}</span>
-              <span className="text-xs text-muted-foreground">{formatBytes(f.size)}</span>
-              <button
-                type="button"
-                disabled={disabled}
-                onClick={() => onChange(files.filter((_, j) => j !== i))}
-                className="text-muted-foreground hover:text-foreground"
-                aria-label={`Remove ${f.name}`}
-              >
-                <X className="size-4" />
-              </button>
+            <li key={`${f.name}-${i}`} className="rounded-control border border-line bg-surface px-3 py-2 text-sm">
+              <div className="flex items-center gap-2.5">
+                {f.type.startsWith('image/') ? <ImageIcon className="size-4 text-ink-3" aria-hidden /> : <FileText className="size-4 text-ink-3" aria-hidden />}
+                <span className="min-w-0 flex-1 truncate font-medium text-ink">{f.name}</span>
+                <span className="text-xs text-ink-3">{formatBytes(f.size)}</span>
+                <button
+                  type="button"
+                  disabled={disabled}
+                  onClick={() => onChange(files.filter((_, j) => j !== i))}
+                  className="-mr-1 flex size-8 items-center justify-center rounded-chip text-ink-3 outline-none hover:bg-sunken hover:text-ink focus-visible:ring-2 focus-visible:ring-violet"
+                  aria-label={`Remove ${f.name}`}
+                >
+                  <X className="size-4" aria-hidden />
+                </button>
+              </div>
             </li>
           ))}
         </ul>
+      )}
+      {uploading && files.length > 0 && (
+        <div className="mt-2.5">
+          <div className="mb-1 flex justify-between text-xs text-ink-3">
+            <span>Uploading…</span>
+            <span className="tabular-nums">{Math.round(progress)}%</span>
+          </div>
+          <ProgressBar value={progress} size="sm" tone="violet" label="Upload progress" />
+        </div>
       )}
     </div>
   )

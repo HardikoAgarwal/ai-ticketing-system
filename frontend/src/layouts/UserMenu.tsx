@@ -1,9 +1,11 @@
-import { ChevronsUpDown, LogOut, Monitor, Moon, Sun } from 'lucide-react'
+import { Keyboard, LogOut, Monitor, Moon, Sun } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 
 import { useAuth } from '@/auth/AuthContext'
 import { useWorkspace } from '@/auth/workspace'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Avatar } from '@/components/ds/Avatar'
+import { SegmentedControl } from '@/components/ds/SegmentedControl'
+import { openShortcutsHelp } from '@/components/shell/shortcuts'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,91 +14,58 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { initials } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { useTheme, type ThemeChoice } from '@/theme/ThemeProvider'
 
-const THEMES: { key: ThemeChoice; label: string; Icon: typeof Sun }[] = [
-  { key: 'light', label: 'Light', Icon: Sun },
-  { key: 'dark', label: 'Dark', Icon: Moon },
-  { key: 'system', label: 'System', Icon: Monitor },
-]
+const THEMES = [
+  { value: 'light', label: 'Light', icon: Sun },
+  { value: 'dark', label: 'Dark', icon: Moon },
+  { value: 'system', label: 'Auto', icon: Monitor },
+] as const
 
 function ThemeSwitch() {
   const { choice, setChoice } = useTheme()
   return (
     <div className="px-2 py-1.5">
-      <p className="mb-1.5 text-xs font-medium text-muted-foreground">Appearance</p>
-      <div role="radiogroup" aria-label="Theme" className="grid grid-cols-3 gap-1 rounded-lg bg-muted p-1">
-        {THEMES.map(({ key, label, Icon }) => (
-          <button
-            key={key}
-            type="button"
-            role="radio"
-            aria-checked={choice === key}
-            onClick={(e) => {
-              e.preventDefault()
-              setChoice(key)
-            }}
-            className={cn(
-              'flex h-8 items-center justify-center gap-1.5 rounded-md text-xs font-medium transition-all outline-none focus-visible:ring-2 focus-visible:ring-ring',
-              choice === key ? 'bg-card text-foreground shadow-xs ring-1 ring-border' : 'text-muted-foreground hover:text-foreground',
-            )}
-          >
-            <Icon className="size-3.5" /> {label}
-          </button>
-        ))}
-      </div>
+      <p className="mb-1.5 text-xs font-medium text-ink-3">Appearance</p>
+      <SegmentedControl<ThemeChoice> ariaLabel="Theme" size="sm" fullWidth value={choice} onChange={setChoice} options={THEMES.map((t) => ({ ...t }))} />
     </div>
   )
 }
 
-/** Account menu with theme switch. `card` renders the wide sidebar variant, `avatar` the compact top-bar one. */
-export function UserMenu({ variant = 'avatar', collapsed = false }: { variant?: 'avatar' | 'card'; collapsed?: boolean }) {
+/**
+ * Account menu: identity, theme, shortcuts, sign out.
+ * `avatar` = compact (top bar / customer header); `dock` = a full-width row for the agent dock (label text is hidden until the dock expands).
+ */
+export function UserMenu({ variant = 'avatar', rowClassName, labelClassName }: { variant?: 'avatar' | 'dock'; rowClassName?: string; labelClassName?: string }) {
   const { user, logout } = useAuth()
   const { brief, role } = useWorkspace()
   const navigate = useNavigate()
   if (!user) return null
   const roleLabel = role === 'REQUESTER' ? 'Customer' : (role ?? '').charAt(0) + (role ?? '').slice(1).toLowerCase()
-  const avatar = (
-    <Avatar className="size-8">
-      <AvatarFallback className="bg-accent text-xs font-semibold text-accent-foreground">{initials(user.full_name)}</AvatarFallback>
-    </Avatar>
-  )
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        {variant === 'card' ? (
-          <button
-            aria-label="Account menu"
-            className={cn(
-              'flex w-full items-center gap-2.5 rounded-xl border border-sidebar-border bg-sidebar-accent/60 p-2 text-left text-sidebar-foreground transition-colors outline-none hover:bg-sidebar-accent focus-visible:ring-2 focus-visible:ring-sidebar-ring',
-              collapsed && 'justify-center border-transparent bg-transparent p-1',
-            )}
-          >
-            {avatar}
-            {!collapsed && (
-              <>
-                <span className="min-w-0 flex-1 leading-tight">
-                  <span className="block truncate text-[13px] font-semibold">{user.full_name}</span>
-                  <span className="block truncate text-[11px] text-sidebar-foreground/65">{roleLabel}</span>
-                </span>
-                <ChevronsUpDown className="size-4 shrink-0 text-sidebar-foreground/60" />
-              </>
-            )}
+        {variant === 'dock' ? (
+          <button type="button" aria-label={`Account menu, ${user.full_name}`} className={cn('text-left', rowClassName)}>
+            <Avatar name={user.full_name} size="md" />
+            <span className={cn('flex-1 leading-tight', labelClassName)}>
+              <span className="block truncate text-[13px] font-semibold">{user.full_name}</span>
+              <span className="block truncate text-[11px] font-normal text-ink-3">{roleLabel}</span>
+            </span>
           </button>
         ) : (
-          <button className="rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring" aria-label="Account menu">
-            {avatar}
+          <button type="button" className="rounded-control" aria-label={`Account menu, ${user.full_name}`}>
+            <Avatar name={user.full_name} size="md" />
           </button>
         )}
       </DropdownMenuTrigger>
-      <DropdownMenuContent align={variant === 'card' ? 'start' : 'end'} side={variant === 'card' ? 'top' : 'bottom'} className="w-64">
+      <DropdownMenuContent align={variant === 'dock' ? 'end' : 'end'} side={variant === 'dock' ? 'right' : 'bottom'} className="w-64">
         <DropdownMenuLabel className="font-normal">
-          <p className="text-sm font-semibold">{user.full_name}</p>
-          <p className="truncate text-xs text-muted-foreground">{user.is_demo ? 'Demo account' : user.email}</p>
+          <p className="text-sm font-semibold text-ink">{user.full_name}</p>
+          <p className="truncate text-xs text-ink-3">{user.is_demo ? 'Demo account' : user.email}</p>
           {brief && (
-            <p className="mt-1 text-xs text-muted-foreground">
+            <p className="mt-1 text-xs text-ink-3">
               {roleLabel} · {brief.name}
             </p>
           )}
@@ -104,6 +73,9 @@ export function UserMenu({ variant = 'avatar', collapsed = false }: { variant?: 
         <DropdownMenuSeparator />
         <ThemeSwitch />
         <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={openShortcutsHelp}>
+          <Keyboard className="size-4" /> Keyboard shortcuts
+        </DropdownMenuItem>
         <DropdownMenuItem
           onClick={() => {
             logout()

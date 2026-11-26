@@ -1,54 +1,54 @@
-import { ArrowRight, MessageCircleReply, Package, UserRound } from 'lucide-react'
+import { ChevronRight, Package, UserRound } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
-import { StatusBadge } from '@/components/badges'
 import { RelativeTime } from '@/components/common'
-import { StateBadge } from '@/components/dashboard/badges'
-import { STATUS_META } from '@/lib/constants'
+import { Chip } from '@/components/ds'
+import { NewReplyChip, RequesterStatusChip } from '@/features/portal/status'
+import { REQUESTER_STATUS } from '@/features/portal/status-meta'
 import type { RequesterTicket } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
-/** Customer-facing ticket card: same card language as the agent queue (header row, title, badges, footer), friendlier copy. */
+/** One request in the customer's list. Whole row is the link; state is always icon + text. */
 export function TicketRow({ ticket, slug }: { ticket: RequesterTicket; slug: string }) {
-  const meta = STATUS_META[ticket.status]
-  const closed = ticket.status === 'RESOLVED' || ticket.status === 'CLOSED'
+  const awaitingConfirm = ticket.status === 'RESOLVED'
+  const hint = ticket.has_unread ? 'Our team replied' : REQUESTER_STATUS[ticket.status].hint
   return (
-    <Link
-      to={`/w/${slug}/help/tickets/${ticket.id}`}
-      className={cn(
-        'group block rounded-2xl border border-border bg-card p-5 shadow-card transition-all outline-none hover:-translate-y-0.5 hover:border-ring/40 hover:shadow-pop focus-visible:ring-3 focus-visible:ring-ring/40 sm:p-6',
-        ticket.has_unread && 'border-primary/30 bg-accent/40',
-      )}
-    >
-      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
-        <div className="flex items-center gap-3 text-[13px] text-muted-foreground">
-          <span className="rounded-md bg-muted px-2 py-1 font-mono text-xs font-semibold text-foreground/80">{ticket.reference}</span>
-          <span>
-            Updated <RelativeTime value={ticket.updated_at} />
-          </span>
+    <li>
+      <Link
+        to={`/w/${slug}/help/tickets/${ticket.id}`}
+        className={cn(
+          'group flex flex-col gap-3 px-4 py-4 outline-none transition-colors hover:bg-surface-2 focus-visible:bg-surface-2 focus-visible:ring-2 focus-visible:ring-violet focus-visible:ring-inset sm:flex-row sm:items-center sm:gap-5 sm:px-5',
+          ticket.has_unread && 'bg-lav/40',
+        )}
+      >
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-ink-3">
+            <span className="font-mono font-semibold text-ink-2">{ticket.reference}</span>
+            <span aria-hidden>·</span>
+            <span>
+              Updated <RelativeTime value={ticket.updated_at} />
+            </span>
+          </div>
+          <h3 className={cn('mt-1 text-[15px] leading-snug text-balance text-ink sm:text-base', ticket.has_unread ? 'font-semibold' : 'font-medium')}>{ticket.subject}</h3>
+          <p className="mt-1 line-clamp-1 text-sm text-ink-3">{ticket.description}</p>
+          <p className="mt-2 flex min-w-0 items-center gap-1.5 text-xs text-ink-3">
+            {ticket.record ? <Package className="size-3.5 shrink-0" aria-hidden /> : <UserRound className="size-3.5 shrink-0" aria-hidden />}
+            <span className="truncate">{ticket.record ? ticket.record.title : 'General question'}</span>
+            <span aria-hidden>·</span>
+            <span className="truncate">{hint}</span>
+          </p>
         </div>
-        {ticket.has_unread ? (
-          <StateBadge kind="message" label="New reply" pulse />
-        ) : ticket.status === 'RESOLVED' ? (
-          <StateBadge kind="resolved" label="Please confirm" />
-        ) : null}
-      </div>
-
-      <h3 className={cn('mt-3 text-[17px] leading-snug tracking-tight text-balance sm:text-lg', ticket.has_unread ? 'font-semibold' : 'font-medium')}>{ticket.subject}</h3>
-      <p className="mt-1.5 line-clamp-2 text-sm leading-relaxed text-muted-foreground">{ticket.description}</p>
-
-      <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-3 border-t border-border pt-4">
-        <StatusBadge status={ticket.status} audience="requester" size="card" />
-        <span className="flex min-w-0 items-center gap-1.5 text-[13px] text-muted-foreground">
-          {ticket.record ? <Package className="size-4 shrink-0" /> : <UserRound className="size-4 shrink-0" />}
-          <span className="truncate">{ticket.record ? ticket.record.title : 'General question'}</span>
-        </span>
-        <span className="ml-auto hidden text-[13px] text-muted-foreground md:inline">{closed ? meta.requesterHint : ticket.first_response_at ? 'Our team has replied' : meta.requesterHint}</span>
-        <span className="flex items-center gap-1 text-sm font-medium text-primary">
-          Open <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
-        </span>
-      </div>
-      {ticket.has_unread && <MessageCircleReply className="sr-only" />}
-    </Link>
+        <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+          {ticket.has_unread && <NewReplyChip />}
+          {awaitingConfirm && !ticket.has_unread && (
+            <Chip tone="amber" size="md">
+              Please confirm
+            </Chip>
+          )}
+          <RequesterStatusChip status={ticket.status} />
+          <ChevronRight className="ml-auto hidden size-4 text-ink-3 transition-transform group-hover:translate-x-0.5 sm:block" aria-hidden />
+        </div>
+      </Link>
+    </li>
   )
 }

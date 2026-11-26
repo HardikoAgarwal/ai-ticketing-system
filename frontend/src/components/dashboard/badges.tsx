@@ -1,7 +1,7 @@
 import { differenceInMinutes, parseISO } from 'date-fns'
 import { Archive, CheckCheck, Clock, Flame, Inbox, MessageCircleReply, TriangleAlert, type LucideIcon } from 'lucide-react'
 
-import { CHIP_TONES, type ChipTone } from '@/components/dashboard/Chip'
+import { CHIP_TONES, type ChipTone } from '@/components/ds/chip-tones'
 import { cn } from '@/lib/utils'
 import type { StaffTicket } from '@/lib/types'
 
@@ -23,7 +23,7 @@ export function StateBadge({ kind, label, pulse, className }: { kind: StateKind;
   const v = VARIANTS[kind]
   const Icon = v.icon
   return (
-    <span className={cn('inline-flex h-7 items-center gap-1.5 rounded-lg border px-2.5 text-xs font-semibold whitespace-nowrap', CHIP_TONES[v.tone], className)}>
+    <span className={cn('inline-flex h-7 items-center gap-1.5 rounded-chip border px-2.5 text-xs font-semibold whitespace-nowrap', CHIP_TONES[v.tone], className)}>
       {pulse ? (
         <span className="relative flex size-2.5 items-center justify-center" aria-hidden>
           <span className="absolute inline-flex size-full animate-ping rounded-full bg-current opacity-40" />
