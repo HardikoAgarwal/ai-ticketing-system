@@ -2,7 +2,7 @@ import { Check, Minus } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
 
-/** A clean select box: an empty rounded square that fills solid with a check when chosen. A real checkbox for assistive tech. */
+/** A round select button: an empty white circle that fills with the accent colour and a check when chosen. A real checkbox for assistive tech. */
 export function SelectBox({ checked, onChange, label, className, disabled }: { checked: boolean | 'mixed'; onChange: () => void; label: string; className?: string; disabled?: boolean }) {
   return (
     <button
@@ -13,8 +13,8 @@ export function SelectBox({ checked, onChange, label, className, disabled }: { c
       onClick={onChange}
       disabled={disabled}
       className={cn(
-        'flex size-7 items-center justify-center rounded-control border-2 transition-colors disabled:opacity-40 focus-visible:ring-2 focus-visible:ring-violet focus-visible:ring-offset-2 focus-visible:ring-offset-surface focus-visible:outline-none',
-        checked ? 'border-ink bg-ink text-canvas' : 'border-line-strong bg-surface text-transparent hover:border-ink hover:text-ink-3',
+        'flex size-7 items-center justify-center rounded-full border-2 shadow-sm transition-colors focus-visible:ring-2 focus-visible:ring-violet focus-visible:ring-offset-2 focus-visible:ring-offset-surface focus-visible:outline-none disabled:opacity-40',
+        checked ? 'border-violet bg-violet text-canvas' : 'border-line-strong bg-surface text-transparent hover:border-violet hover:text-violet',
         className,
       )}
     >

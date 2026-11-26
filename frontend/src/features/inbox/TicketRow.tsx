@@ -60,7 +60,7 @@ export const TicketRow = forwardRef<HTMLLIElement, TicketRowProps>(function Tick
       data-ticket-id={ticket.id}
       className={cn(
         'group relative rounded-panel border bg-surface shadow-card transition-colors',
-        checked ? 'border-ink' : 'border-line hover:border-line-strong',
+        checked ? 'border-violet bg-violet-soft/50' : 'border-line hover:border-line-strong',
         cursor && 'ring-2 ring-violet ring-inset',
         fresh && 'ring-2 ring-ai motion-safe:animate-pulse',
         closed && 'opacity-80',

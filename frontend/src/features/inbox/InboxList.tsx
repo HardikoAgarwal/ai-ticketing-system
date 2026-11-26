@@ -129,7 +129,7 @@ export function InboxList(p: InboxListProps) {
             />
           ) : (
             <>
-              <ul aria-label="Tickets" className={p.layout === 'cards' ? 'space-y-9 pb-4' : 'space-y-3 pb-3'}>
+              <ul aria-label="Tickets" className={p.layout === 'cards' ? 'space-y-10 pt-4 pb-4' : 'space-y-3 pb-3'}>
                 {p.ordered.map((t) => p.layout === 'cards' ? (
                   <TicketCard
                     key={t.id}

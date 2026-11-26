@@ -1,20 +1,21 @@
 import { Mail } from 'lucide-react'
 
-import { fill } from '@/components/ds'
+import { fill, on } from '@/components/ds'
+import { cn } from '@/lib/utils'
 
 /**
- * "A customer wrote back." Deliberately unlike every other badge: a dark pill with an envelope and a pulsing green dot (still when
- * reduced motion is on), so a ticket waiting for a reply is the first thing the eye lands on in a long list.
+ * "A customer wrote back." A bright highlighter-yellow badge with an envelope and a pulsing dot (still when reduced motion is on).
+ * No other badge uses this colour, so a ticket waiting for a reply stands out in a long list.
  */
-export function NewMessageBadge({ label, size = 'lg' }: { label: string; size?: 'sm' | 'lg' }) {
+export function NewMessageBadge({ label, size = 'lg', className }: { label: string; size?: 'sm' | 'lg'; className?: string }) {
   return (
     <span
-      className={size === 'lg' ? 'inline-flex h-9 items-center gap-2 rounded-chip bg-ink pr-3.5 pl-3 text-sm font-bold whitespace-nowrap text-canvas' : 'inline-flex h-7 items-center gap-1.5 rounded-chip bg-ink pr-2.5 pl-2 text-xs font-bold whitespace-nowrap text-canvas'}
-      style={{ boxShadow: `0 0 0 3px color-mix(in srgb, ${fill('mint')} 38%, transparent)` }}
+      className={cn('inline-flex items-center rounded-chip font-bold whitespace-nowrap', size === 'lg' ? 'h-8 gap-2 px-3 text-sm' : 'h-6 gap-1.5 px-2 text-xs', className)}
+      style={{ background: fill('butter'), color: on('butter'), boxShadow: `0 0 0 3px color-mix(in srgb, ${fill('butter')} 35%, transparent)` }}
     >
       <span className="relative flex size-2.5 shrink-0" aria-hidden>
-        <span className="absolute inline-flex size-full rounded-full opacity-75 motion-safe:animate-ping" style={{ background: fill('mint') }} />
-        <span className="relative inline-flex size-2.5 rounded-full" style={{ background: fill('mint') }} />
+        <span className="absolute inline-flex size-full rounded-full opacity-60 motion-safe:animate-ping" style={{ background: on('butter') }} />
+        <span className="relative inline-flex size-2.5 rounded-full" style={{ background: on('butter') }} />
       </span>
       <Mail className={size === 'lg' ? 'size-4' : 'size-3.5'} aria-hidden />
       {label}
