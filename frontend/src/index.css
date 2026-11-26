@@ -487,6 +487,42 @@
   }
 }
 
+/* A blurred, slowly rotating aurora behind an AI block. Put it on a wrapper (no background) around an <AiSurface>. */
+@utility ai-halo {
+  position: relative;
+  isolation: isolate;
+  &::after {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    z-index: -1;
+    border-radius: inherit;
+    background: conic-gradient(from var(--ai-angle), var(--aurora-1), var(--aurora-2), var(--aurora-3), var(--aurora-1));
+    filter: blur(11px);
+    opacity: 0.6;
+    animation: ai-ring-spin 7s linear infinite;
+    pointer-events: none;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    &::after {
+      animation: none;
+    }
+  }
+}
+
+/* Ticket cut-outs: two half-circle notches on the top and bottom edges, where the perforation between a card and its stub falls.
+   Set --stub-w on the element to the stub's width. Large screens only (the stub stacks below on small ones). */
+@utility ticket-notch {
+  @media (min-width: 1024px) {
+    -webkit-mask:
+      radial-gradient(circle 11px at calc(100% - var(--stub-w)) 0, #0000 98%, #000) top / 100% 51% no-repeat,
+      radial-gradient(circle 11px at calc(100% - var(--stub-w)) 100%, #0000 98%, #000) bottom / 100% 51% no-repeat;
+    mask:
+      radial-gradient(circle 11px at calc(100% - var(--stub-w)) 0, #0000 98%, #000) top / 100% 51% no-repeat,
+      radial-gradient(circle 11px at calc(100% - var(--stub-w)) 100%, #0000 98%, #000) bottom / 100% 51% no-repeat;
+  }
+}
+
 @utility ai-surface {
   background-color: var(--surface);
   box-shadow: var(--aurora-glow);

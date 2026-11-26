@@ -24,13 +24,12 @@ export interface TicketRowProps {
   checked: boolean
   selecting: boolean
   fresh: boolean
-  compact: boolean
   meId?: number
   onToggle: (id: number) => void
 }
 
 export const TicketRow = forwardRef<HTMLLIElement, TicketRowProps>(function TicketRow(
-  { ticket, to, cursor, checked, selecting, fresh, compact, meId, onToggle },
+  { ticket, to, cursor, checked, selecting, fresh, meId, onToggle },
   ref,
 ) {
   const closed = ticket.status === 'RESOLVED' || ticket.status === 'CLOSED'
@@ -69,7 +68,7 @@ export const TicketRow = forwardRef<HTMLLIElement, TicketRowProps>(function Tick
       <Link
         to={to}
         aria-label={`${ticket.reference}: ${ticket.subject}`}
-        className={cn('block rounded-control px-4 outline-none focus-visible:ring-2 focus-visible:ring-violet', GRID, compact ? 'py-3' : 'py-5')}
+        className={cn('block rounded-control px-4 outline-none focus-visible:ring-2 focus-visible:ring-violet', GRID, 'py-5')}
       >
         {/* ---------- table row (lg+) ---------- */}
         <span className="hidden lg:block" aria-hidden />
@@ -77,14 +76,11 @@ export const TicketRow = forwardRef<HTMLLIElement, TicketRowProps>(function Tick
           <span className="flex items-center gap-2">
             {ticket.has_unread && <span className="size-2 shrink-0 rounded-full bg-violet" role="img" aria-label="Unread" />}
             <span className={cn('line-clamp-2 text-[15px] leading-5 text-ink', ticket.has_unread ? 'font-semibold' : 'font-medium')}>{ticket.subject}</span>
-            {compact && <span className="hidden shrink-0 font-mono text-xs text-ink-3 xl:inline">{ticket.reference}</span>}
           </span>
-          {!compact && (
-            <span className="mt-0.5 flex items-center gap-1.5 text-[13px] text-ink-2">
-              {summary && <AiSpark className="size-3.5" label="AI summary" />}
-              <span className="truncate">{summary || ticket.description}</span>
-            </span>
-          )}
+          <span className="mt-0.5 flex items-center gap-1.5 text-[13px] text-ink-2">
+            {summary && <AiSpark className="size-3.5" label="AI summary" />}
+            <span className="truncate">{summary || ticket.description}</span>
+          </span>
         </span>
         <span className="hidden lg:block">{lead}</span>
         <span className="hidden lg:block">
@@ -113,13 +109,13 @@ export const TicketRow = forwardRef<HTMLLIElement, TicketRowProps>(function Tick
         </span>
         <span className="hidden flex-col items-end text-xs text-ink-3 lg:flex">
           <RelativeTime value={ticket.updated_at} />
-          {!compact && <span className="font-mono">{ticket.reference}</span>}
+          <span className="font-mono">{ticket.reference}</span>
         </span>
 
         {/* ---------- card row (below lg) ---------- */}
         <span className="flex min-w-0 items-start gap-3 lg:hidden">
           <span className="mt-0.5 shrink-0">
-            <Avatar name={ticket.requester.name} size={compact ? 'sm' : 'md'} className={cn(selecting || checked ? 'opacity-0' : 'group-hover:opacity-0 group-focus-within:opacity-0')} />
+            <Avatar name={ticket.requester.name} size="md" className={cn(selecting || checked ? 'opacity-0' : 'group-hover:opacity-0 group-focus-within:opacity-0')} />
           </span>
           <span className="min-w-0 flex-1">
             <span className="flex items-baseline gap-2">
@@ -129,13 +125,11 @@ export const TicketRow = forwardRef<HTMLLIElement, TicketRowProps>(function Tick
                 <RelativeTime value={ticket.updated_at} />
               </span>
             </span>
-            {!compact && (
-              <span className="mt-0.5 flex items-center gap-1.5 text-[13px] text-ink-2">
-                {summary && <AiSpark className="size-3.5" label="AI summary" />}
-                <span className="truncate">{summary || ticket.description}</span>
-              </span>
-            )}
-            <span className={cn('flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-ink-3', compact ? 'mt-0.5' : 'mt-2')}>
+            <span className="mt-0.5 flex items-center gap-1.5 text-[13px] text-ink-2">
+              {summary && <AiSpark className="size-3.5" label="AI summary" />}
+              <span className="truncate">{summary || ticket.description}</span>
+            </span>
+            <span className={cn('flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-ink-3', 'mt-2')}>
               {lead}
               {showPriority && prio && (
                 <SolidChip hue={PRIORITY_HUE[ticket.priority] ?? 'slate'} icon={prio.icon} size="sm">
@@ -157,7 +151,7 @@ export const TicketRow = forwardRef<HTMLLIElement, TicketRowProps>(function Tick
       <span
         className={cn(
           'absolute left-4 flex size-8 items-center justify-center',
-          compact ? 'top-3 size-6 lg:top-1/2 lg:-translate-y-1/2' : 'top-5 lg:top-1/2 lg:-translate-y-1/2',
+          'top-5 lg:top-1/2 lg:-translate-y-1/2',
           !(selecting || checked) && 'opacity-0 focus-within:opacity-100 group-hover:opacity-100 lg:opacity-100',
         )}
       >
@@ -167,13 +161,13 @@ export const TicketRow = forwardRef<HTMLLIElement, TicketRowProps>(function Tick
   )
 })
 
-export function TicketRowSkeleton({ compact }: { compact?: boolean }) {
+export function TicketRowSkeleton() {
   return (
-    <div className={cn('flex items-start gap-3 px-3', compact ? 'py-2' : 'py-3')} aria-hidden>
-      <div className={cn('animate-pulse rounded-control bg-sunken', compact ? 'size-6' : 'size-8')} />
+    <div className="flex items-start gap-3 px-3 py-3" aria-hidden>
+      <div className="size-8 animate-pulse rounded-control bg-sunken" />
       <div className="flex-1 space-y-2">
         <div className="h-4 w-2/3 animate-pulse rounded bg-sunken" />
-        {!compact && <div className="h-3.5 w-5/6 animate-pulse rounded bg-sunken" />}
+        <div className="h-3.5 w-5/6 animate-pulse rounded bg-sunken" />
         <div className="h-3 w-1/2 animate-pulse rounded bg-sunken" />
       </div>
     </div>

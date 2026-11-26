@@ -1,5 +1,5 @@
 import { CheckCheck, Inbox, Loader2, SearchX, UserCheck, X } from 'lucide-react'
-import { Fragment, useEffect, useRef, type ReactNode } from 'react'
+import { useEffect, useRef, type ReactNode } from 'react'
 
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -9,12 +9,10 @@ import { cn } from '@/lib/utils'
 
 import { TicketCard, TicketCardSkeleton } from './TicketCard'
 import { GRID, TicketRow, TicketRowSkeleton } from './TicketRow'
-import type { Group } from './useInbox'
 
 export interface InboxListProps {
   /** Page header, queue stats and toolbar. Rendered at the top of the scrolling area so the list gets the whole screen once you scroll. */
   top?: ReactNode
-  groups: Group[]
   ordered: StaffTicket[]
   total: number
   loading: boolean
@@ -29,7 +27,6 @@ export interface InboxListProps {
   cursor: number | null
   selected: Set<number>
   fresh: Set<number>
-  compact: boolean
   layout: 'cards' | 'table'
   meId?: number
   filtered: boolean
@@ -45,7 +42,7 @@ export interface InboxListProps {
 
 const HEAD = 'text-[11px] font-semibold tracking-[0.08em] text-ink-3 uppercase'
 
-/** The full-width ticket list: a column header (lg+), urgency groups with sticky headers, bulk bar, infinite scroll. */
+/** The full-width ticket list: a column header (lg+), bulk bar, infinite scroll. */
 export function InboxList(p: InboxListProps) {
   const scroller = useRef<HTMLDivElement>(null)
   const sentinel = useRef<HTMLDivElement>(null)
@@ -118,7 +115,7 @@ export function InboxList(p: InboxListProps) {
               </div>
             ) : (
               <div className="space-y-1 pt-1">
-                {Array.from({ length: 8 }).map((_, i) => <TicketRowSkeleton key={i} compact={p.compact} />)}
+                {Array.from({ length: 8 }).map((_, i) => <TicketRowSkeleton key={i} />)}
               </div>
             )
           ) : p.error ? (
@@ -132,45 +129,33 @@ export function InboxList(p: InboxListProps) {
             />
           ) : (
             <>
-              {p.groups.map((g) => (
-                <Fragment key={g.key}>
-                  {g.label && (
-                    <div className="sticky top-0 z-10 -mx-2 flex items-center gap-2 bg-canvas/95 px-5 py-2 backdrop-blur lg:top-9">
-                      <span className={cn('size-2 rounded-full', g.dot)} aria-hidden />
-                      <h2 className="text-xs font-semibold tracking-wide text-ink-2 uppercase">{g.label}</h2>
-                      <span className="text-xs text-ink-3 tabular-nums">{g.items.length}</span>
-                    </div>
-                  )}
-                  <ul aria-label={g.label || 'Tickets'} className={p.layout === 'cards' ? 'space-y-7 pb-4' : 'space-y-3 pb-3'}>
-                    {g.items.map((t) => p.layout === 'cards' ? (
-                      <TicketCard
-                        key={t.id}
-                        ticket={t}
-                        to={`${p.ticketsPath}/${t.id}`}
-                        cursor={p.cursor === t.id}
-                        checked={p.selected.has(t.id)}
-                        selecting={selecting}
-                        fresh={p.fresh.has(t.id)}
-                        meId={p.meId}
-                        onToggle={p.onToggle}
-                      />
-                    ) : (
-                      <TicketRow
-                        key={t.id}
-                        ticket={t}
-                        to={`${p.ticketsPath}/${t.id}`}
-                        cursor={p.cursor === t.id}
-                        checked={p.selected.has(t.id)}
-                        selecting={selecting}
-                        fresh={p.fresh.has(t.id)}
-                        compact={p.compact}
-                        meId={p.meId}
-                        onToggle={p.onToggle}
-                      />
-                    ))}
-                  </ul>
-                </Fragment>
-              ))}
+              <ul aria-label="Tickets" className={p.layout === 'cards' ? 'space-y-9 pb-4' : 'space-y-3 pb-3'}>
+                {p.ordered.map((t) => p.layout === 'cards' ? (
+                  <TicketCard
+                    key={t.id}
+                    ticket={t}
+                    to={`${p.ticketsPath}/${t.id}`}
+                    cursor={p.cursor === t.id}
+                    checked={p.selected.has(t.id)}
+                    selecting={selecting}
+                    fresh={p.fresh.has(t.id)}
+                    meId={p.meId}
+                    onToggle={p.onToggle}
+                  />
+                ) : (
+                  <TicketRow
+                    key={t.id}
+                    ticket={t}
+                    to={`${p.ticketsPath}/${t.id}`}
+                    cursor={p.cursor === t.id}
+                    checked={p.selected.has(t.id)}
+                    selecting={selecting}
+                    fresh={p.fresh.has(t.id)}
+                    meId={p.meId}
+                    onToggle={p.onToggle}
+                  />
+                ))}
+              </ul>
               <div ref={sentinel} className="flex justify-center py-4">
                 {p.hasNext ? (
                   <Button variant="outline" size="sm" onClick={p.onLoadMore} disabled={p.fetchingNext}>

@@ -1,11 +1,11 @@
-import { Layers, LayoutGrid, Search, Table2, X } from 'lucide-react'
+import { LayoutGrid, Search, Table2, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 
 import { Kbd, SegmentedControl } from '@/components/ds'
 import { useShortcut } from '@/components/shell/shortcuts'
 import { cn } from '@/lib/utils'
 
-import { DisplayPopover, FilterPopover } from './FilterPopover'
+import { FilterPopover, SortPopover } from './FilterPopover'
 import { FILTER_KEYS } from './model'
 import type { FilterSpec } from './useFilterSpecs'
 
@@ -37,8 +37,8 @@ function SearchBox({ value, onCommit }: { value: string; onCommit: (v: string) =
   useShortcut('/', () => ref.current?.focus(), { description: 'Search tickets', group: 'Inbox' })
 
   return (
-    <div className="relative min-w-0 basis-full sm:basis-auto sm:max-w-sm sm:flex-1">
-      <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-ink-3" aria-hidden />
+    <div className="relative min-w-0 basis-full sm:basis-auto sm:max-w-lg sm:flex-1">
+      <Search className="pointer-events-none absolute top-1/2 left-4 size-[18px] -translate-y-1/2 text-ink-3" aria-hidden />
       <input
         ref={ref}
         type="search"
@@ -50,9 +50,9 @@ function SearchBox({ value, onCommit }: { value: string; onCommit: (v: string) =
             else ref.current?.blur()
           }
         }}
-        placeholder="Search tickets"
+        placeholder="Search by subject, customer or reference"
         aria-label="Search tickets"
-        className="h-9 w-full rounded-control border border-line bg-surface pr-9 pl-9 text-sm text-ink transition-colors outline-none placeholder:text-ink-3 focus:border-violet focus:ring-2 focus:ring-violet/30 [&::-webkit-search-cancel-button]:hidden"
+        className="h-11 w-full rounded-control border border-line-strong bg-surface pr-11 pl-11 text-[15px] text-ink shadow-card transition-colors outline-none placeholder:text-ink-3 focus:border-violet focus:ring-2 focus:ring-violet/30 [&::-webkit-search-cancel-button]:hidden"
       />
       {text ? (
         <button
@@ -73,44 +73,26 @@ function SearchBox({ value, onCommit }: { value: string; onCommit: (v: string) =
   )
 }
 
-export function InboxToolbar({ search, params, specs, sort, density, grouped, layout, onLayout, onFilter, onSearch, onSort, onDensity, onGroup, onResetFilters }: {
+export function InboxToolbar({ search, params, specs, sort, layout, onLayout, onFilter, onSearch, onSort, onResetFilters }: {
   search: string
   params: URLSearchParams
   specs: FilterSpec[]
   sort: string
-  density: 'comfortable' | 'compact'
-  grouped: boolean
   layout: 'cards' | 'table'
   onLayout: (v: 'cards' | 'table') => void
   onFilter: (key: string, value: string | null) => void
   onSearch: (v: string) => void
   onSort: (v: string) => void
-  onDensity: (v: 'comfortable' | 'compact') => void
-  onGroup: (on: boolean) => void
   onResetFilters: () => void
 }) {
   return (
     <div className="flex flex-wrap items-center gap-2">
       <SearchBox value={search} onCommit={onSearch} />
       <FilterPopover specs={specs} params={params} onChange={onFilter} onReset={onResetFilters} />
-      <button
-        type="button"
-        aria-pressed={grouped}
-        onClick={() => onGroup(!grouped)}
-        className={cn(
-          'inline-flex h-9 shrink-0 items-center gap-1.5 rounded-control border px-3 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-violet focus-visible:outline-none',
-          grouped ? 'border-violet bg-violet-soft text-ink' : 'border-line bg-surface text-ink-2 hover:bg-surface-2',
-        )}
-      >
-        <Layers className="size-4" aria-hidden />
-        <span className="hidden sm:inline">Group by urgency</span>
-        <span className="sm:hidden">Group</span>
-      </button>
-      <DisplayPopover sort={sort} density={density} onSort={onSort} onDensity={onDensity} />
+      <SortPopover sort={sort} onSort={onSort} />
       <SegmentedControl<'cards' | 'table'>
         ariaLabel="Ticket layout"
-        size="sm"
-        className="ml-auto"
+        className="ml-auto h-11"
         value={layout}
         onChange={onLayout}
         options={[
@@ -133,6 +115,7 @@ export function AppliedChips({ specs, params, search, onFilter, onClear }: {
   const chips: { id: string; text: string; remove: () => void }[] = []
   for (const key of FILTER_KEYS) {
     const spec = specs.find((s) => s.key === key)
+    if (!spec) continue
     const values = split(params.get(key))
     for (const v of values) {
       const text = spec?.options.find((o) => o.value === v)?.label ?? v

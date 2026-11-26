@@ -7,16 +7,9 @@ import { useWorkspace } from '@/auth/workspace'
 import type { StaffTicket } from '@/lib/types'
 import { useFallbackInterval } from '@/realtime/RealtimeProvider'
 
-import { buildQuery, BUCKETS, FILTER_KEYS, PAGE_SIZE, ticketBucket, viewFromParams, type FilterKey, type TicketBucket, type ViewKey } from './model'
+import { buildQuery, FILTER_KEYS, PAGE_SIZE, viewFromParams, type FilterKey, type ViewKey } from './model'
 
-export interface Group {
-  key: TicketBucket | 'all'
-  label: string
-  dot: string
-  items: StaffTicket[]
-}
-
-/** All list state (view, filters, search, sort, density) is URL-backed; the list itself is an infinite query. */
+/** All list state (view, filters, search, sort, layout) is URL-backed; the list itself is an infinite query. */
 export function useInbox() {
   const { slug, api } = useWorkspace()
   const [params, setParams] = useSearchParams()
@@ -24,7 +17,6 @@ export function useInbox() {
 
   const view = viewFromParams(params)
   const sort = params.get('sort') ?? 'default'
-  const density: 'compact' | 'comfortable' = params.get('density') === 'compact' ? 'compact' : 'comfortable'
   const search = params.get('q') ?? ''
   const layout: 'cards' | 'table' = params.get('layout') === 'table' ? 'table' : 'cards'
   const query = useMemo(() => buildQuery(params), [params])
@@ -71,15 +63,8 @@ export function useInbox() {
     return out
   }, [list.data])
 
-  // `group=on|off` is an explicit override; otherwise group by urgency only in the default sort of the working views.
-  const groupParam = params.get('group')
-  const grouped = groupParam === 'on' ? true : groupParam === 'off' ? false : sort === 'default' && view !== 'all'
-  const groups: Group[] = useMemo(() => {
-    if (!grouped) return [{ key: 'all', label: '', dot: '', items: tickets }]
-    return BUCKETS.map((b) => ({ ...b, items: tickets.filter((t) => ticketBucket(t) === b.key) })).filter((g) => g.items.length)
-  }, [tickets, grouped])
-  /** Visual order (groups flattened): the order J/K walk through. */
-  const ordered = useMemo(() => groups.flatMap((g) => g.items), [groups])
+  /** Tickets in the order the list shows them (J/K walk through this). */
+  const ordered = tickets
   const total = list.data?.pages[0]?.count ?? 0
 
   /* New tickets arriving over the socket (a page-count-neutral growth of the known set) get a short highlight + announcement. */
@@ -102,14 +87,14 @@ export function useInbox() {
     known.current = { key: queryKey, ids, pages }
   }, [list.data, tickets, queryKey])
 
-  /** Switch view: filters and search reset, display preferences (sort, density) stay. */
+  /** Switch view: filters and search reset, display preferences (sort, layout) stay. */
   const setView = useCallback(
     (next: ViewKey, filters: Record<string, string> = {}) =>
       setParams(
         (prev) => {
           const out = new URLSearchParams()
           if (next !== 'attention') out.set('view', next)
-          for (const k of ['sort', 'density', 'layout']) if (prev.get(k)) out.set(k, prev.get(k)!)
+          for (const k of ['sort', 'layout']) if (prev.get(k)) out.set(k, prev.get(k)!)
           for (const [k, v] of Object.entries(filters)) out.set(k, v)
           return out
         },
@@ -139,7 +124,6 @@ export function useInbox() {
     params,
     view: view as ViewKey,
     sort,
-    density,
     layout,
     search,
     activeFilters: activeFilters as FilterKey[],
@@ -149,10 +133,8 @@ export function useInbox() {
     stats,
     list,
     tickets,
-    groups,
     ordered,
     total,
     fresh,
-    grouped,
   }
 }

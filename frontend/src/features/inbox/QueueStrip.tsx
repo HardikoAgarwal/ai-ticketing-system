@@ -26,7 +26,7 @@ export function QueueStrip({ stats, view, params, onPick }: { stats?: QueueStats
     return (
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
         {Array.from({ length: 5 }).map((_, i) => (
-          <Skeleton key={i} className="h-28 rounded-panel" />
+          <Skeleton key={i} className="h-36 rounded-panel" />
         ))}
       </div>
     )
@@ -36,7 +36,7 @@ export function QueueStrip({ stats, view, params, onPick }: { stats?: QueueStats
   const tiles: Tile[] = [
     { key: 'open', icon: Inbox, hue: 'sky', label: 'Open now', value: stats.open + stats.in_progress, foot: `${stats.in_progress} in progress`, active: view === 'attention' && !sla && !prio, onPick: () => onPick('attention') },
     { key: 'overdue', icon: Clock, hue: 'rose', label: 'Overdue', value: stats.overdue, foot: stats.overdue ? 'Past the reply target' : 'All within target', active: view === 'attention' && sla === 'overdue', onPick: () => onPick('attention', { sla: 'overdue' }) },
-    { key: 'unassigned', icon: UserX, hue: 'butter', label: 'Unassigned', value: stats.unassigned, foot: stats.unassigned ? 'Waiting for an owner' : 'Everyone has an owner', active: view === 'unassigned', onPick: () => onPick('unassigned') },
+    { key: 'unassigned', icon: UserX, hue: 'lav', label: 'Unassigned', value: stats.unassigned, foot: stats.unassigned ? 'Waiting for an owner' : 'Everyone has an owner', active: view === 'unassigned', onPick: () => onPick('unassigned') },
     { key: 'critical', icon: Flame, hue: 'peach', label: 'Critical', value: stats.critical, foot: stats.critical ? 'Highest priority' : 'None open', active: view === 'attention' && prio === 'CRITICAL', onPick: () => onPick('attention', { priority: 'CRITICAL' }) },
     { key: 'mine', icon: UserCheck, hue: 'mint', label: 'Assigned to me', value: stats.mine, foot: stats.mine ? 'Your open tickets' : 'Nothing assigned to you', active: view === 'mine', onPick: () => onPick('mine') },
   ]
@@ -50,17 +50,17 @@ export function QueueStrip({ stats, view, params, onPick }: { stats?: QueueStats
           onClick={t.onPick}
           style={{ background: fill(t.hue), color: on(t.hue) }}
           className={cn(
-            'relative flex flex-col rounded-panel p-4 text-left shadow-card transition-transform focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink sm:p-5 max-lg:last:col-span-2',
+            'relative flex flex-col rounded-panel p-5 text-left shadow-card transition-transform focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink sm:p-6 max-lg:last:col-span-2',
             t.active ? 'ring-2 ring-ink ring-offset-2 ring-offset-canvas' : 'hover:-translate-y-0.5',
           )}
         >
-          <span className="flex items-center gap-2 text-sm font-semibold">
-            <t.icon className="size-[18px]" aria-hidden />
+          <span className="flex items-center gap-2 text-base font-semibold">
+            <t.icon className="size-5" aria-hidden />
             {t.label}
             {t.active && <Check className="ml-auto size-4" aria-label="Showing" />}
           </span>
-          <span className="mt-3 text-4xl leading-10 font-semibold tracking-tight tabular-nums">{t.value}</span>
-          <span className="mt-1 truncate text-xs font-medium opacity-90">{t.foot}</span>
+          <span className="mt-3 text-5xl leading-[52px] font-semibold tracking-tight tabular-nums">{t.value}</span>
+          <span className="mt-1.5 truncate text-sm font-medium opacity-90">{t.foot}</span>
         </button>
       ))}
     </div>

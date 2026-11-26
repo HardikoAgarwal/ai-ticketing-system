@@ -1,4 +1,4 @@
-import { CheckCheck, Columns2, Eraser, Inbox, Layers, Rows3, UserCheck } from 'lucide-react'
+import { CheckCheck, Eraser, Inbox, UserCheck } from 'lucide-react'
 import { useCallback, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 
@@ -30,8 +30,8 @@ export function TicketsPage() {
   const ticketsPath = `/w/${slug}/agent/tickets`
 
   const inbox = useInbox()
-  const { params, patch, setView, clearAll, view, stats, list, ordered, groups } = inbox
-  const specs = useFilterSpecs(view)
+  const { params, patch, setView, clearAll, view, stats, list, ordered } = inbox
+  const specs = useFilterSpecs()
   const actions = useInboxActions(ordered)
   const { cursor, setCursor } = actions
   const filtered = inbox.activeFilters.length > 0 || !!inbox.search
@@ -69,13 +69,11 @@ export function TicketsPage() {
       { id: 'tickets.filter.overdue', title: 'Show overdue tickets', group: 'Tickets', keywords: ['sla', 'late'], perform: () => setView('attention', { sla: 'overdue' }) },
       { id: 'tickets.filter.critical', title: 'Show critical tickets', group: 'Tickets', keywords: ['urgent', 'priority'], perform: () => setView('attention', { priority: 'CRITICAL' }) },
       { id: 'tickets.filter.clear', title: 'Clear ticket filters', group: 'Tickets', icon: Eraser, when: filtered, perform: clearAll },
-      { id: 'tickets.group', title: inbox.grouped ? 'Stop grouping by urgency' : 'Group tickets by urgency', group: 'Tickets', icon: Layers, perform: () => patch({ group: inbox.grouped ? 'off' : 'on' }) },
-      { id: 'tickets.density', title: inbox.density === 'compact' ? 'Use comfortable rows' : 'Use compact rows', group: 'Tickets', icon: inbox.density === 'compact' ? Rows3 : Columns2, perform: () => patch({ density: inbox.density === 'compact' ? null : 'compact' }) },
-      { id: 'tickets.bulk.resolve', title: 'Resolve selected tickets', group: 'Tickets', icon: CheckCheck, shortcut: 'e', when: actions.selected.size > 0, perform: () => void actions.resolve([...actions.selected]) },
+            { id: 'tickets.bulk.resolve', title: 'Resolve selected tickets', group: 'Tickets', icon: CheckCheck, shortcut: 'e', when: actions.selected.size > 0, perform: () => void actions.resolve([...actions.selected]) },
       { id: 'tickets.bulk.assign', title: 'Assign selected tickets to me', group: 'Tickets', icon: UserCheck, shortcut: 'a', when: actions.selected.size > 0, perform: () => void actions.assignToMe([...actions.selected]) },
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [setView, clearAll, patch, filtered, inbox.density, inbox.grouped, actions.selected, actions.resolve, actions.assignToMe],
+    [setView, clearAll, filtered, actions.selected, actions.resolve, actions.assignToMe],
   )
   useRegisterCommands(commands)
 
@@ -112,19 +110,14 @@ export function TicketsPage() {
           params={params}
           specs={specs}
           sort={inbox.sort}
-          density={inbox.density}
-          grouped={inbox.grouped}
           onFilter={onFilter}
           onSearch={onSearch}
           onSort={(v) => patch({ sort: v === 'default' ? null : v })}
-          onDensity={(d) => patch({ density: d === 'compact' ? 'compact' : null })}
-          onGroup={(on) => patch({ group: on ? 'on' : 'off' })}
           onResetFilters={onResetFilters}
         />
         <AppliedChips specs={specs} params={params} search={inbox.search} onFilter={onFilter} onClear={clearAll} />
             </>
           }
-          groups={groups}
           ordered={ordered}
           total={inbox.total}
           loading={list.isLoading}
@@ -138,7 +131,6 @@ export function TicketsPage() {
           cursor={cursor}
           selected={actions.selected}
           fresh={inbox.fresh}
-          compact={inbox.density === 'compact'}
           layout={inbox.layout}
           meId={user?.id}
           filtered={filtered}

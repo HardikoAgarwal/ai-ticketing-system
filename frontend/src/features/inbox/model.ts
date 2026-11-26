@@ -26,7 +26,7 @@ export const SORT_OPTIONS = [
 export const FILTER_KEYS = ['status', 'priority', 'category', 'assigned', 'sla'] as const
 export type FilterKey = (typeof FILTER_KEYS)[number]
 /** URL params owned by the ticket list. Remembered with the queue so the ticket page can link back with the same filters. */
-export const INBOX_PARAMS = ['view', 'q', 'sort', 'density', 'group', 'layout', ...FILTER_KEYS] as const
+export const INBOX_PARAMS = ['view', 'q', 'sort', 'layout', ...FILTER_KEYS] as const
 
 export const PAGE_SIZE = 25
 
@@ -99,24 +99,6 @@ export function attentionOf(ticket: StaffTicket): Attention | null {
   if (ticket.ai_status === 'PENDING' && ticket.category_source !== 'STAFF') return { tone: 'ai', icon: Loader2, label: 'AI triaging', working: true }
   if (ticket.ai_draft_status === 'COMPLETED') return { tone: 'ai', icon: Sparkles, label: 'Draft ready' }
   return null
-}
-
-export type TicketBucket = 'overdue' | 'reply' | 'progress' | 'open' | 'done'
-export const BUCKETS: { key: TicketBucket; label: string; dot: string }[] = [
-  { key: 'overdue', label: 'Overdue', dot: 'bg-rose-ink' },
-  { key: 'reply', label: 'Needs reply', dot: 'bg-sky-ink' },
-  { key: 'progress', label: 'In progress', dot: 'bg-violet' },
-  { key: 'open', label: 'Open', dot: 'bg-ink-3' },
-  { key: 'done', label: 'Resolved', dot: 'bg-mint-ink' },
-]
-
-export function ticketBucket(ticket: StaffTicket): TicketBucket {
-  if (ticket.status === 'RESOLVED' || ticket.status === 'CLOSED') return 'done'
-  const states = ticketStates(ticket)
-  if (states.some((s) => s.kind === 'overdue')) return 'overdue'
-  if (ticket.has_unread || states.some((s) => s.kind === 'message')) return 'reply'
-  if (ticket.status === 'IN_PROGRESS') return 'progress'
-  return 'open'
 }
 
 /* ---------- solid colours for this page (the faded pastel chips are not used here) ---------- */

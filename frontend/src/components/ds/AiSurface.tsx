@@ -11,15 +11,16 @@ import { cn } from '@/lib/utils'
 export function AiSurface({
   as,
   working = false,
+  animated = false,
   tone = 'bold',
   className,
   children,
   ...rest
-}: { as?: ElementType; working?: boolean; tone?: 'quiet' | 'bold'; className?: string; children?: ReactNode } & Omit<ComponentProps<'div'>, 'children'>) {
+}: { as?: ElementType; working?: boolean; /** Keep the glow and the rotating border moving even when nothing is being generated. */ animated?: boolean; tone?: 'quiet' | 'bold'; className?: string; children?: ReactNode } & Omit<ComponentProps<'div'>, 'children'>) {
   const Comp = (as ?? 'div') as ElementType
   return (
     <Comp
-      data-working={working ? 'true' : undefined}
+      data-working={working || animated ? 'true' : undefined}
       aria-busy={working || undefined}
       className={cn('ai-border relative rounded-panel bg-surface', tone === 'bold' ? 'ai-surface' : 'shadow-card', working && tone === 'quiet' && 'ai-shimmer', className)}
       {...rest}
