@@ -20,8 +20,7 @@ export function useHomeData(days: number) {
     refetchInterval: live,
   })
   const usage = useQuery({ queryKey: ['ai-usage', slug], queryFn: api.tickets.aiUsage, refetchInterval: live })
-  const feed = useQuery({ queryKey: ['notifications', slug, 'home'], queryFn: api.tickets.notifications, refetchInterval: live })
-  return { analytics, stats, open, usage, feed }
+  return { analytics, stats, open, usage }
 }
 
 export const AGING_BUCKETS = [

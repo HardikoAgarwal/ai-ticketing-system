@@ -1,20 +1,14 @@
 import { ArrowDownRight, ArrowUpRight, CheckCheck, Clock, Flame, Inbox, Minus, Star, Timer, UserX, type LucideIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
+import { Area, AreaChart, ResponsiveContainer, YAxis } from 'recharts'
 
 import { Panel, Skeleton } from '@/components/ds'
 import { formatDuration } from '@/lib/format'
 import type { Analytics, QueueStats } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
-const TILE = {
-  blue: 'bg-sky text-sky-ink',
-  red: 'bg-rose text-rose-ink',
-  amber: 'bg-butter text-butter-ink',
-  peach: 'bg-peach text-peach-ink',
-  green: 'bg-mint text-mint-ink',
-  violet: 'bg-lav text-lav-ink',
-} as const
+import { CHART, HUE, mix, type Hue } from './chart-tokens'
 
 /** "vs previous" change. Direction is shown with an arrow and words, never colour alone. `goodWhen` says which direction is an improvement. */
 export function Delta({ now, before, goodWhen, unit = '%', periodLabel }: { now: number | null; before: number | null; goodWhen: 'up' | 'down'; unit?: '%' | 'abs'; periodLabel: string }) {
@@ -43,84 +37,151 @@ export function Delta({ now, before, goodWhen, unit = '%', periodLabel }: { now:
   )
 }
 
-function Cell({ icon: Icon, tone, label, value, foot, to, className }: { icon: LucideIcon; tone: keyof typeof TILE; label: string; value: ReactNode; foot?: ReactNode; to?: string; className?: string }) {
-  const body = (
-    <>
-      <span className="flex items-center gap-2 text-[13px] font-medium text-ink-2">
-        <span className={cn('flex size-7 items-center justify-center rounded-chip', TILE[tone])}>
-          <Icon className="size-3.5" aria-hidden />
-        </span>
-        {label}
-      </span>
-      <span className="mt-2.5 block text-[32px] leading-9 font-semibold tracking-tight text-ink tabular-nums">{value}</span>
-      <span className="mt-1.5 block min-h-4 text-xs text-ink-3">{foot}</span>
-    </>
-  )
-  const cls = cn('block h-full min-w-0 bg-surface p-5', className)
-  return to ? (
-    <Link to={to} className={cn(cls, 'transition-colors hover:bg-surface-2 focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-violet focus-visible:outline-none focus-visible:ring-inset')}>
-      {body}
-    </Link>
-  ) : (
-    <div className={cls}>{body}</div>
+function Spark({ data, color, id }: { data: number[]; color: string; id: string }) {
+  const rows = data.map((v, i) => ({ i, v }))
+  return (
+    <ResponsiveContainer width="100%" height={56}>
+      <AreaChart data={rows} margin={{ top: 4, right: 0, bottom: 0, left: 0 }}>
+        <defs>
+          <linearGradient id={id} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={color} stopOpacity={0.35} />
+            <stop offset="100%" stopColor={color} stopOpacity={0.02} />
+          </linearGradient>
+        </defs>
+        <YAxis hide domain={[0, 'dataMax + 1']} />
+        <Area isAnimationActive={false} type="monotone" dataKey="v" stroke={color} strokeWidth={2} fill={`url(#${id})`} dot={false} />
+      </AreaChart>
+    </ResponsiveContainer>
   )
 }
 
-/** Two strips: what needs doing right now (clickable into the inbox) and how the chosen period compares with the one before. */
-export function KpiRow({ stats, analytics, days, inbox }: { stats?: QueueStats; analytics?: Analytics; days: number; inbox: (qs: string) => string }) {
-  const open = stats ? stats.open + stats.in_progress : undefined
-  const period = `previous ${days} days`
-  const a = analytics
-  const csatNow = a?.csat.average ?? null
+function Stars({ value }: { value: number }) {
   return (
-    <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-      <Panel aria-labelledby="kpi-now" className="overflow-hidden">
-        <h2 id="kpi-now" className="sr-only">
-          Right now
-        </h2>
-        <div className="grid h-full grid-cols-2 gap-px bg-line sm:grid-cols-4">
-          {stats ? (
-            <>
-              <Cell icon={Inbox} tone="blue" label="Open now" value={open} foot={`${stats.in_progress} in progress`} to={inbox('view=attention')} />
-              <Cell icon={Clock} tone="red" label="Overdue reply" value={stats.overdue} foot={stats.overdue ? 'Past the response target' : 'All within target'} to={inbox('view=attention&sla=overdue')} />
-              <Cell icon={UserX} tone="amber" label="Unassigned" value={stats.unassigned} foot={stats.unassigned ? 'Waiting for an owner' : 'Everyone has an owner'} to={inbox('view=unassigned')} />
-              <Cell icon={Flame} tone="peach" label="Critical" value={stats.critical} foot={stats.critical ? 'Highest priority' : 'None open'} to={inbox('view=attention&priority=CRITICAL')} />
-            </>
-          ) : (
-            Array.from({ length: 4 }).map((_, i) => <div key={i} className="bg-surface p-5"><Skeleton className="h-24" /></div>)
-          )}
-        </div>
-      </Panel>
-
-      <Panel aria-labelledby="kpi-period" className="overflow-hidden">
-        <h2 id="kpi-period" className="sr-only">
-          Last {days} days
-        </h2>
-        <div className="grid h-full grid-cols-2 gap-px bg-line sm:grid-cols-4">
-          {a ? (
-            <>
-              <Cell icon={CheckCheck} tone="green" label="Resolved" value={a.totals.resolved} foot={<Delta now={a.totals.resolved} before={a.previous.resolved} goodWhen="up" periodLabel={period} />} />
-              <Cell icon={Inbox} tone="violet" label="Created" value={a.totals.created} foot={<Delta now={a.totals.created} before={a.previous.created} goodWhen="down" periodLabel={period} />} />
-              <Cell
-                icon={Timer}
-                tone="blue"
-                label="First response"
-                value={formatDuration(a.avg_first_response_minutes)}
-                foot={<Delta now={a.avg_first_response_minutes} before={a.previous.avg_first_response_minutes} goodWhen="down" periodLabel={period} />}
-              />
-              <Cell
-                icon={Star}
-                tone="amber"
-                label="CSAT"
-                value={csatNow ? `${csatNow.toFixed(1)}/5` : '—'}
-                foot={csatNow ? <Delta now={csatNow} before={a.previous.csat_average} goodWhen="up" unit="abs" periodLabel={period} /> : `${a.csat.responses} responses`}
-              />
-            </>
-          ) : (
-            Array.from({ length: 4 }).map((_, i) => <div key={i} className="bg-surface p-5"><Skeleton className="h-24" /></div>)
-          )}
-        </div>
-      </Panel>
+    <div className="flex items-center gap-1" role="img" aria-label={`${value.toFixed(1)} out of 5 stars`}>
+      {[1, 2, 3, 4, 5].map((n) => {
+        const fill = Math.max(0, Math.min(1, value - (n - 1)))
+        return (
+          <span key={n} className="relative inline-flex">
+            <Star className="size-6 text-line-strong" aria-hidden />
+            <span className="absolute inset-0 overflow-hidden" style={{ width: `${fill * 100}%` }}>
+              <Star className="size-6 fill-butter-ink text-butter-ink" aria-hidden />
+            </span>
+          </span>
+        )
+      })}
     </div>
+  )
+}
+
+function Kpi({ icon: Icon, hue, label, value, delta, visual }: { icon: LucideIcon; hue: Hue; label: string; value: ReactNode; delta: ReactNode; visual: ReactNode }) {
+  return (
+    <Panel className="flex min-w-0 flex-col p-4 sm:p-5">
+      <div className="flex items-center gap-2.5 text-sm font-medium text-ink-2">
+        <span className="flex size-8 items-center justify-center rounded-control" style={{ background: mix(hue, 22), color: HUE[hue] }}>
+          <Icon className="size-4" aria-hidden />
+        </span>
+        {label}
+      </div>
+      <div className="mt-4 text-4xl leading-10 sm:text-[44px] sm:leading-[48px] font-semibold tracking-tight text-ink tabular-nums">{value}</div>
+      <div className="mt-1.5 min-h-4">{delta}</div>
+      <div className="mt-4 flex min-h-14 items-end">{visual}</div>
+    </Panel>
+  )
+}
+
+/** The four period figures, each with a picture of its own: a trend line, a star scale, or the matching second number. */
+export function KpiRow({ analytics: a, days }: { analytics?: Analytics; days: number }) {
+  if (!a) {
+    return (
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Skeleton key={i} className="h-52 rounded-panel sm:h-60" />
+        ))}
+      </div>
+    )
+  }
+  const period = `previous ${days} days`
+  const csat = a.csat.average
+  return (
+    <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
+      <Kpi
+        icon={CheckCheck}
+        hue="mint"
+        label="Resolved"
+        value={a.totals.resolved}
+        delta={<Delta now={a.totals.resolved} before={a.previous.resolved} goodWhen="up" periodLabel={period} />}
+        visual={<div className="w-full"><Spark id="k-res" data={a.volume.map((v) => v.resolved)} color={CHART.resolved} /></div>}
+      />
+      <Kpi
+        icon={Inbox}
+        hue="lav"
+        label="New tickets"
+        value={a.totals.created}
+        delta={<Delta now={a.totals.created} before={a.previous.created} goodWhen="down" periodLabel={period} />}
+        visual={<div className="w-full"><Spark id="k-new" data={a.volume.map((v) => v.created)} color={CHART.opened} /></div>}
+      />
+      <Kpi
+        icon={Timer}
+        hue="sky"
+        label="First response"
+        value={formatDuration(a.avg_first_response_minutes)}
+        delta={<Delta now={a.avg_first_response_minutes} before={a.previous.avg_first_response_minutes} goodWhen="down" periodLabel={period} />}
+        visual={
+          <dl className="w-full rounded-control bg-sunken px-3 py-2.5">
+            <dt className="text-xs text-ink-2">Average time to resolve</dt>
+            <dd className="text-lg leading-6 font-semibold text-ink tabular-nums">{formatDuration(a.avg_resolution_minutes)}</dd>
+          </dl>
+        }
+      />
+      <Kpi
+        icon={Star}
+        hue="butter"
+        label="Customer satisfaction"
+        value={csat ? <>{csat.toFixed(1)}<span className="text-xl font-medium text-ink-3"> / 5</span></> : '—'}
+        delta={csat ? <Delta now={csat} before={a.previous.csat_average} goodWhen="up" unit="abs" periodLabel={period} /> : <span className="text-xs text-ink-3">No ratings yet</span>}
+        visual={
+          <div className="w-full">
+            <Stars value={csat ?? 0} />
+            <p className="mt-1.5 text-xs text-ink-2">{a.csat.responses} rating{a.csat.responses === 1 ? '' : 's'}</p>
+          </div>
+        }
+      />
+    </div>
+  )
+}
+
+/** The live queue as four plain numbers. Each opens the ticket list already filtered. */
+export function QueueNow({ stats, inbox }: { stats?: QueueStats; inbox: (qs: string) => string }) {
+  const cells = stats
+    ? [
+        { icon: Inbox, hue: 'sky' as Hue, label: 'Open now', value: stats.open + stats.in_progress, foot: `${stats.in_progress} in progress`, to: inbox('view=attention') },
+        { icon: Clock, hue: 'rose' as Hue, label: 'Overdue reply', value: stats.overdue, foot: stats.overdue ? 'Past the response target' : 'All within target', to: inbox('view=attention&sla=overdue') },
+        { icon: UserX, hue: 'butter' as Hue, label: 'Unassigned', value: stats.unassigned, foot: stats.unassigned ? 'Waiting for an owner' : 'Everyone has an owner', to: inbox('view=unassigned') },
+        { icon: Flame, hue: 'peach' as Hue, label: 'Critical', value: stats.critical, foot: stats.critical ? 'Highest priority' : 'None open', to: inbox('view=attention&priority=CRITICAL') },
+      ]
+    : []
+  return (
+    <Panel aria-label="Queue right now" className="overflow-hidden">
+      <div className="grid grid-cols-2 gap-px bg-line lg:grid-cols-4">
+        {stats
+          ? cells.map((c) => (
+              <Link key={c.label} to={c.to} className="flex items-center gap-4 bg-surface p-5 transition-colors hover:bg-surface-2 focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-violet focus-visible:outline-none focus-visible:ring-inset">
+                <span className="flex size-11 shrink-0 items-center justify-center rounded-panel" style={{ background: mix(c.hue, 22), color: HUE[c.hue] }}>
+                  <c.icon className="size-5" aria-hidden />
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-sm font-medium text-ink-2">{c.label}</span>
+                  <span className="block text-[28px] leading-8 font-semibold text-ink tabular-nums">{c.value}</span>
+                  <span className="block truncate text-xs text-ink-3">{c.foot}</span>
+                </span>
+              </Link>
+            ))
+          : Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="bg-surface p-5">
+                <Skeleton className="h-16" />
+              </div>
+            ))}
+      </div>
+    </Panel>
   )
 }

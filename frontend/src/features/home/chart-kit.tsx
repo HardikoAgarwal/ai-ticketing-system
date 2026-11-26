@@ -19,12 +19,12 @@ export function ChartPanel({ title, description, summary, table, empty, children
   return (
     <Panel as="figure" className={cn('flex flex-col', className)}>
       <PanelHeader title={<figcaption>{title}</figcaption>} description={description} divided={false} className="pb-2" />
-      <div className="px-5 pb-4">
+      <div className="flex flex-1 flex-col px-5 pb-5">
         {empty ? (
-          <div className="flex h-52 items-center justify-center rounded-control border border-dashed border-line-strong bg-surface-2 text-sm text-ink-3">No data in this period yet</div>
+          <div className="flex h-60 flex-1 items-center justify-center rounded-control border border-dashed border-line-strong bg-surface-2 text-sm text-ink-3">No data in this period yet</div>
         ) : (
           <>
-            <div role="img" aria-label={summary}>
+            <div role="img" aria-label={summary} className="flex flex-1 flex-col justify-center">
               {children}
             </div>
             <details className="group mt-3">
@@ -61,19 +61,5 @@ export function ChartPanel({ title, description, summary, table, empty, children
         )}
       </div>
     </Panel>
-  )
-}
-
-export function Legend({ items }: { items: { label: string; color: string; value?: number | string }[] }) {
-  return (
-    <ul className="flex flex-wrap justify-center gap-x-4 gap-y-1 text-xs text-ink-2">
-      {items.map((i) => (
-        <li key={i.label} className="flex items-center gap-1.5">
-          <span className="size-2.5 rounded-[3px]" style={{ background: i.color }} aria-hidden />
-          {i.label}
-          {i.value !== undefined && <span className="font-semibold text-ink tabular-nums">{i.value}</span>}
-        </li>
-      ))}
-    </ul>
   )
 }

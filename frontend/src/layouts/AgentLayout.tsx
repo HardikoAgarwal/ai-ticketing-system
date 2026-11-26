@@ -6,7 +6,7 @@ import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useWorkspace } from '@/auth/workspace'
 import { DemoDock } from '@/components/dashboard/DemoDock'
 import { SkeletonRows } from '@/components/ds/states'
-import { CommandBar } from '@/components/shell/CommandBar'
+import { MobileBar } from '@/components/shell/CommandBar'
 import { useRegisterCommands, type Command } from '@/components/shell/commands'
 import { CommandPalette } from '@/components/shell/CommandPalette'
 import { Dock, isItemActive, type DockItem } from '@/components/shell/Dock'
@@ -93,7 +93,7 @@ function Frame() {
       </a>
       <Dock items={items} />
       <div className="flex min-w-0 flex-1 flex-col">
-        <CommandBar />
+        <MobileBar />
         <main id="main" tabIndex={-1} className={cn('min-h-0 flex-1 outline-none', bleed ? 'flex flex-col overflow-hidden' : 'scroll-quiet overflow-y-auto')}>
           {/* one stable tree: toggling bleed only changes classes, so the routed page is never remounted */}
           <div className={cn(bleed ? 'flex min-h-0 flex-1 flex-col' : 'mx-auto w-full max-w-[1400px] px-4 py-6 md:px-8 md:py-8', !bleed && isDemo && 'pb-24')}>
@@ -113,7 +113,7 @@ function Frame() {
 }
 
 /**
- * Agent shell: dock (left) + command bar (top) + content. Pages render in <Outlet/>.
+ * Agent shell: dock (left, with search / status / account) + content; phones get a slim top bar. Pages render in <Outlet/>.
  * Default content is a padded, scrolling container; a page that scrolls its own regions (the ticket list, the ticket page)
  * takes over the full area by calling `useShellBleed()`.
  */

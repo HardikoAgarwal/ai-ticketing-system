@@ -2,6 +2,7 @@
 
 ## Unreleased: Helpdesk AI rewrite (from the BookLeaf author portal)
 ### Changed
+- Home is now an analytics-only Overview: big KPI cards with trend lines, volume chart, response-target and priority donuts, category/sentiment/ticket-age/workload bars. Chart labels are drawn on the charts themselves (no separate legends). Removed the desktop top bar; search, live status and the account menu live in the dock (phones keep a slim top bar). Ticket lists and activity feed removed from Home.
 - Dashboard rebuilt as "Paper & Aurora" (see `docs/DESIGN.md`): warm paper theme with a designed dark mode, icon dock and Cmd-K command palette, split-view inbox with keyboard shortcuts, tabbed ticket workspace with full state handling, and a shared aurora glow reserved for AI features. Login, signup, invite, sandbox setup, knowledge base, settings, analytics and the customer portal were redesigned on the same design system (`components/ds`).
 - Domain generalised from a publishing-specific author portal to a multi-workspace helpdesk: authors, books and royalties became requesters, generic records and configurable categories.
 - Infrastructure simplified for permanent free hosting: Celery and Redis replaced by a Postgres-backed job table with an in-process pool; Channels uses the in-memory layer; cache is local memory. Render's Postgres/Redis blocks removed (`render.yaml` expects a Neon `DATABASE_URL`).
