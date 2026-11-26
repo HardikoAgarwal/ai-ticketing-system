@@ -2,7 +2,7 @@ import { Star } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 
 import { RelativeTime } from '@/components/common'
-import { Avatar, DataTable, SolidChip, TBODY, Td, Th } from '@/components/ds'
+import { Avatar, DataTable, ROW, SolidChip, TBODY, Td, Th } from '@/components/ds'
 import { categoryHue, STATUS_CHIP, STATUS_HUE } from '@/features/inbox/model'
 import { formatDate } from '@/lib/format'
 import type { StaffTicket } from '@/lib/types'
@@ -27,26 +27,26 @@ function Row({ ticket: t, to }: { ticket: StaffTicket; to: string }) {
       onClick={(e) => {
         if (!(e.target as HTMLElement).closest('a,button')) navigate(to)
       }}
-      className="group cursor-pointer transition-colors hover:bg-surface-2"
+      className={`group ${ROW}`}
     >
       <Td>
-        <a
-          href={to}
-          onClick={(e) => {
-            if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return
-            e.preventDefault()
-            navigate(to)
-          }}
-          className="block truncate rounded-sm text-[15px] font-medium text-ink outline-none hover:underline focus-visible:ring-2 focus-visible:ring-violet"
-        >
-          {t.subject}
-        </a>
-        <span className="mt-1 block truncate font-mono text-xs text-ink-3">{t.reference}</span>
-      </Td>
-      <Td className="w-36">
-        <SolidChip hue={STATUS_HUE[t.status]} icon={status.icon} size="sm">
-          {status.label}
-        </SolidChip>
+        <div className="flex min-w-0 items-center gap-3">
+          <SolidChip hue={STATUS_HUE[t.status]} icon={status.icon} size="sm">
+            {status.label}
+          </SolidChip>
+          <a
+            href={to}
+            onClick={(e) => {
+              if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return
+              e.preventDefault()
+              navigate(to)
+            }}
+            className="min-w-0 truncate rounded-sm text-[15px] font-medium text-ink outline-none hover:underline focus-visible:ring-2 focus-visible:ring-violet"
+          >
+            {t.subject}
+          </a>
+        </div>
+        <div className="mt-1.5 font-mono text-xs text-ink-3">{t.reference}</div>
       </Td>
       <Td className="w-44">
         <div className="flex min-w-0 items-center gap-2.5">
@@ -54,7 +54,7 @@ function Row({ ticket: t, to }: { ticket: StaffTicket; to: string }) {
           <span className="truncate text-sm text-ink">{t.requester.name}</span>
         </div>
       </Td>
-      <Td className="hidden w-44 2xl:table-cell">
+      <Td className="hidden w-44 xl:table-cell">
         {t.category ? (
           <SolidChip hue={categoryHue(t.category.name)} size="sm" className="max-w-full truncate">
             {t.category.name}
@@ -79,16 +79,15 @@ function Row({ ticket: t, to }: { ticket: StaffTicket; to: string }) {
   )
 }
 
-/** Finished tickets as a real table: ticket, status, customer, category, when it finished, how long it took, rating. */
+/** Finished tickets as a real table: ticket (status badge beside the title), customer, category, when it finished, how long it took, rating. */
 export function HistoryTable({ tickets, basePath }: { tickets: StaffTicket[]; basePath: string }) {
   return (
     <DataTable caption="Resolved and closed tickets">
       <thead>
         <tr>
           <Th>Ticket</Th>
-          <Th className="w-36">Status</Th>
           <Th className="w-44">Customer</Th>
-          <Th className="hidden w-44 2xl:table-cell">Category</Th>
+          <Th className="hidden w-44 xl:table-cell">Category</Th>
           <Th className="w-32">Finished</Th>
           <Th className="hidden w-24 xl:table-cell">Took</Th>
           <Th className="w-20 text-right">Rating</Th>
