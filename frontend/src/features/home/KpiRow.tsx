@@ -75,7 +75,7 @@ function Kpi({ icon: Icon, label, value, compare, visual }: { icon: LucideIcon; 
   return (
     <Panel className="flex min-w-0 flex-col p-4 sm:p-5">
       <div className="flex items-center gap-2.5 text-sm font-semibold text-ink-2">
-        <span className="flex size-9 items-center justify-center rounded-control bg-sunken text-ink">
+        <span className="flex size-9 items-center justify-center rounded-control bg-violet-soft text-violet ring-1 ring-violet/20 ring-inset">
           <Icon className="size-[18px]" aria-hidden />
         </span>
         {label}

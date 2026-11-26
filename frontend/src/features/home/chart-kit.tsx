@@ -22,7 +22,7 @@ export function ChartPanel({ icon: Icon, title, description, figure, summary, em
   return (
     <Panel as="figure" className={cn('flex flex-col overflow-hidden', className)}>
       <header className="flex flex-wrap items-center gap-x-4 gap-y-3 border-b border-line px-5 py-4 sm:px-6">
-        <span className="flex size-10 shrink-0 items-center justify-center rounded-control bg-sunken text-ink" aria-hidden>
+        <span className="flex size-10 shrink-0 items-center justify-center rounded-control bg-violet-soft text-violet ring-1 ring-violet/20 ring-inset" aria-hidden>
           <Icon className="size-5" />
         </span>
         <figcaption className="min-w-0 flex-1 basis-56">
