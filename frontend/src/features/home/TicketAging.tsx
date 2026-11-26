@@ -1,64 +1,56 @@
-import { differenceInHours, parseISO } from 'date-fns'
 import { Hourglass } from 'lucide-react'
-import { useMemo } from 'react'
+import { Bar, BarChart, CartesianGrid, Cell, LabelList, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 
 import type { Paginated, StaffTicket } from '@/lib/types'
 
 import { ChartPanel, Figure, PendingChart } from './chart-kit'
-import { fill, on, type Hue } from './chart-tokens'
+import { CHART, fill, TOOLTIP } from './chart-tokens'
+import { ageOf, MAX_DAY, zoneOf } from './useHomeData'
 
-const BUCKETS: { key: string; label: string; range: string; hint: string; max: number; hue: Hue }[] = [
-  { key: 'fresh', label: 'Under 1 day', range: '0 – 24 hours', hint: 'Fresh', max: 24, hue: 'mint' },
-  { key: 'aging', label: '1 – 3 days', range: '24 – 72 hours', hint: 'Getting older', max: 72, hue: 'butter' },
-  { key: 'nudge', label: '3 – 7 days', range: '3 – 7 days', hint: 'Needs a nudge', max: 168, hue: 'peach' },
-  { key: 'stale', label: 'Over 7 days', range: 'A week or more', hint: 'Stale', max: Infinity, hue: 'rose' },
-]
-
-const duration = (h: number) => (h < 24 ? `${h}h` : `${Math.floor(h / 24)} ${Math.floor(h / 24) === 1 ? 'day' : 'days'}`)
+const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`
 
 /**
- * Open tickets split by how long they have waited, as four solid tiles from green (fresh) to red (stale).
- * Each tile is just the count, what it means, and its share of the queue. The headline is the single longest wait.
+ * How long open tickets have been waiting, as a bar chart with one column per day of waiting (0, 1, 2 ... 14+).
+ * Columns go from green (arrived today) through amber and orange to red (a week or more), so mass on the right means a stale queue.
+ * The headline figures are the median wait and the single oldest ticket.
  */
 export function TicketAging({ data, loading, error, onRetry, className }: { data?: Paginated<StaffTicket>; loading: boolean; error?: unknown; onRetry: () => void; className?: string }) {
-  const tickets = data?.results
-  const hours = useMemo(() => {
-    const now = new Date()
-    return (tickets ?? []).map((t) => ({ h: Math.max(0, differenceInHours(now, parseISO(t.created_at))), ref: t.reference }))
-  }, [tickets])
   if (loading || error) return <PendingChart error={error} onRetry={onRetry} className={className} />
-
-  const counts = BUCKETS.map((b, i) => hours.filter(({ h }) => h < b.max && h >= (BUCKETS[i - 1]?.max ?? 0)).length)
-  const total = hours.length
-  const oldest = hours.reduce<(typeof hours)[number] | null>((m, x) => (!m || x.h > m.h ? x : m), null)
+  const tickets = data?.results ?? []
+  const { rows, median, oldest, stale } = ageOf(tickets)
   const sampled = data && data.count > data.results.length
   return (
     <ChartPanel
       icon={Hourglass}
       className={className}
       title="How long tickets have waited"
-      description={sampled ? `Open tickets by age. The ${data.results.length} most urgent of ${data.count}.` : 'Open tickets by how long they have been waiting.'}
-      figure={oldest ? <Figure value={duration(oldest.h)} label={`Longest wait · ${oldest.ref}`} tone={oldest.h >= 168 ? 'bad' : undefined} /> : undefined}
-      summary={`Open tickets by age: ${BUCKETS.map((b, i) => `${counts[i]} ${b.label.toLowerCase()}`).join(', ')}.`}
-      empty={!total}
+      description={sampled ? `Open tickets by days waiting. The ${data.results.length} most urgent of ${data.count}.` : 'Open tickets by days waiting. Tall red columns mean stale tickets.'}
+      figure={
+        median === null ? undefined : (
+          <div className="flex gap-6">
+            <Figure value={plural(median, 'day')} label="Median wait" />
+            <Figure value={plural(oldest?.days ?? 0, 'day')} label={`Oldest ${oldest?.reference ?? ''}`} tone={stale ? 'bad' : undefined} />
+          </div>
+        )
+      }
+      summary={`Open tickets by days waiting: ${rows.filter((r) => r.count).map((r) => `${r.count} at ${r.label} days`).join(', ')}.`}
+      empty={!tickets.length}
     >
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        {BUCKETS.map((b, i) => {
-          const share = Math.round((counts[i] / total) * 100)
-          return (
-            <div key={b.key} className="flex flex-col rounded-panel p-5" style={{ background: fill(b.hue), color: on(b.hue) }}>
-              <p className="text-sm font-semibold">{b.label}</p>
-              <p className="text-xs opacity-85">{b.hint}</p>
-              <p className="mt-5 text-5xl leading-none font-semibold tracking-tight tabular-nums">{counts[i]}</p>
-              <p className="mt-1 text-xs font-medium opacity-90">{counts[i] === 1 ? 'ticket' : 'tickets'}</p>
-              <div className="mt-5 h-1.5 overflow-hidden rounded-full" style={{ background: `color-mix(in srgb, ${on(b.hue)} 25%, transparent)` }} aria-hidden>
-                <div className="h-full rounded-full" style={{ width: `${share}%`, background: on(b.hue) }} />
-              </div>
-              <p className="mt-1.5 text-xs font-medium tabular-nums opacity-90">{share}% of open tickets</p>
-            </div>
-          )
-        })}
-      </div>
+      <ResponsiveContainer width="100%" height={340}>
+        <BarChart data={rows} margin={{ top: 28, right: 4, left: -20, bottom: 0 }} barCategoryGap="14%">
+          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={CHART.grid} />
+          <XAxis dataKey="label" tickLine={false} axisLine={false} tick={{ fill: 'var(--ink-2)', fontSize: 12 }} tickMargin={8} interval={0} height={36} />
+          <YAxis allowDecimals={false} tickLine={false} axisLine={false} tick={{ fill: 'var(--ink-3)', fontSize: 12 }} width={44} />
+          <Tooltip {...TOOLTIP} formatter={(v) => [v, 'Open tickets']} labelFormatter={(l) => `${l} ${l === '1' ? 'day' : 'days'} waiting`} />
+          <Bar dataKey="count" radius={[8, 8, 3, 3]} isAnimationActive={false}>
+            {rows.map((r) => (
+              <Cell key={r.day} fill={fill(zoneOf(r.day))} fillOpacity={r.count ? 1 : 0.18} />
+            ))}
+            <LabelList dataKey="count" position="top" offset={6} formatter={(v: unknown) => (Number(v) ? String(v) : '')} style={{ fill: 'var(--ink)', fontSize: 14, fontWeight: 700 }} />
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+      <p className="mt-1 text-center text-xs text-ink-2">Days since the ticket arrived (the last column is {MAX_DAY} or more)</p>
     </ChartPanel>
   )
 }
