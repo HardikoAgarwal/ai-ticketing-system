@@ -2,11 +2,11 @@ import { CheckCheck, Inbox, Loader2, SearchX, UserCheck, X } from 'lucide-react'
 import { useEffect, useRef, type ReactNode } from 'react'
 
 import { Button } from '@/components/ui/button'
-import { Checkbox } from '@/components/ui/checkbox'
 import { EmptyState, ErrorState } from '@/components/ds'
 import type { StaffTicket } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
+import { SelectBox } from './SelectBox'
 import { TicketCard, TicketCardSkeleton } from './TicketCard'
 import { GRID, TicketRow, TicketRowSkeleton } from './TicketRow'
 
@@ -67,11 +67,12 @@ export function InboxList(p: InboxListProps) {
   const selecting = p.selected.size > 0
   const allChecked = p.ordered.length > 0 && p.selected.size === p.ordered.length
   const selectAll = (
-    <Checkbox
-      checked={allChecked ? true : selecting ? 'indeterminate' : false}
-      onCheckedChange={(v) => p.onSelectAll(v === true)}
-      aria-label="Select all loaded tickets"
+    <SelectBox
+      checked={allChecked ? true : selecting ? 'mixed' : false}
+      onChange={() => p.onSelectAll(!allChecked)}
+      label="Select all loaded tickets"
       disabled={!p.ordered.length}
+      className="size-6"
     />
   )
 

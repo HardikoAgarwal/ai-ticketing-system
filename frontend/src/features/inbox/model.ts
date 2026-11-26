@@ -74,6 +74,8 @@ export const PRIORITY_LOOK: Record<string, { icon: LucideIcon; cls: string; labe
 }
 
 export interface Attention {
+  /** What kind of attention it is, so a view can draw a reply differently from an overdue ticket. */
+  kind: 'overdue' | 'message' | 'atrisk' | 'new' | 'aifailed' | 'triaging' | 'draft'
   tone: ChipTone
   icon: LucideIcon
   label: string
@@ -87,17 +89,17 @@ export function attentionOf(ticket: StaffTicket): Attention | null {
   const states = ticketStates(ticket)
   const find = (kind: string) => states.find((s) => s.kind === kind)
   const overdue = find('overdue')
-  if (overdue) return { tone: 'red', icon: Timer, label: overdue.label }
+  if (overdue) return { kind: 'overdue', tone: 'red', icon: Timer, label: overdue.label }
   const msg = find('message')
-  if (msg) return { tone: 'blue', icon: MessageSquare, label: msg.label }
+  if (msg) return { kind: 'message', tone: 'blue', icon: MessageSquare, label: msg.label }
   const risk = find('atrisk')
-  if (risk) return { tone: 'amber', icon: Clock, label: risk.label }
+  if (risk) return { kind: 'atrisk', tone: 'amber', icon: Clock, label: risk.label }
   const fresh = find('ticket')
-  if (fresh) return { tone: 'green', icon: CircleDot, label: fresh.label }
+  if (fresh) return { kind: 'new', tone: 'green', icon: CircleDot, label: fresh.label }
   const failed = find('aifailed')
-  if (failed) return { tone: 'amber', icon: AlertTriangle, label: failed.label }
-  if (ticket.ai_status === 'PENDING' && ticket.category_source !== 'STAFF') return { tone: 'ai', icon: Loader2, label: 'AI triaging', working: true }
-  if (ticket.ai_draft_status === 'COMPLETED') return { tone: 'ai', icon: Sparkles, label: 'Draft ready' }
+  if (failed) return { kind: 'aifailed', tone: 'amber', icon: AlertTriangle, label: failed.label }
+  if (ticket.ai_status === 'PENDING' && ticket.category_source !== 'STAFF') return { kind: 'triaging', tone: 'ai', icon: Loader2, label: 'AI triaging', working: true }
+  if (ticket.ai_draft_status === 'COMPLETED') return { kind: 'draft', tone: 'ai', icon: Sparkles, label: 'Draft ready' }
   return null
 }
 

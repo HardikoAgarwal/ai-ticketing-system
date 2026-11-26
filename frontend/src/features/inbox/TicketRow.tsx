@@ -4,10 +4,11 @@ import { Link } from 'react-router-dom'
 
 import { RelativeTime } from '@/components/common'
 import { AiSpark, Avatar, SolidChip } from '@/components/ds'
-import { Checkbox } from '@/components/ui/checkbox'
 import { cn } from '@/lib/utils'
 import type { StaffTicket } from '@/lib/types'
 
+import { NewMessageBadge } from './NewMessageBadge'
+import { SelectBox } from './SelectBox'
 import { attentionOf, categoryHue, PRIORITY_HUE, PRIORITY_LOOK, STATUS_CHIP, STATUS_HUE, TONE_HUE } from './model'
 
 /**
@@ -44,7 +45,7 @@ export const TicketRow = forwardRef<HTMLLIElement, TicketRowProps>(function Tick
   const spin = attn?.working ? '[&>svg]:animate-spin motion-reduce:[&>svg]:animate-none' : undefined
   // The one chip that matters most: what needs attention, else the plain status.
   const lead = attn && AttnIcon ? (
-    <SolidChip hue={TONE_HUE[attn.tone]} icon={AttnIcon} size="sm" className={spin}>
+    attn.kind === 'message' ? <NewMessageBadge label={attn.label} size="sm" /> : <SolidChip hue={TONE_HUE[attn.tone]} icon={AttnIcon} size="sm" className={spin}>
       {attn.label}
     </SolidChip>
   ) : (
@@ -155,7 +156,7 @@ export const TicketRow = forwardRef<HTMLLIElement, TicketRowProps>(function Tick
           !(selecting || checked) && 'opacity-0 focus-within:opacity-100 group-hover:opacity-100 lg:opacity-100',
         )}
       >
-        <Checkbox checked={checked} onCheckedChange={() => onToggle(ticket.id)} aria-label={`Select ${ticket.reference}`} />
+        <SelectBox checked={checked} onChange={() => onToggle(ticket.id)} label={`Select ${ticket.reference}`} className="size-6" />
       </span>
     </li>
   )
