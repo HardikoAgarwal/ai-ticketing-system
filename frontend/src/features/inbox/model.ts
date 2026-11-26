@@ -1,7 +1,7 @@
 import { AlertTriangle, ArrowDown, ArrowUp, CircleCheck, CircleDot, Clock, Flame, Loader2, MessageSquare, Minus, Sparkles, Timer, type LucideIcon } from 'lucide-react'
 
 import { ticketStates } from '@/components/dashboard/badges'
-import type { ChipTone } from '@/components/ds'
+import type { ChipTone, Hue } from '@/components/ds'
 import type { TicketQuery } from '@/lib/endpoints'
 import type { StaffTicket, TicketStatus } from '@/lib/types'
 
@@ -117,4 +117,18 @@ export function ticketBucket(ticket: StaffTicket): TicketBucket {
   if (ticket.has_unread || states.some((s) => s.kind === 'message')) return 'reply'
   if (ticket.status === 'IN_PROGRESS') return 'progress'
   return 'open'
+}
+
+/* ---------- solid colours for this page (the faded pastel chips are not used here) ---------- */
+
+export const STATUS_HUE: Record<TicketStatus, Hue> = { OPEN: 'sky', IN_PROGRESS: 'lav', RESOLVED: 'mint', CLOSED: 'slate' }
+export const PRIORITY_HUE: Record<string, Hue> = { CRITICAL: 'rose', HIGH: 'peach', MEDIUM: 'butter', LOW: 'slate' }
+/** Maps the attention chip's pastel tone onto the solid hue with the same meaning. */
+export const TONE_HUE: Record<ChipTone, Hue> = { red: 'rose', blue: 'sky', amber: 'butter', green: 'mint', ai: 'lav', violet: 'lav', peach: 'peach', slate: 'slate' }
+const CATEGORY_HUES: Hue[] = ['mint', 'lav', 'sky', 'peach', 'rose', 'butter']
+/** A stable colour per category name, so the same category always looks the same. */
+export function categoryHue(name: string): Hue {
+  let h = 0
+  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0
+  return CATEGORY_HUES[h % CATEGORY_HUES.length]
 }

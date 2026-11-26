@@ -3,11 +3,10 @@ import { useEffect, useRef, useState } from 'react'
 
 import { Kbd, SegmentedControl } from '@/components/ds'
 import { useShortcut } from '@/components/shell/shortcuts'
-import type { QueueStats } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
 import { DisplayPopover, FilterPopover } from './FilterPopover'
-import { FILTER_KEYS, type ViewKey } from './model'
+import { FILTER_KEYS } from './model'
 import type { FilterSpec } from './useFilterSpecs'
 
 const split = (v: string | null) => (v ? v.split(',').filter(Boolean) : [])
@@ -74,9 +73,7 @@ function SearchBox({ value, onCommit }: { value: string; onCommit: (v: string) =
   )
 }
 
-export function InboxToolbar({ view, stats, search, params, specs, sort, density, grouped, layout, onLayout, onView, onFilter, onSearch, onSort, onDensity, onGroup, onResetFilters }: {
-  view: ViewKey
-  stats?: QueueStats
+export function InboxToolbar({ search, params, specs, sort, density, grouped, layout, onLayout, onFilter, onSearch, onSort, onDensity, onGroup, onResetFilters }: {
   search: string
   params: URLSearchParams
   specs: FilterSpec[]
@@ -85,7 +82,6 @@ export function InboxToolbar({ view, stats, search, params, specs, sort, density
   grouped: boolean
   layout: 'cards' | 'table'
   onLayout: (v: 'cards' | 'table') => void
-  onView: (v: ViewKey) => void
   onFilter: (key: string, value: string | null) => void
   onSearch: (v: string) => void
   onSort: (v: string) => void
@@ -95,20 +91,6 @@ export function InboxToolbar({ view, stats, search, params, specs, sort, density
 }) {
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <div className="scroll-quiet max-w-full overflow-x-auto">
-        <SegmentedControl<ViewKey>
-          ariaLabel="Ticket view"
-          size="sm"
-          value={view}
-          onChange={onView}
-          options={[
-            { value: 'attention', label: 'Attention', count: stats ? stats.open + stats.in_progress : undefined },
-            { value: 'mine', label: 'Mine', count: stats?.mine },
-            { value: 'unassigned', label: 'Unassigned', count: stats?.unassigned },
-            { value: 'all', label: 'All' },
-          ]}
-        />
-      </div>
       <SearchBox value={search} onCommit={onSearch} />
       <FilterPopover specs={specs} params={params} onChange={onFilter} onReset={onResetFilters} />
       <button

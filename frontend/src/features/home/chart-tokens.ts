@@ -1,8 +1,5 @@
-/** The hues a chart may use. Each is a solid fill (`--viz-*`) with a matching text colour (`--on-*`), defined for light and dark in index.css. */
-export type Hue = 'rose' | 'peach' | 'butter' | 'mint' | 'sky' | 'lav' | 'slate'
-
-export const fill = (h: Hue) => `var(--viz-${h})`
-export const on = (h: Hue) => `var(--on-${h})`
+export { fill, on, type Hue } from '@/components/ds/viz'
+import type { Hue } from '@/components/ds/viz'
 
 export const PRIORITY_HUE: Record<string, Hue> = { CRITICAL: 'rose', HIGH: 'peach', MEDIUM: 'butter', LOW: 'slate' }
 export const SENTIMENT_HUE: Record<string, Hue> = { NEGATIVE: 'rose', NEUTRAL: 'slate', POSITIVE: 'mint' }

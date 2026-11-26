@@ -113,8 +113,8 @@ export function InboxList(p: InboxListProps) {
         <div className="px-2">
           {p.loading ? (
             p.layout === 'cards' ? (
-              <div className="grid grid-cols-1 gap-5 pt-1 xl:grid-cols-2">
-                {Array.from({ length: 6 }).map((_, i) => <TicketCardSkeleton key={i} />)}
+              <div className="space-y-6 pt-1">
+                {Array.from({ length: 4 }).map((_, i) => <TicketCardSkeleton key={i} />)}
               </div>
             ) : (
               <div className="space-y-1 pt-1">
@@ -141,7 +141,7 @@ export function InboxList(p: InboxListProps) {
                       <span className="text-xs text-ink-3 tabular-nums">{g.items.length}</span>
                     </div>
                   )}
-                  <ul aria-label={g.label || 'Tickets'} className={p.layout === 'cards' ? 'grid grid-cols-1 gap-x-5 gap-y-6 pb-3 xl:grid-cols-2' : 'space-y-0.5'}>
+                  <ul aria-label={g.label || 'Tickets'} className={p.layout === 'cards' ? 'space-y-7 pb-4' : 'space-y-3 pb-3'}>
                     {g.items.map((t) => p.layout === 'cards' ? (
                       <TicketCard
                         key={t.id}

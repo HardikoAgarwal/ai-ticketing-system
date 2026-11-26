@@ -11,7 +11,7 @@ import type { Analytics } from '@/lib/types'
 
 import { CategoryChart, PriorityChart, SentimentChart, VolumeChart } from './Charts'
 import { KpiRow } from './KpiRow'
-import { TicketAging } from './AgeTimeline'
+import { TicketAging } from './TicketAging'
 import { Workload } from './QueueInsights'
 import { SlaGauge } from './SlaGauge'
 import { useHomeData, useWorkload } from './useHomeData'

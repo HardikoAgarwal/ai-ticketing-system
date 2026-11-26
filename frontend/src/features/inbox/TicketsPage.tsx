@@ -108,15 +108,12 @@ export function TicketsPage() {
         <InboxToolbar
           layout={inbox.layout}
           onLayout={(l) => patch({ layout: l === 'table' ? 'table' : null })}
-          view={view}
-          stats={stats.data}
           search={inbox.search}
           params={params}
           specs={specs}
           sort={inbox.sort}
           density={inbox.density}
           grouped={inbox.grouped}
-          onView={(v) => setView(v)}
           onFilter={onFilter}
           onSearch={onSearch}
           onSort={(v) => patch({ sort: v === 'default' ? null : v })}
