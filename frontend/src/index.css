@@ -54,6 +54,7 @@
     --color-ink-3: var(--ink-3);
     --color-violet: var(--violet);
     --color-violet-soft: var(--violet-soft);
+    --color-ai: var(--ai);
     --color-aurora-1: var(--aurora-1);
     --color-aurora-2: var(--aurora-2);
     --color-aurora-3: var(--aurora-3);
@@ -109,12 +110,14 @@
     --line: #e4dccb;
     --line-strong: #cfc4ad;
     /* text (ink-2 ~10:1, ink-3 >= 5:1 on every light surface) */
-    --ink: #0b0a1d;
-    --ink-2: #3d3b57;
-    --ink-3: #5f5d7a;
-    /* brand + AI */
-    --violet: #5b3df5;
-    --violet-soft: #ece8ff;
+    --ink: #16130f;
+    --ink-2: #433f38;
+    --ink-3: #625d54;
+    /* highlight accent (focus, selection, links, active nav): a warm emerald, deliberately not blue/violet.
+       The token keeps its old name so existing classes follow; violet/cyan/pink now belong to AI only (aurora, lav). */
+    --violet: #0b7a5c;
+    --violet-soft: #dcf1e8;
+    --ai: #5b3df5;
     --aurora-1: #7c5cff;
     --aurora-2: #22d3ee;
     --aurora-3: #ff7ab8;
@@ -158,11 +161,11 @@
     --border: var(--line);
     --input: var(--line-strong);
     --ring: var(--violet);
-    --chart-1: #5b3df5;
-    --chart-2: #0e9fb8;
-    --chart-3: #d9890b;
+    --chart-1: #0b7a5c;
+    --chart-2: #d9890b;
+    --chart-3: #7c5cff;
     --chart-4: #d63a64;
-    --chart-5: #2f9e6b;
+    --chart-5: #2b7fbf;
     --radius: 0.625rem;
     --sidebar: var(--surface);
     --sidebar-foreground: var(--ink-2);
@@ -173,25 +176,26 @@
     --sidebar-border: var(--line);
     --sidebar-ring: var(--violet);
 
-    --shadow-card-v: 0 1px 0 var(--line), 0 8px 24px -18px rgb(40 30 110 / 0.28);
-    --shadow-panel-v: 0 1px 0 var(--line), 0 12px 32px -20px rgb(40 30 110 / 0.3);
-    --shadow-pop-v: 0 18px 44px -12px rgb(40 30 110 / 0.28), 0 2px 6px rgb(40 30 110 / 0.08);
-    --shadow-dock-v: 0 10px 30px -10px rgb(40 30 110 / 0.35);
+    --shadow-card-v: 0 1px 0 var(--line), 0 8px 24px -18px rgb(60 40 20 / 0.26);
+    --shadow-panel-v: 0 1px 0 var(--line), 0 12px 32px -20px rgb(60 40 20 / 0.28);
+    --shadow-pop-v: 0 18px 44px -12px rgb(60 40 20 / 0.26), 0 2px 6px rgb(60 40 20 / 0.08);
+    --shadow-dock-v: 0 10px 30px -10px rgb(60 40 20 / 0.32);
     color-scheme: light;
 }
 
 .dark {
-    --canvas: #0e0d1a;
-    --surface: #161426;
-    --surface-2: #1d1a31;
-    --sunken: #0a0912;
-    --line: #2b2745;
-    --line-strong: #3d3860;
+    --canvas: #121110;
+    --surface: #1a1917;
+    --surface-2: #211f1c;
+    --sunken: #0c0b0a;
+    --line: #2e2b27;
+    --line-strong: #433f38;
     --ink: #f4efe6;
-    --ink-2: #cbc8de;
-    --ink-3: #a3a0c0;
-    --violet: #a08cff;
-    --violet-soft: rgb(124 92 255 / 0.2);
+    --ink-2: #d3cec4;
+    --ink-3: #a9a398;
+    --violet: #4fd1a1;
+    --violet-soft: rgb(79 209 161 / 0.16);
+    --ai: #a99aff;
     --aurora-1: #8f75ff;
     --aurora-2: #38e0f5;
     --aurora-3: #ff8cc4;
@@ -216,16 +220,16 @@
     --sky-ink: #a4d4ff;
 
     --primary: #f4efe6;
-    --primary-foreground: #0e0d1a;
+    --primary-foreground: #121110;
     --destructive: #ff7a8c;
-    --input: #3d3860;
-    --chart-1: #a08cff;
-    --chart-2: #38e0f5;
-    --chart-3: #fbbf24;
+    --input: #433f38;
+    --chart-1: #4fd1a1;
+    --chart-2: #fbbf24;
+    --chart-3: #a08cff;
     --chart-4: #ff8cc4;
-    --chart-5: #5ee0a8;
+    --chart-5: #6cb6f2;
     --sidebar-primary: #f4efe6;
-    --sidebar-primary-foreground: #0e0d1a;
+    --sidebar-primary-foreground: #121110;
 
     --shadow-card-v: 0 1px 0 var(--line), 0 10px 28px -16px rgb(0 0 0 / 0.6);
     --shadow-panel-v: 0 1px 0 var(--line), 0 14px 36px -18px rgb(0 0 0 / 0.65);

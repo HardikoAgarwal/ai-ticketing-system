@@ -5,7 +5,7 @@ import type { ChipTone } from '@/components/ds'
 import type { TicketQuery } from '@/lib/endpoints'
 import type { StaffTicket, TicketStatus } from '@/lib/types'
 
-/* ---------- views, sort, filters (all state lives in the URL so it survives selecting a ticket) ---------- */
+/* ---------- views, sort, filters (all state lives in the URL, so a filtered list is linkable and survives a reload) ---------- */
 
 export const VIEWS = {
   attention: { label: 'Needs attention', query: { status: 'OPEN,IN_PROGRESS' } },
@@ -25,8 +25,8 @@ export const SORT_OPTIONS = [
 
 export const FILTER_KEYS = ['status', 'priority', 'category', 'assigned', 'sla'] as const
 export type FilterKey = (typeof FILTER_KEYS)[number]
-/** URL params owned by the inbox. Anything else (e.g. the ticket pane's `tab`) is never copied between tickets. */
-export const INBOX_PARAMS = ['view', 'q', 'sort', 'density', ...FILTER_KEYS] as const
+/** URL params owned by the ticket list. Remembered with the queue so the ticket page can link back with the same filters. */
+export const INBOX_PARAMS = ['view', 'q', 'sort', 'density', 'group', ...FILTER_KEYS] as const
 
 export const PAGE_SIZE = 25
 
@@ -46,7 +46,7 @@ export function buildQuery(params: URLSearchParams): TicketQuery {
   return q
 }
 
-/** Keep only the params the inbox owns, so links between tickets preserve the list state and drop pane state. */
+/** Keep only the params the list owns (drops anything unrelated), as a "?a=b" string or "". */
 export function inboxSearch(params: URLSearchParams): string {
   const next = new URLSearchParams()
   for (const k of INBOX_PARAMS) {

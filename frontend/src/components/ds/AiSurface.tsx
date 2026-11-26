@@ -33,7 +33,7 @@ export function AiSurface({
 export function AiSpark({ working = false, className, label }: { working?: boolean; className?: string; label?: string }) {
   return (
     <Sparkles
-      className={cn('size-4 shrink-0 text-violet', working && 'animate-pulse motion-reduce:animate-none', className)}
+      className={cn('size-4 shrink-0 text-ai', working && 'animate-pulse motion-reduce:animate-none', className)}
       aria-hidden={label ? undefined : true}
       aria-label={label}
     />
@@ -57,7 +57,7 @@ export function AiChip({ icon: Icon = Sparkles, working = false, size = 'md', cl
         className,
       )}
     >
-      <Icon className={cn('size-3.5 shrink-0 text-violet', working && 'animate-pulse motion-reduce:animate-none')} aria-hidden />
+      <Icon className={cn('size-3.5 shrink-0 text-ai', working && 'animate-pulse motion-reduce:animate-none')} aria-hidden />
       {children}
     </span>
   )
@@ -67,7 +67,7 @@ export function AiChip({ icon: Icon = Sparkles, working = false, size = 'md', cl
 export function AiBadgeInline({ className, children = 'AI' }: { className?: string; children?: ReactNode }) {
   return (
     <span className={cn('inline-flex items-center gap-1 text-xs font-semibold text-lav-ink', className)}>
-      <Sparkles className="size-3 text-violet" aria-hidden />
+      <Sparkles className="size-3 text-ai" aria-hidden />
       {children}
     </span>
   )

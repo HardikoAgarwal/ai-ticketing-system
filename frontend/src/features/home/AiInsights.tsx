@@ -1,14 +1,14 @@
 import { Sparkles } from 'lucide-react'
 
-import { AiChip, AiSurface, ProgressRing } from '@/components/ds'
+import { AiChip, AiSurface, ProgressBar, ProgressRing } from '@/components/ds'
 import { formatNumber } from '@/lib/format'
-import type { Analytics } from '@/lib/types'
+import type { AIUsage, Analytics } from '@/lib/types'
 
 const pct = (v: number | null | undefined) => (v === null || v === undefined ? '—' : `${Math.round(v * 100)}%`)
 const ratio = (a: number, b: number) => (b > 0 ? a / b : null)
 
-/** The one AI block on the analytics page: how much the team leans on the AI, and how often they correct it. */
-export function AiInsights({ data }: { data: Analytics }) {
+/** The one AI block on the home page: how much the team leans on the AI, how often they correct it, and today's call budget. */
+export function AiInsights({ data, usage }: { data: Analytics; usage?: AIUsage }) {
   const { drafts, ai_overrides: o, ai_usage: u } = data
   const used = drafts.ai_as_is + drafts.ai_edited
   const adoption = ratio(used, drafts.total)
@@ -26,7 +26,7 @@ export function AiInsights({ data }: { data: Analytics }) {
   return (
     <AiSurface className="p-5 sm:p-6">
       <div className="flex flex-wrap items-center gap-3">
-        <span className="flex size-9 items-center justify-center rounded-control bg-lav text-violet">
+        <span className="flex size-9 items-center justify-center rounded-control bg-lav text-ai">
           <Sparkles className="size-[18px]" aria-hidden />
         </span>
         <div className="min-w-0 flex-1">
@@ -35,6 +35,23 @@ export function AiInsights({ data }: { data: Analytics }) {
         </div>
         <AiChip size="sm">{formatNumber(u.calls)} calls</AiChip>
       </div>
+
+      {usage && (
+        <div className="mt-5 rounded-control border border-line bg-surface/60 p-3.5">
+          <div className="flex items-baseline justify-between gap-3 text-[13px]">
+            <span className="font-medium text-ink">AI calls today in this workspace</span>
+            <span className="font-semibold text-ink tabular-nums">
+              {usage.workspace_used} <span className="font-normal text-ink-3">of {usage.workspace_cap}</span>
+            </span>
+          </div>
+          <ProgressBar value={usage.workspace_used} max={usage.workspace_cap} tone="ai" label={`AI calls today: ${usage.workspace_used} of ${usage.workspace_cap}`} className="mt-2" />
+          <p className="mt-2 text-xs text-ink-3">
+            {usage.workspace_used >= usage.workspace_cap
+              ? 'Daily AI budget reached. New tickets use keyword triage until it resets.'
+              : 'When the daily budget runs out, new tickets fall back to keyword triage automatically.'}
+          </p>
+        </div>
+      )}
 
       <div className="mt-5 grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
         <div>
@@ -55,7 +72,7 @@ export function AiInsights({ data }: { data: Analytics }) {
           <ul className="mt-5 space-y-2">
             {lines.map((l) => (
               <li key={l} className="flex gap-2 text-sm leading-5 text-ink">
-                <Sparkles className="mt-0.5 size-3.5 shrink-0 text-violet" aria-hidden /> {l}
+                <Sparkles className="mt-0.5 size-3.5 shrink-0 text-ai" aria-hidden /> {l}
               </li>
             ))}
           </ul>

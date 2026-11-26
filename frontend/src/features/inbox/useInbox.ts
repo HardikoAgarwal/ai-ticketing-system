@@ -70,7 +70,9 @@ export function useInbox() {
     return out
   }, [list.data])
 
-  const grouped = sort === 'default' && view !== 'all'
+  // `group=on|off` is an explicit override; otherwise group by urgency only in the default sort of the working views.
+  const groupParam = params.get('group')
+  const grouped = groupParam === 'on' ? true : groupParam === 'off' ? false : sort === 'default' && view !== 'all'
   const groups: Group[] = useMemo(() => {
     if (!grouped) return [{ key: 'all', label: '', dot: '', items: tickets }]
     return BUCKETS.map((b) => ({ ...b, items: tickets.filter((t) => ticketBucket(t) === b.key) })).filter((g) => g.items.length)

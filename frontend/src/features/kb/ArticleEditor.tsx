@@ -145,7 +145,7 @@ export function ArticleEditor({ articleId, readOnly, onClose, onDirty, onCreated
 
             <AiSurface tone="quiet" className="p-4">
               <h3 className="flex items-center gap-2 text-sm font-semibold text-ink">
-                <Bot className="size-4 text-violet" aria-hidden /> How the AI will see this
+                <Bot className="size-4 text-ai" aria-hidden /> How the AI will see this
               </h3>
               <p className="mt-1 mb-3 text-[13px] text-ink-2">Your article is cut into passages. For each ticket the AI is given the most relevant ones and cites the article.</p>
               {value.is_internal && (

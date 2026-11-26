@@ -25,7 +25,7 @@ export function AiSettings({ f, readOnly }: { f: WorkspaceFormApi; readOnly: boo
       <div>
         <AiSurface tone={form.ai_enabled ? 'bold' : 'quiet'} className="p-4">
           <div className="flex items-center gap-4">
-            <span className="flex size-11 shrink-0 items-center justify-center rounded-control bg-lav text-violet">
+            <span className="flex size-11 shrink-0 items-center justify-center rounded-control bg-lav text-ai">
               <Sparkles className="size-5" aria-hidden />
             </span>
             <div className="min-w-0 flex-1">
@@ -47,7 +47,7 @@ export function AiSettings({ f, readOnly }: { f: WorkspaceFormApi; readOnly: boo
       <div className="grid gap-x-8 gap-y-5 md:grid-cols-3">
         {FEATURES.map(({ icon: Icon, title, body }) => (
           <div key={title}>
-            <Icon className="mb-2 size-4 text-violet" aria-hidden />
+            <Icon className="mb-2 size-4 text-ai" aria-hidden />
             <p className="text-sm font-semibold text-ink">{title}</p>
             <p className="mt-1 text-[13px] leading-5 text-ink-2">{body}</p>
           </div>

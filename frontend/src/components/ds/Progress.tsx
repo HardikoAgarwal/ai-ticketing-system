@@ -3,7 +3,7 @@ import type { ReactNode } from 'react'
 import { cn } from '@/lib/utils'
 
 const BAR = { violet: 'bg-violet', green: 'bg-mint-ink', amber: 'bg-butter-ink', red: 'bg-rose-ink', ink: 'bg-ink', ai: 'bg-gradient-to-r from-aurora-1 via-aurora-2 to-aurora-3' } as const
-const STROKE = { violet: 'stroke-violet', green: 'stroke-mint-ink', amber: 'stroke-butter-ink', red: 'stroke-rose-ink', ink: 'stroke-ink', ai: 'stroke-violet' } as const
+const STROKE = { violet: 'stroke-violet', green: 'stroke-mint-ink', amber: 'stroke-butter-ink', red: 'stroke-rose-ink', ink: 'stroke-ink', ai: 'stroke-ai' } as const
 export type ProgressTone = keyof typeof BAR
 
 export function ProgressBar({ value, max = 100, tone = 'violet', size = 'md', label, className }: { value: number; max?: number; tone?: ProgressTone; size?: 'sm' | 'md'; label: string; className?: string }) {

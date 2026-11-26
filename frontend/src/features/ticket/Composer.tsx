@@ -18,7 +18,8 @@ import { usePersistentText } from '@/lib/use-persistent-text'
 import type { DraftResponse, Macro, StaffTicketDetail } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
-import { DraftCard } from './DraftCard'
+import { DraftBar } from './DraftBar'
+import { draftBarVisible, waitingOnUs } from './ticket-ui'
 import type { TicketState } from './use-ticket'
 
 const SKIP_PREVIEW_KEY = 'helpdesk.skip-send-preview'
@@ -30,7 +31,7 @@ interface FailedSend {
   draftId: number | null
 }
 
-/** Reply / internal-note composer with the AI draft card above it. Pinned to the bottom of the conversation. */
+/** One docked block at the bottom of the conversation: mode switch, the AI draft bar, the text, the toolbar. Nothing floats; the thread above it scrolls. */
 export function Composer({ ticket, t, mode, onModeChange, focusTick, readOnly, onReopen }: {
   ticket: StaffTicketDetail
   t: TicketState
@@ -56,7 +57,6 @@ export function Composer({ ticket, t, mode, onModeChange, focusTick, readOnly, o
       return false
     }
   })
-  const [draftOpen, setDraftOpen] = useState(false)
   const [failed, setFailed] = useState<FailedSend | null>(null)
   const [newActivity, setNewActivity] = useState(false)
   const replyRef = useRef<HTMLTextAreaElement>(null)
@@ -188,67 +188,86 @@ export function Composer({ ticket, t, mode, onModeChange, focusTick, readOnly, o
   const submitNote = () => note.trim() && !addNote.isPending && !readOnly && addNote.mutate(note)
   const assignedElsewhere = ticket.assigned_to && ticket.assigned_to.id !== user?.id
 
-  const field = 'field-sizing-content max-h-44 min-h-20 resize-none rounded-none border-0 bg-transparent px-5 py-3 text-[15px] leading-relaxed shadow-none focus-visible:ring-0 dark:bg-transparent'
+  const field = 'field-sizing-content max-h-[min(9.5rem,20svh)] min-h-[3.5rem] [@media(max-height:800px)]:min-h-[2.75rem] resize-none rounded-none border-0 bg-transparent px-4 py-2.5 text-[15px] leading-relaxed shadow-none focus-visible:ring-0 dark:bg-transparent'
+  const showDraft = !noteMode && !closed && !readOnly && waitingOnUs(ticket) && draftBarVisible(draft, t.draft.isLoading)
+  const aiActive = showDraft && (draft?.status === 'ready' || draft?.status === 'generating' || t.regenerate.isPending)
+  // One quiet notice at most, above the box, so the composer never stacks up warnings.
+  const notice = failed && !noteMode
+    ? 'failed'
+    : newActivity && !noteMode
+      ? 'new'
+      : resolved && !noteMode
+        ? 'resolved'
+        : assignedElsewhere && !noteMode && !closed
+          ? 'elsewhere'
+          : null
 
   return (
-    <div className="shrink-0 border-t border-line bg-surface px-3 py-3 sm:px-5">
+    <div className="shrink-0 border-t border-line bg-surface px-3 py-2.5 sm:px-5">
       <div className="mx-auto max-w-3xl">
-        {!noteMode && !closed && !readOnly && (
-          <DraftCard
-            draft={draft}
-            loading={t.draft.isLoading}
-            inEditor={inEditor}
-            regenerating={t.regenerate.isPending}
-            expanded={draftOpen}
-            onToggle={() => setDraftOpen((v) => !v)}
-            onRegenerate={() => t.regenerate.mutate()}
-            onUse={insertDraft}
-            disabled={readOnly}
-          />
-        )}
-
-        {failed && !noteMode && (
-          <div role="alert" className="mb-3 flex flex-wrap items-center gap-2 rounded-panel border border-rose-line bg-rose px-3.5 py-2.5 text-[13px] text-rose-ink">
+        {notice === 'failed' && failed && (
+          <div role="alert" className="mb-2 flex flex-wrap items-center gap-2 rounded-control border border-rose-line bg-rose px-3 py-2 text-[13px] text-rose-ink">
             <AlertTriangle className="size-4 shrink-0" aria-hidden />
-            <span className="flex-1">Your reply wasn't sent. The text is back in the box, nothing is lost.</span>
-            <Button variant="outline" size="sm" onClick={() => send.mutate(failed)} disabled={send.isPending}>
-              <RotateCcw /> Retry
-            </Button>
+            <span className="min-w-0 flex-1">Your reply wasn't sent. The text is back in the box, nothing is lost.</span>
+            <Button variant="outline" size="sm" onClick={() => send.mutate(failed)} disabled={send.isPending}><RotateCcw /> Retry</Button>
             <button type="button" onClick={() => setFailed(null)} aria-label="Dismiss" className="rounded-chip p-1 hover:bg-rose-line/40"><X className="size-4" aria-hidden /></button>
           </div>
         )}
-        {newActivity && !noteMode && (
-          <div role="status" className="mb-3 flex items-center justify-between gap-2 rounded-panel border border-sky-line bg-sky px-3.5 py-2 text-[13px] text-sky-ink">
-            {firstName} sent a new message while you were writing. Your text is safe; read it before sending.
+        {notice === 'new' && (
+          <div role="status" className="mb-2 flex items-center justify-between gap-2 rounded-control border border-sky-line bg-sky px-3 py-2 text-[13px] text-sky-ink">
+            <span>{firstName} sent a new message while you were writing. Your text is safe; read it before sending.</span>
             <button type="button" className="font-semibold underline" onClick={() => setNewActivity(false)}>Dismiss</button>
           </div>
         )}
-        {assignedElsewhere && !noteMode && !closed && (
-          <p className="mb-3 flex items-center gap-1.5 rounded-control border border-line bg-surface-2 px-3 py-2 text-xs text-ink-2">
-            <AlertTriangle className="size-3.5 text-butter-ink" aria-hidden /> Assigned to {ticket.assigned_to!.full_name}. You can still reply; the assignment won't change.
+        {notice === 'elsewhere' && (
+          <p className="mb-2 flex items-center gap-1.5 text-xs text-ink-2">
+            <AlertTriangle className="size-3.5 shrink-0 text-butter-ink" aria-hidden /> Assigned to {ticket.assigned_to!.full_name}. You can still reply; the assignment won't change.
           </p>
         )}
-        {resolved && !noteMode && (
-          <p className="mb-3 flex flex-wrap items-center gap-2 rounded-control border border-mint-line bg-mint px-3 py-2 text-xs text-mint-ink">
-            <span className="font-medium">This ticket is resolved.</span> Sending a reply moves it back to In Progress.
+        {notice === 'resolved' && (
+          <p className="mb-2 flex flex-wrap items-center gap-2 text-xs text-mint-ink">
+            <span className="font-medium">This ticket is resolved.</span> A reply moves it back to In Progress.
             <button type="button" onClick={onReopen} className="font-semibold underline">Reopen without replying</button>
           </p>
         )}
 
-        <div className={cn('overflow-hidden rounded-panel border bg-surface shadow-panel transition-colors focus-within:outline-2 focus-within:outline-offset-1 focus-within:outline-violet', noteMode ? 'border-butter-line bg-butter/40' : usingDraft ? 'ai-border' : 'border-line-strong')}>
-          <div className="flex flex-wrap items-center gap-2 border-b border-line px-3 py-2">
+        <div
+          data-working={aiActive && (draft?.status === 'generating' || t.regenerate.isPending) ? 'true' : undefined}
+          className={cn(
+            'relative overflow-hidden rounded-panel border bg-surface shadow-panel transition-colors focus-within:outline-2 focus-within:outline-offset-1 focus-within:outline-violet',
+            aiActive ? 'ai-border ai-surface border-transparent' : noteMode ? 'border-butter-line bg-butter/40' : 'border-line-strong',
+          )}
+        >
+          {showDraft && (
+            <div className="border-b border-line">
+              <DraftBar
+                draft={draft}
+                loading={t.draft.isLoading}
+                inEditor={inEditor}
+                regenerating={t.regenerate.isPending}
+                onRegenerate={() => t.regenerate.mutate()}
+                onUse={insertDraft}
+                disabled={readOnly}
+              />
+            </div>
+          )}
+
+          <div className="flex flex-wrap items-center gap-2 px-3 pt-2">
             <SegmentedControl<ComposerMode>
               ariaLabel="Message type"
               size="sm"
               value={mode}
-              onChange={onModeChange}
+              onChange={(m) => {
+                onModeChange(m)
+                requestAnimationFrame(() => (m === 'note' ? noteRef.current : replyRef.current)?.focus())
+              }}
               options={[
-                { value: 'reply', label: `Reply to ${firstName}`, icon: Send },
-                { value: 'note', label: 'Internal note', icon: Lock },
+                { value: 'reply', label: <><span className="sm:hidden">Reply</span><span className="max-sm:hidden">Reply to {firstName}</span></>, icon: Send },
+                { value: 'note', label: <><span className="sm:hidden">Note</span><span className="max-sm:hidden">Internal note</span></>, icon: Lock },
               ]}
             />
             <span className="ml-auto hidden items-center gap-1 text-xs text-ink-3 sm:flex">
-              {noteMode ? <><Lock className="size-3" aria-hidden /> Team only. {firstName} never sees notes.</> : <>Visible to {firstName} instantly</>}
+              {noteMode ? <><Lock className="size-3" aria-hidden /> Team only. {firstName} never sees notes.</> : <>Sent to {ticket.requester.email}</>}
             </span>
           </div>
 
@@ -265,7 +284,7 @@ export function Composer({ ticket, t, mode, onModeChange, focusTick, readOnly, o
               className={field}
             />
           ) : closed ? (
-            <div className="flex flex-col items-center gap-3 px-5 py-8 text-center text-sm text-ink-3">
+            <div className="flex flex-col items-center gap-3 px-5 py-6 text-center text-sm text-ink-3">
               <p>This ticket is closed. Reopen it to reply, or switch to an internal note.</p>
               <Button variant="outline" onClick={onReopen} disabled={readOnly}><RotateCcw /> Reopen ticket</Button>
             </div>
@@ -283,13 +302,13 @@ export function Composer({ ticket, t, mode, onModeChange, focusTick, readOnly, o
             />
           )}
 
-          <div className="flex flex-wrap items-center justify-between gap-2 border-t border-line bg-surface-2 px-3 py-2.5">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-t border-line bg-surface-2 px-3 py-2">
             <div className="flex min-w-0 items-center gap-2">
               {!noteMode && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="outline" size="sm" disabled={!macros.data?.length || closed || readOnly}>
-                      <MessageSquareText /> Macros
+                      <MessageSquareText /> <span className="max-sm:sr-only">Macros</span>
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="start" className="w-64">
@@ -300,15 +319,10 @@ export function Composer({ ticket, t, mode, onModeChange, focusTick, readOnly, o
                   </DropdownMenuContent>
                 </DropdownMenu>
               )}
-              {!noteMode && !closed && draft?.status === 'ready' && draft.draft && !usingDraft && (
-                <Button variant="outline" size="sm" onClick={() => insertDraft('use')} disabled={readOnly}>
-                  <Sparkles className="text-violet" /> AI draft
-                </Button>
-              )}
               {!noteMode && usingDraft ? (
                 <p className="hidden items-center gap-1.5 text-xs font-medium text-lav-ink sm:flex">
-                  <Sparkles className="size-3.5 text-violet" aria-hidden />
-                  {editedFromDraft ? 'From AI draft, edited by you' : 'From AI draft, review before sending'}
+                  <Sparkles className="size-3.5 text-ai" aria-hidden />
+                  {editedFromDraft ? 'From AI draft, edited by you' : 'From AI draft'}
                 </p>
               ) : (
                 <p className="hidden items-center gap-1 text-xs text-ink-3 md:flex">

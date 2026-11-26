@@ -13,8 +13,9 @@ import { NewTicketPage } from '@/pages/customer/NewTicketPage'
 import { TicketDetailPage } from '@/pages/customer/TicketDetailPage'
 import { TicketsPage } from '@/pages/customer/TicketsPage'
 
-const InboxLayout = lazy(() => import('@/features/inbox/InboxLayout').then((m) => ({ default: m.InboxLayout })))
-const AnalyticsPage = lazy(() => import('@/pages/agent/AnalyticsPage').then((m) => ({ default: m.AnalyticsPage })))
+const HomePage = lazy(() => import('@/features/home/HomePage').then((m) => ({ default: m.HomePage })))
+const AgentTicketsPage = lazy(() => import('@/features/inbox/TicketsPage').then((m) => ({ default: m.TicketsPage })))
+const TicketPage = lazy(() => import('@/features/ticket/TicketPage').then((m) => ({ default: m.TicketPage })))
 const KnowledgePage = lazy(() => import('@/pages/agent/KnowledgePage').then((m) => ({ default: m.KnowledgePage })))
 const DesignSystemPage = lazy(() => import('@/pages/DesignSystemPage').then((m) => ({ default: m.DesignSystemPage })))
 const SettingsPage = lazy(() => import('@/pages/agent/SettingsPage').then((m) => ({ default: m.SettingsPage })))
@@ -51,12 +52,11 @@ export default function App() {
 
         <Route element={<RequireArea area="agent" />}>
           <Route path="/w/:slug/agent" element={<AgentLayout />}>
-            {/* one layout route for list + ticket, so selecting a ticket never remounts the list */}
-            <Route element={<InboxLayout />}>
-              <Route index element={null} />
-              <Route path="tickets/:id" element={null} />
-            </Route>
-            <Route path="analytics" element={<AnalyticsPage />} />
+            <Route index element={<HomePage />} />
+            <Route path="tickets" element={<AgentTicketsPage />} />
+            <Route path="tickets/:id" element={<TicketPage />} />
+            {/* analytics now lives on the home dashboard; keep old links and bookmarks working */}
+            <Route path="analytics" element={<Navigate to=".." replace />} />
             <Route path="knowledge" element={<KnowledgePage />} />
             <Route path="settings" element={<SettingsPage />} />
           </Route>

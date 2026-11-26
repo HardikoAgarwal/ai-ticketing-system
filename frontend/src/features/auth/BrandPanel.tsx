@@ -52,7 +52,7 @@ export function BrandPanel() {
             <AiSurface working className="p-3.5 text-ink">
               <div className="flex items-center justify-between">
                 <span className="flex items-center gap-1.5 text-[13px] font-semibold">
-                  <Sparkles className="size-3.5 text-violet" /> Suggested reply
+                  <Sparkles className="size-3.5 text-ai" /> Suggested reply
                 </span>
                 <AiChip size="sm">92%</AiChip>
               </div>

@@ -10,7 +10,7 @@ import type { StaffTicket } from '@/lib/types'
  * Keyboard cursor (J/K), multi-selection and the bulk actions (assign to me, resolve).
  * The API has no bulk endpoint, so a bulk action is one request per ticket, run in parallel; failures are counted, not hidden.
  */
-export function useInboxActions(ordered: StaffTicket[], openId: number | null) {
+export function useInboxActions(ordered: StaffTicket[]) {
   const { api } = useWorkspace()
   const qc = useQueryClient()
   const [cursorRaw, setCursor] = useState<number | null>(null)
@@ -25,12 +25,11 @@ export function useInboxActions(ordered: StaffTicket[], openId: number | null) {
   const move = useCallback(
     (delta: 1 | -1) => {
       if (!ordered.length) return
-      const from = cursor ?? openId
-      const i = from === null ? -1 : ordered.findIndex((t) => t.id === from)
+      const i = cursor === null ? -1 : ordered.findIndex((t) => t.id === cursor)
       const next = i === -1 ? (delta === 1 ? 0 : ordered.length - 1) : Math.max(0, Math.min(ordered.length - 1, i + delta))
       setCursor(ordered[next]!.id)
     },
-    [ordered, cursor, openId],
+    [ordered, cursor],
   )
 
   const toggle = useCallback((id: number) => {

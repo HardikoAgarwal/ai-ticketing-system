@@ -4,14 +4,14 @@ import { toast } from 'sonner'
 
 import { useWorkspace } from '@/auth/workspace'
 import { RelativeTime } from '@/components/common'
-import { Avatar, Chip } from '@/components/ds'
+import { Avatar, Chip, SegmentedControl } from '@/components/ds'
 import { announce } from '@/components/shell/announce'
 import { errorMessage } from '@/lib/api'
 import { formatBytes } from '@/lib/format'
 import type { Activity, Attachment, Message, StaffTicketDetail } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
-import { dayLabel } from './ticket-ui'
+import { dayLabel, type ThreadFilter } from './ticket-ui'
 
 type Item = { key: string; at: string; kind: 'message'; message: Message } | { key: string; at: string; kind: 'event'; activity: Activity }
 
@@ -99,7 +99,7 @@ function Bubble({ side, name, time, children, meta, tone, fresh, pending }: {
   return (
     <li className={cn('flex items-end gap-2.5', side === 'right' && 'flex-row-reverse', pending && 'opacity-70')} data-fresh={fresh || undefined}>
       <Avatar name={name} size="sm" className="shrink-0" />
-      <div className={cn('flex max-w-[88%] min-w-0 flex-col sm:max-w-[78%]', side === 'right' ? 'items-end' : 'items-start')}>
+      <div className={cn('flex max-w-[90%] min-w-0 flex-col sm:max-w-[82%]', side === 'right' ? 'items-end' : 'items-start')}>
         <div className={cn('mb-1 flex flex-wrap items-center gap-2 px-1 text-xs', side === 'right' && 'flex-row-reverse')}>
           <span className="font-semibold text-ink">{name}</span>
           {meta}
@@ -137,10 +137,9 @@ function NoteRow({ note, fresh }: { note: Message; fresh?: boolean }) {
 }
 
 /** The message list: customer, agent and internal-note rows, system events inline, date dividers, live arrival handling. */
-export function Thread({ ticket, active, meName }: { ticket: StaffTicketDetail; active: boolean; meName?: string }) {
+export function Thread({ ticket, meName, filter, onFilterChange }: { ticket: StaffTicketDetail; meName?: string; filter: ThreadFilter; onFilterChange: (f: ThreadFilter) => void }) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const atBottom = useRef(true)
-  const savedTop = useRef<number | null>(null)
   const seen = useRef<Set<number> | null>(null)
   const [unseen, setUnseen] = useState(0)
   const [fresh, setFresh] = useState<Set<number>>(new Set())
@@ -152,26 +151,23 @@ export function Thread({ ticket, active, meName }: { ticket: StaffTicketDetail; 
   const name = ticket.requester_profile.name
 
   const items = useMemo<Item[]>(() => {
+    const shown = body.filter((m) => (filter === 'notes' ? m.is_internal : filter === 'messages' ? !m.is_internal : true))
     const out: Item[] = [
-      ...body.map((m): Item => ({ key: `m${m.id}`, at: m.created_at, kind: 'message', message: m })),
-      ...ticket.activities.map((a): Item => ({ key: `a${a.id}`, at: a.created_at, kind: 'event', activity: a })),
+      ...shown.map((m): Item => ({ key: `m${m.id}`, at: m.created_at, kind: 'message', message: m })),
+      ...(filter === 'all' ? ticket.activities.map((a): Item => ({ key: `a${a.id}`, at: a.created_at, kind: 'event', activity: a })) : []),
     ]
     return out.sort((x, y) => Date.parse(x.at) - Date.parse(y.at))
-  }, [body, ticket.activities])
+  }, [body, ticket.activities, filter])
 
   const toBottom = useCallback((smooth: boolean) => {
     const el = scrollRef.current
     if (el) el.scrollTo({ top: el.scrollHeight, behavior: smooth ? 'smooth' : 'auto' })
   }, [])
 
-  // Restore position each time the tab is shown (hidden panels lose their scroll offset).
+  // Land on the latest message when the ticket opens.
   useLayoutEffect(() => {
-    if (!active) return
-    const el = scrollRef.current
-    if (!el) return
-    if (savedTop.current === null || atBottom.current) toBottom(false)
-    else el.scrollTop = savedTop.current
-  }, [active, toBottom])
+    toBottom(false)
+  }, [toBottom])
 
   // Arrivals: stick to the bottom when already there, otherwise offer a jump pill. Announce for screen readers.
   const ids = useMemo(() => body.filter((m) => m.id > 0).map((m) => m.id), [body])
@@ -190,7 +186,7 @@ export function Thread({ ticket, active, meName }: { ticket: StaffTicketDetail; 
       setFresh((f) => new Set([...f, ...next]))
       setTimeout(() => setFresh((f) => new Set([...f].filter((x) => !next.has(x)))), 3500)
     }
-    if (atBottom.current) requestAnimationFrame(() => toBottom(true))
+    if (atBottom.current || added.some((m) => m.sender_name === meName)) requestAnimationFrame(() => toBottom(true))
     else if (others.length) setUnseen((n) => n + others.length)
   }, [ids, body, meName, toBottom])
 
@@ -205,7 +201,6 @@ export function Thread({ ticket, active, meName }: { ticket: StaffTicketDetail; 
     if (!el) return
     const bottom = el.scrollHeight - el.scrollTop - el.clientHeight < 80
     atBottom.current = bottom
-    savedTop.current = el.scrollTop
     if (bottom) setUnseen(0)
   }
 
@@ -218,15 +213,37 @@ export function Thread({ ticket, active, meName }: { ticket: StaffTicketDetail; 
   }, [items, ticket.created_at])
   const noReplies = body.every((m) => m.is_internal || m.sender_is_requester)
 
+  const noteCount = body.filter((m) => m.is_internal).length
+  const messageCount = body.filter((m) => !m.is_internal).length + 1
+
   return (
-    <div className="relative min-h-[14rem] flex-1">
-      <div ref={scrollRef} onScroll={onScroll} tabIndex={0} role="log" aria-label="Conversation messages" aria-live="off" className="scroll-quiet h-full overflow-y-auto bg-surface-2 px-4 py-5 sm:px-6 [scroll-padding-bottom:1rem]">
+    <div className="flex min-h-0 flex-1 flex-col">
+      <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-line bg-surface px-3 py-2 sm:px-5">
+        <h2 className="text-sm font-semibold text-ink max-sm:hidden">Conversation <span className="font-normal text-ink-3">· {messageCount} {messageCount === 1 ? 'message' : 'messages'}</span></h2>
+        <SegmentedControl<ThreadFilter>
+          ariaLabel="Show in conversation"
+          size="sm"
+          value={filter}
+          onChange={onFilterChange}
+          options={[
+            { value: 'all', label: 'Everything' },
+            { value: 'messages', label: 'Messages' },
+            { value: 'notes', label: 'Team notes', count: noteCount },
+          ]}
+        />
+      </div>
+      <div className="relative min-h-0 flex-1">
+      <div ref={scrollRef} onScroll={onScroll} tabIndex={0} role="log" aria-label="Conversation messages" aria-live="off" className="scroll-quiet h-full overflow-y-auto bg-surface-2 px-3 py-5 sm:px-6 [scroll-padding-bottom:1rem]">
         <ol className="mx-auto flex max-w-3xl flex-col gap-5">
-          <DayDivider label={dayLabel(ticket.created_at)} />
-          <Bubble side="left" name={name} time={ticket.created_at} tone="customer">
-            {ticket.description}
-            <Attachments ticketId={ticket.id} attachments={ticket.attachments} />
-          </Bubble>
+          {filter !== 'notes' && (
+            <>
+              <DayDivider label={dayLabel(ticket.created_at)} />
+              <Bubble side="left" name={name} time={ticket.created_at} tone="customer">
+                {ticket.description}
+                <Attachments ticketId={ticket.id} attachments={ticket.attachments} />
+              </Bubble>
+            </>
+          )}
           {rows.map(({ it, divider }) => {
             return (
               <Fragment key={it.key}>
@@ -243,7 +260,7 @@ export function Thread({ ticket, active, meName }: { ticket: StaffTicketDetail; 
                     time={it.message.created_at}
                     fresh={fresh.has(it.message.id)}
                     pending={it.message.id < 0}
-                    meta={it.message.ai_draft_id ? <span className="inline-flex items-center gap-1 font-semibold text-lav-ink"><Sparkles className="size-3 text-violet" aria-hidden />{it.message.ai_draft_edited ? 'AI draft, edited' : 'AI draft'}</span> : null}
+                    meta={it.message.ai_draft_id ? <span className="inline-flex items-center gap-1 font-semibold text-lav-ink"><Sparkles className="size-3 text-ai" aria-hidden />{it.message.ai_draft_edited ? 'AI draft, edited' : 'AI draft'}</span> : null}
                   >
                     {it.message.body}
                   </Bubble>
@@ -251,7 +268,10 @@ export function Thread({ ticket, active, meName }: { ticket: StaffTicketDetail; 
               </Fragment>
             )
           })}
-          {noReplies && ticket.status !== 'CLOSED' && (
+          {filter === 'notes' && noteCount === 0 && (
+            <li className="rounded-control border border-dashed border-line-strong px-4 py-3 text-center text-[13px] text-ink-3">No team notes yet. Notes are only visible to your team.</li>
+          )}
+          {filter !== 'notes' && noReplies && ticket.status !== 'CLOSED' && (
             <li className="rounded-control border border-dashed border-line-strong px-4 py-3 text-center text-[13px] text-ink-3">
               No reply yet. The first reply stops the response clock.
             </li>
@@ -270,6 +290,7 @@ export function Thread({ ticket, active, meName }: { ticket: StaffTicketDetail; 
           <ArrowDown className="size-3.5" aria-hidden /> {unseen} new {unseen === 1 ? 'message' : 'messages'}
         </button>
       )}
+      </div>
     </div>
   )
 }

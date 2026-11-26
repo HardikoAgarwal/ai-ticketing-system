@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { BarChart3, BookOpen, Inbox, Moon, Monitor, Settings, Sun, Keyboard } from 'lucide-react'
+import { BookOpen, Inbox, Keyboard, LayoutDashboard, Monitor, Moon, Settings, Sun } from 'lucide-react'
 import { Suspense, useMemo } from 'react'
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 
@@ -57,8 +57,9 @@ function Frame() {
 
   const items = useMemo<DockItem[]>(
     () => [
-      { to: base, label: 'Inbox', icon: Inbox, end: true, also: [`${base}/tickets`], count: stats ? stats.open + stats.in_progress : undefined },
-      { to: `${base}/analytics`, label: 'Analytics', icon: BarChart3 },
+      { to: base, label: 'Home', icon: LayoutDashboard, end: true },
+      // active on the list and on /tickets/:id; the badge is the needs-attention count
+      { to: `${base}/tickets`, label: 'Tickets', icon: Inbox, count: stats ? stats.open + stats.in_progress : undefined },
       { to: `${base}/knowledge`, label: 'Knowledge', icon: BookOpen },
       { to: `${base}/settings`, label: manager ? 'Settings' : 'Team', icon: Settings },
     ],
@@ -67,9 +68,9 @@ function Frame() {
 
   const commands = useMemo<Command[]>(
     () => [
-      { id: 'go.inbox', title: 'Go to Inbox', group: 'Navigate', icon: Inbox, shortcut: 'g i', keywords: ['tickets', 'queue'], perform: () => navigate(base) },
-      { id: 'go.mine', title: 'Show tickets assigned to me', group: 'Navigate', icon: Inbox, keywords: ['mine', 'assigned'], perform: () => navigate(`${base}?view=mine`) },
-      { id: 'go.analytics', title: 'Go to Analytics', group: 'Navigate', icon: BarChart3, shortcut: 'g a', keywords: ['stats', 'reports'], perform: () => navigate(`${base}/analytics`) },
+      { id: 'go.home', title: 'Go to Home', group: 'Navigate', icon: LayoutDashboard, shortcut: 'g h', keywords: ['dashboard', 'overview', 'analytics', 'stats', 'reports'], perform: () => navigate(base) },
+      { id: 'go.tickets', title: 'Go to Tickets', group: 'Navigate', icon: Inbox, shortcut: 'g t', keywords: ['inbox', 'queue', 'list'], perform: () => navigate(`${base}/tickets`) },
+      { id: 'go.mine', title: 'Show tickets assigned to me', group: 'Navigate', icon: Inbox, keywords: ['mine', 'assigned'], perform: () => navigate(`${base}/tickets?view=mine`) },
       { id: 'go.kb', title: 'Go to Knowledge base', group: 'Navigate', icon: BookOpen, shortcut: 'g k', keywords: ['articles', 'kb'], perform: () => navigate(`${base}/knowledge`) },
       { id: 'go.settings', title: manager ? 'Go to Settings' : 'Go to Team', group: 'Navigate', icon: Settings, shortcut: 'g s', keywords: ['team', 'sla', 'categories'], perform: () => navigate(`${base}/settings`) },
       { id: 'theme.light', title: 'Theme: Light', group: 'Appearance', icon: Sun, keywords: ['appearance'], perform: () => setChoice('light') },
@@ -80,8 +81,8 @@ function Frame() {
     [base, manager, navigate, setChoice],
   )
   useRegisterCommands(commands)
-  useShortcut('g i', () => navigate(base), { description: 'Go to Inbox', group: 'Navigate' })
-  useShortcut('g a', () => navigate(`${base}/analytics`), { description: 'Go to Analytics', group: 'Navigate' })
+  useShortcut('g h', () => navigate(base), { description: 'Go to Home', group: 'Navigate' })
+  useShortcut('g t', () => navigate(`${base}/tickets`), { description: 'Go to Tickets', group: 'Navigate' })
   useShortcut('g k', () => navigate(`${base}/knowledge`), { description: 'Go to Knowledge base', group: 'Navigate' })
   useShortcut('g s', () => navigate(`${base}/settings`), { description: 'Go to Settings', group: 'Navigate' })
 
@@ -113,7 +114,8 @@ function Frame() {
 
 /**
  * Agent shell: dock (left) + command bar (top) + content. Pages render in <Outlet/>.
- * Default content is a padded, scrolling container; a page can take over the full area by calling `useShellBleed()`.
+ * Default content is a padded, scrolling container; a page that scrolls its own regions (the ticket list, the ticket page)
+ * takes over the full area by calling `useShellBleed()`.
  */
 export function AgentLayout() {
   return (

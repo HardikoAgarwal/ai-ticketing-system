@@ -2,14 +2,14 @@ import { format, isToday, isYesterday, parseISO } from 'date-fns'
 
 import type { ChipTone } from '@/components/ds'
 import { slaLabel } from '@/components/badges'
-import type { Sentiment, StaffTicketDetail, TicketPriority, TicketStatus } from '@/lib/types'
+import type { DraftResponse, Sentiment, StaffTicketDetail, TicketPriority, TicketStatus } from '@/lib/types'
 
 export const STATUS_TONE: Record<TicketStatus, ChipTone> = { OPEN: 'blue', IN_PROGRESS: 'violet', RESOLVED: 'green', CLOSED: 'slate' }
 export const PRIORITY_TONE: Record<TicketPriority, ChipTone> = { CRITICAL: 'red', HIGH: 'peach', MEDIUM: 'blue', LOW: 'slate' }
 export const SENTIMENT_TONE: Record<Sentiment, ChipTone> = { NEGATIVE: 'red', NEUTRAL: 'slate', POSITIVE: 'green' }
 
-export const TABS = ['conversation', 'details', 'similar', 'activity', 'notes'] as const
-export type TicketTab = (typeof TABS)[number]
+/** Which part of the conversation the thread shows. */
+export type ThreadFilter = 'all' | 'messages' | 'notes'
 
 export const isOpenStatus = (s: TicketStatus) => s === 'OPEN' || s === 'IN_PROGRESS'
 
@@ -39,14 +39,26 @@ export function slaView(t: StaffTicketDetail) {
   return { answered, waiting, tone, text }
 }
 
+/** True when the customer spoke last (or nobody has replied yet): the ball is in our court. */
+export function waitingOnUs(t: Pick<StaffTicketDetail, 'messages'>): boolean {
+  const last = [...t.messages].reverse().find((m) => !m.is_internal)
+  return !last || last.sender_is_requester
+}
+
 /** One practical suggestion derived from the ticket state. */
 export function nextAction(t: StaffTicketDetail, draftReady: boolean, meId?: number): { text: string; tone: ChipTone } {
   if (t.status === 'RESOLVED') return { text: 'Waiting for the customer to confirm the fix. Reopen if they reply.', tone: 'green' }
   if (t.status === 'CLOSED') return { text: 'This ticket is closed. Reopen it to reply.', tone: 'slate' }
   if (t.sla_state === 'overdue' && !t.first_response_at) return { text: 'The first-response target has passed. Reply now.', tone: 'red' }
   if (!t.assigned_to) return { text: 'Nobody owns this yet. Take it, then review the suggested reply.', tone: 'amber' }
+  if (!waitingOnUs(t)) return { text: 'You replied. Waiting for the customer. You will be notified when they answer.', tone: 'green' }
   if (t.unread_kind === 'requester_reply') return { text: 'The customer wrote back. Read their message and answer.', tone: 'amber' }
   if (draftReady && t.assigned_to.id === meId) return { text: 'An AI draft is ready. Check the facts, then send.', tone: 'violet' }
   if (draftReady) return { text: 'An AI draft is ready for whoever picks this up.', tone: 'slate' }
   return { text: 'Reply to the customer or leave an internal note for the team.', tone: 'slate' }
+}
+
+/** True when the draft bar will draw something, so the composer can give the whole box the aurora treatment. */
+export function draftBarVisible(draft: DraftResponse | undefined, loading: boolean) {
+  return !loading && !!draft && draft.status !== 'disabled'
 }

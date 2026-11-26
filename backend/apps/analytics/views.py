@@ -119,6 +119,14 @@ class AnalyticsSummaryView(WorkspaceViewMixin, APIView):
 
         csat = tickets.filter(csat_score__isnull=False).aggregate(avg=Avg("csat_score"), n=Count("id"))
 
+        # The period of the same length just before this one, so the UI can show "vs previous" deltas.
+        prev_start = since - timedelta(days=days)
+        prev = all_tickets.filter(created_at__gte=prev_start, created_at__lt=since)
+        prev_stats = prev.aggregate(
+            first_response=Avg(F("first_response_at") - F("created_at"), filter=Q(first_response_at__isnull=False)),
+            csat=Avg("csat_score"),
+        )
+
         return Response(
             {
                 "range_days": days,
@@ -126,6 +134,12 @@ class AnalyticsSummaryView(WorkspaceViewMixin, APIView):
                     "created": tickets.count(),
                     "resolved": tickets.filter(status__in=[TicketStatus.RESOLVED, TicketStatus.CLOSED]).count(),
                     "open_now": all_tickets.filter(status__in=Ticket.ACTIVE_STATUSES).count(),
+                },
+                "previous": {
+                    "created": prev.count(),
+                    "resolved": all_tickets.filter(resolved_at__gte=prev_start, resolved_at__lt=since).count(),
+                    "avg_first_response_minutes": _minutes(prev_stats["first_response"]),
+                    "csat_average": round(prev_stats["csat"], 2) if prev_stats["csat"] else None,
                 },
                 "avg_first_response_minutes": _minutes(durations["first_response"]),
                 "avg_resolution_minutes": _minutes(durations["resolution"]),

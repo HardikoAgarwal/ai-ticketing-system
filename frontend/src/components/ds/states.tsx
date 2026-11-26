@@ -52,7 +52,7 @@ export function EmptyState({ icon: Icon, title, description, action, tone = 'pla
 }) {
   const body = (
     <div className="flex flex-col items-center px-6 py-12 text-center">
-      <span className={cn('mb-4 flex size-12 items-center justify-center rounded-panel', tone === 'ai' ? 'bg-lav text-violet' : 'bg-sunken text-ink-2')}>
+      <span className={cn('mb-4 flex size-12 items-center justify-center rounded-panel', tone === 'ai' ? 'bg-lav text-ai' : 'bg-sunken text-ink-2')}>
         <Icon className="size-5" aria-hidden />
       </span>
       <p className="text-base font-semibold tracking-tight text-ink">{title}</p>

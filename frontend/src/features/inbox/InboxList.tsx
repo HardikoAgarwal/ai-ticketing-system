@@ -7,7 +7,7 @@ import { EmptyState, ErrorState } from '@/components/ds'
 import type { StaffTicket } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
-import { TicketRow, TicketRowSkeleton } from './TicketRow'
+import { GRID, TicketRow, TicketRowSkeleton } from './TicketRow'
 import type { Group } from './useInbox'
 
 export interface InboxListProps {
@@ -21,9 +21,8 @@ export interface InboxListProps {
   fetchingNext: boolean
   onRetry: () => void
   onLoadMore: () => void
-  baseUrl: string
-  search: string
-  openId: number | null
+  /** Base path of the ticket pages, e.g. /w/acme/agent/tickets */
+  ticketsPath: string
   cursor: number | null
   selected: Set<number>
   fresh: Set<number>
@@ -40,6 +39,9 @@ export interface InboxListProps {
   onClearSelection: () => void
 }
 
+const HEAD = 'text-[11px] font-semibold tracking-[0.08em] text-ink-3 uppercase'
+
+/** The full-width ticket list: a column header (lg+), urgency groups with sticky headers, bulk bar, infinite scroll. */
 export function InboxList(p: InboxListProps) {
   const scroller = useRef<HTMLDivElement>(null)
   const sentinel = useRef<HTMLDivElement>(null)
@@ -63,86 +65,105 @@ export function InboxList(p: InboxListProps) {
 
   const selecting = p.selected.size > 0
   const allChecked = p.ordered.length > 0 && p.selected.size === p.ordered.length
+  const selectAll = (
+    <Checkbox
+      checked={allChecked ? true : selecting ? 'indeterminate' : false}
+      onCheckedChange={(v) => p.onSelectAll(v === true)}
+      aria-label="Select all loaded tickets"
+      disabled={!p.ordered.length}
+    />
+  )
 
   return (
     <div className="relative flex min-h-0 flex-1 flex-col">
-      <div className="flex items-center gap-2.5 px-4 pb-1.5 text-xs text-ink-3" aria-live="polite">
-        <Checkbox
-          checked={allChecked ? true : selecting ? 'indeterminate' : false}
-          onCheckedChange={(v) => p.onSelectAll(v === true)}
-          aria-label="Select all loaded tickets"
-          disabled={!p.ordered.length}
-        />
-        <span>
-          {p.loading ? 'Loading…' : (
+      <div ref={scroller} className="scroll-quiet min-h-0 flex-1 overflow-y-auto pb-28" aria-busy={p.fetching}>
+        {/* column header: sticky, lg+ only (below lg the rows are cards) */}
+        <div className="sticky top-0 z-20 hidden h-9 border-b border-line bg-canvas px-3 lg:block">
+          <div className={cn('h-full', GRID)}>
+            <span className="flex items-center">{selectAll}</span>
+            <span className={HEAD}>
+              Ticket
+              {p.fetching && !p.loading && <Loader2 className="ml-2 inline size-3 animate-spin text-ink-3 motion-reduce:animate-none" aria-label="Refreshing" />}
+            </span>
+            <span className={HEAD}>Status</span>
+            <span className={HEAD}>Priority</span>
+            <span className={HEAD}>Customer</span>
+            <span className={cn(HEAD, 'hidden xl:block')}>Category</span>
+            <span className={cn(HEAD, 'hidden xl:block')}>Owner</span>
+            <span className={cn(HEAD, 'text-right')}>Updated</span>
+          </div>
+        </div>
+        <div className="flex items-center gap-2.5 px-3 py-2 text-xs text-ink-3 lg:hidden" aria-live="polite">
+          {selectAll}
+          <span>
+            {p.loading ? 'Loading…' : (
+              <>
+                <span className="font-medium text-ink-2 tabular-nums">{p.ordered.length}</span>
+                {p.total > p.ordered.length ? <> of <span className="tabular-nums">{p.total}</span></> : null} ticket{p.total === 1 ? '' : 's'}
+              </>
+            )}
+          </span>
+        </div>
+
+        <div className="px-2">
+          {p.loading ? (
+            <div className="space-y-1 pt-1">
+              {Array.from({ length: 8 }).map((_, i) => <TicketRowSkeleton key={i} compact={p.compact} />)}
+            </div>
+          ) : p.error ? (
+            <ErrorState error={p.error} onRetry={p.onRetry} className="m-2" />
+          ) : p.ordered.length === 0 ? (
+            <EmptyState
+              icon={p.filtered ? SearchX : Inbox}
+              title={p.filtered ? 'No tickets match' : p.view === 'mine' ? 'Nothing assigned to you' : 'Inbox zero'}
+              description={p.filtered ? 'Try removing a filter or searching for something else.' : 'New tickets appear here the moment they arrive.'}
+              action={p.filtered ? <Button variant="outline" size="sm" onClick={p.onClearFilters}>Clear filters</Button> : undefined}
+            />
+          ) : (
             <>
-              <span className="font-medium text-ink-2 tabular-nums">{p.ordered.length}</span>
-              {p.total > p.ordered.length ? <> of <span className="tabular-nums">{p.total}</span></> : null} ticket{p.total === 1 ? '' : 's'}
+              {p.groups.map((g) => (
+                <Fragment key={g.key}>
+                  {g.label && (
+                    <div className="sticky top-0 z-10 -mx-2 flex items-center gap-2 bg-canvas/95 px-5 py-2 backdrop-blur lg:top-9">
+                      <span className={cn('size-2 rounded-full', g.dot)} aria-hidden />
+                      <h2 className="text-xs font-semibold tracking-wide text-ink-2 uppercase">{g.label}</h2>
+                      <span className="text-xs text-ink-3 tabular-nums">{g.items.length}</span>
+                    </div>
+                  )}
+                  <ul aria-label={g.label || 'Tickets'} className="space-y-0.5">
+                    {g.items.map((t) => (
+                      <TicketRow
+                        key={t.id}
+                        ticket={t}
+                        to={`${p.ticketsPath}/${t.id}`}
+                        cursor={p.cursor === t.id}
+                        checked={p.selected.has(t.id)}
+                        selecting={selecting}
+                        fresh={p.fresh.has(t.id)}
+                        compact={p.compact}
+                        meId={p.meId}
+                        onToggle={p.onToggle}
+                      />
+                    ))}
+                  </ul>
+                </Fragment>
+              ))}
+              <div ref={sentinel} className="flex justify-center py-4">
+                {p.hasNext ? (
+                  <Button variant="outline" size="sm" onClick={p.onLoadMore} disabled={p.fetchingNext}>
+                    {p.fetchingNext && <Loader2 className="animate-spin" />} Load more
+                  </Button>
+                ) : (
+                  <span className="text-xs text-ink-3">You've reached the end</span>
+                )}
+              </div>
             </>
           )}
-        </span>
-        {p.fetching && !p.loading && <Loader2 className="size-3.5 animate-spin text-ink-3 motion-reduce:animate-none" aria-label="Refreshing" />}
-      </div>
-
-      <div ref={scroller} className="scroll-quiet min-h-0 flex-1 overflow-y-auto px-2 pb-24" aria-busy={p.fetching}>
-        {p.loading ? (
-          <div className="space-y-1">
-            {Array.from({ length: 7 }).map((_, i) => <TicketRowSkeleton key={i} compact={p.compact} />)}
-          </div>
-        ) : p.error ? (
-          <ErrorState error={p.error} onRetry={p.onRetry} className="m-2" />
-        ) : p.ordered.length === 0 ? (
-          <EmptyState
-            icon={p.filtered ? SearchX : Inbox}
-            title={p.filtered ? 'No tickets match' : p.view === 'mine' ? 'Nothing assigned to you' : 'Inbox zero'}
-            description={p.filtered ? 'Try removing a filter or searching for something else.' : 'New tickets appear here the moment they arrive.'}
-            action={p.filtered ? <Button variant="outline" size="sm" onClick={p.onClearFilters}>Clear filters</Button> : undefined}
-          />
-        ) : (
-          <>
-            {p.groups.map((g) => (
-              <Fragment key={g.key}>
-                {g.label && (
-                  <div className="sticky top-0 z-10 -mx-2 flex items-center gap-2 bg-surface/95 px-5 py-1.5 backdrop-blur">
-                    <span className={cn('size-2 rounded-full', g.dot)} aria-hidden />
-                    <h3 className="text-xs font-semibold tracking-wide text-ink-2 uppercase">{g.label}</h3>
-                    <span className="text-xs text-ink-3 tabular-nums">{g.items.length}</span>
-                  </div>
-                )}
-                <ul aria-label={g.label || 'Tickets'} className="space-y-0.5">
-                  {g.items.map((t) => (
-                    <TicketRow
-                      key={t.id}
-                      ticket={t}
-                      to={`${p.baseUrl}/tickets/${t.id}${p.search}`}
-                      open={p.openId === t.id}
-                      cursor={p.cursor === t.id}
-                      checked={p.selected.has(t.id)}
-                      selecting={selecting}
-                      fresh={p.fresh.has(t.id)}
-                      compact={p.compact}
-                      meId={p.meId}
-                      onToggle={p.onToggle}
-                    />
-                  ))}
-                </ul>
-              </Fragment>
-            ))}
-            <div ref={sentinel} className="flex justify-center py-3">
-              {p.hasNext ? (
-                <Button variant="outline" size="sm" onClick={p.onLoadMore} disabled={p.fetchingNext}>
-                  {p.fetchingNext && <Loader2 className="animate-spin" />} Load more
-                </Button>
-              ) : (
-                <span className="text-xs text-ink-3">You've reached the end</span>
-              )}
-            </div>
-          </>
-        )}
+        </div>
       </div>
 
       {selecting && (
-        <div role="region" aria-label="Bulk actions" className="absolute inset-x-3 bottom-3 z-20 flex items-center gap-2 rounded-panel border border-line-strong bg-ink px-3 py-2 text-canvas shadow-pop">
+        <div role="region" aria-label="Bulk actions" className="absolute inset-x-3 bottom-4 z-30 mx-auto flex max-w-2xl items-center gap-2 rounded-panel border border-line-strong bg-ink px-3 py-2 text-canvas shadow-pop md:bottom-6">
           <span className="text-sm font-medium whitespace-nowrap tabular-nums">{p.selected.size} selected</span>
           <span className="flex-1" />
           <Button size="sm" variant="secondary" className="whitespace-nowrap" onClick={p.onBulkAssign} disabled={p.busy}>

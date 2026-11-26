@@ -1,4 +1,4 @@
-import { Search, X } from 'lucide-react'
+import { Layers, Search, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 
 import { Kbd, SegmentedControl } from '@/components/ds'
@@ -35,10 +35,10 @@ function SearchBox({ value, onCommit }: { value: string; onCommit: (v: string) =
     return () => clearTimeout(t)
   }, [text, onCommit])
 
-  useShortcut('/', () => ref.current?.focus(), { description: 'Search the inbox', group: 'Inbox' })
+  useShortcut('/', () => ref.current?.focus(), { description: 'Search tickets', group: 'Inbox' })
 
   return (
-    <div className="relative min-w-0 flex-1">
+    <div className="relative min-w-0 basis-full sm:basis-auto sm:max-w-sm sm:flex-1">
       <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-ink-3" aria-hidden />
       <input
         ref={ref}
@@ -74,7 +74,7 @@ function SearchBox({ value, onCommit }: { value: string; onCommit: (v: string) =
   )
 }
 
-export function InboxToolbar({ view, stats, search, params, specs, sort, density, onView, onFilter, onSearch, onSort, onDensity, onResetFilters }: {
+export function InboxToolbar({ view, stats, search, params, specs, sort, density, grouped, onView, onFilter, onSearch, onSort, onDensity, onGroup, onResetFilters }: {
   view: ViewKey
   stats?: QueueStats
   search: string
@@ -82,33 +82,47 @@ export function InboxToolbar({ view, stats, search, params, specs, sort, density
   specs: FilterSpec[]
   sort: string
   density: 'comfortable' | 'compact'
+  grouped: boolean
   onView: (v: ViewKey) => void
   onFilter: (key: string, value: string | null) => void
   onSearch: (v: string) => void
   onSort: (v: string) => void
   onDensity: (v: 'comfortable' | 'compact') => void
+  onGroup: (on: boolean) => void
   onResetFilters: () => void
 }) {
   return (
-    <div className="space-y-2.5">
-      <div className="flex items-center gap-2">
-        <SearchBox value={search} onCommit={onSearch} />
-        <FilterPopover specs={specs} params={params} onChange={onFilter} onReset={onResetFilters} />
-        <DisplayPopover sort={sort} density={density} onSort={onSort} onDensity={onDensity} />
+    <div className="flex flex-wrap items-center gap-2">
+      <div className="scroll-quiet max-w-full overflow-x-auto">
+        <SegmentedControl<ViewKey>
+          ariaLabel="Ticket view"
+          size="sm"
+          value={view}
+          onChange={onView}
+          options={[
+            { value: 'attention', label: 'Attention', count: stats ? stats.open + stats.in_progress : undefined },
+            { value: 'mine', label: 'Mine', count: stats?.mine },
+            { value: 'unassigned', label: 'Unassigned', count: stats?.unassigned },
+            { value: 'all', label: 'All' },
+          ]}
+        />
       </div>
-      <SegmentedControl<ViewKey>
-        ariaLabel="Inbox view"
-        fullWidth
-        size="sm"
-        value={view}
-        onChange={onView}
-        options={[
-          { value: 'attention', label: 'Attention', count: stats ? stats.open + stats.in_progress : undefined },
-          { value: 'mine', label: 'Mine', count: stats?.mine },
-          { value: 'unassigned', label: 'Unassigned', count: stats?.unassigned },
-          { value: 'all', label: 'All' },
-        ]}
-      />
+      <SearchBox value={search} onCommit={onSearch} />
+      <FilterPopover specs={specs} params={params} onChange={onFilter} onReset={onResetFilters} />
+      <button
+        type="button"
+        aria-pressed={grouped}
+        onClick={() => onGroup(!grouped)}
+        className={cn(
+          'inline-flex h-9 shrink-0 items-center gap-1.5 rounded-control border px-3 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-violet focus-visible:outline-none',
+          grouped ? 'border-violet bg-violet-soft text-ink' : 'border-line bg-surface text-ink-2 hover:bg-surface-2',
+        )}
+      >
+        <Layers className="size-4" aria-hidden />
+        <span className="hidden sm:inline">Group by urgency</span>
+        <span className="sm:hidden">Group</span>
+      </button>
+      <DisplayPopover sort={sort} density={density} onSort={onSort} onDensity={onDensity} />
     </div>
   )
 }

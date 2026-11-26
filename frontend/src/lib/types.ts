@@ -226,6 +226,8 @@ export interface AIUsage {
 export interface Analytics {
   range_days: number
   totals: { created: number; resolved: number; open_now: number }
+  /** The period of the same length just before this one, for "vs previous" deltas. */
+  previous: { created: number; resolved: number; avg_first_response_minutes: number | null; csat_average: number | null }
   avg_first_response_minutes: number | null
   avg_resolution_minutes: number | null
   sla: { met: number; breached: number; overdue: number; breach_rate: number | null }

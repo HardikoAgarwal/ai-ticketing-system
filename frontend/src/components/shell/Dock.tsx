@@ -15,10 +15,8 @@ export interface DockItem {
   to: string
   label: string
   icon: LucideIcon
-  /** Exact match only (no sub-routes), e.g. the inbox root. */
+  /** Exact match only (no sub-routes), e.g. Home, so it is not active on every page below it. */
   end?: boolean
-  /** Extra path prefixes that also mark this item active (the inbox stays active on /tickets/:id). */
-  also?: string[]
   count?: number
 }
 
@@ -26,7 +24,6 @@ export interface DockItem {
 export function isItemActive(item: DockItem, pathname: string) {
   const path = pathname.replace(/\/+$/, '') || '/'
   if (path === item.to) return true
-  if (item.also?.some((p) => path === p || path.startsWith(`${p}/`))) return true
   return !item.end && path.startsWith(`${item.to}/`)
 }
 
