@@ -14,7 +14,7 @@ import type { TicketRowProps } from './TicketRow'
 /** A decorative barcode derived from the reference, for the ticket-stub look. */
 function Barcode({ code }: { code: string }) {
   return (
-    <span aria-hidden className="flex h-9 items-stretch opacity-90">
+    <span aria-hidden className="flex h-7 items-stretch opacity-90">
       {Array.from({ length: 26 }, (_, i) => {
         const c = code.charCodeAt(i % code.length) + i * 7
         return <span key={i} style={{ width: 1 + (c % 3), marginRight: 1 + ((c >> 2) % 3), background: 'currentColor' }} />
@@ -44,9 +44,9 @@ export const TicketCard = forwardRef<HTMLLIElement, TicketRowProps>(function Tic
   const main: CSSProperties | undefined = checked ? { background: 'color-mix(in srgb, var(--violet) 7%, var(--surface))' } : undefined
   return (
     <li ref={ref} data-ticket-id={ticket.id} className="group relative">
-      <div className={cn('relative rounded-panel [--stub-w:21rem]', cursor && 'ring-2 ring-violet ring-offset-2 ring-offset-canvas', fresh && 'ring-2 ring-ai ring-offset-2 ring-offset-canvas motion-safe:animate-pulse')}>
+      <div className={cn('relative [--stub-w:21rem]', cursor && 'ring-2 ring-violet ring-offset-2 ring-offset-canvas', fresh && 'ring-2 ring-ai ring-offset-2 ring-offset-canvas motion-safe:animate-pulse')}>
         <div className="drop-shadow-[0_10px_14px_rgb(60_40_20/0.10)]">
-          <article className={cn('ticket-notch overflow-hidden rounded-panel border-2 bg-surface transition-colors', checked ? 'border-violet' : 'border-line')}>
+          <article className={cn('ticket-notch overflow-hidden border-2 bg-surface transition-colors', checked ? 'border-violet' : 'border-line')}>
             <Link to={to} aria-label={`${ticket.reference}: ${ticket.subject}`} className="grid outline-none focus-visible:ring-2 focus-visible:ring-violet focus-visible:ring-inset lg:grid-cols-[minmax(0,1fr)_var(--stub-w)]">
               <span className="flex min-w-0 flex-col gap-4 p-5 pt-6 pl-9 sm:pl-10" style={main}>
                 <span className="block">
@@ -66,14 +66,19 @@ export const TicketCard = forwardRef<HTMLLIElement, TicketRowProps>(function Tic
               </span>
 
               <span className="flex flex-col justify-between gap-4 border-t-2 border-dashed p-5 lg:border-t-0 lg:border-l-2" style={stub}>
-                <span className="flex items-end justify-between gap-3">
+                <span className="flex items-start justify-between gap-3">
                   <span className="block">
                     <span className={LABEL}>Ticket</span>
                     <span className="block font-mono text-xl leading-6 font-bold tracking-tight text-ink">{ticket.reference}</span>
+                    <span className="mt-2 block" style={{ color: fill(band) }}>
+                      <Barcode code={ticket.reference} />
+                    </span>
                   </span>
-                  <span style={{ color: fill(band) }}>
-                    <Barcode code={ticket.reference} />
-                  </span>
+                  {prio && !closed && (
+                    <SolidChip hue={PRIORITY_HUE[ticket.priority] ?? 'slate'} icon={prio.icon} size="lg">
+                      {prio.label}
+                    </SolidChip>
+                  )}
                 </span>
                 <span className="grid grid-cols-2 gap-x-4">
                   <span className="block min-w-0">
@@ -114,11 +119,6 @@ export const TicketCard = forwardRef<HTMLLIElement, TicketRowProps>(function Tic
               {attn.label}
             </SolidChip>
           )}
-          {prio && !closed && (
-            <SolidChip hue={PRIORITY_HUE[ticket.priority] ?? 'slate'} icon={prio.icon} size="lg" className="shadow-sm">
-              {prio.label}
-            </SolidChip>
-          )}
         </span>
         <SelectBox checked={checked} onChange={() => onToggle(ticket.id)} label={`Select ${ticket.reference}`} className="absolute top-1/2 -left-3.5 z-10 -translate-y-1/2" />
       </div>
@@ -128,7 +128,7 @@ export const TicketCard = forwardRef<HTMLLIElement, TicketRowProps>(function Tic
 
 export function TicketCardSkeleton() {
   return (
-    <div className="overflow-hidden rounded-panel border border-line bg-surface" aria-hidden>
+    <div className="overflow-hidden border border-line bg-surface" aria-hidden>
       <div className="grid lg:grid-cols-[1fr_17rem]">
         <div className="space-y-3 p-6">
           <div className="h-4 w-28 animate-pulse rounded bg-sunken" />
