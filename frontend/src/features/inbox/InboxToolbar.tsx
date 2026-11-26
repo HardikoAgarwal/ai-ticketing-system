@@ -1,4 +1,4 @@
-import { Layers, Search, X } from 'lucide-react'
+import { Layers, LayoutGrid, Search, Table2, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 
 import { Kbd, SegmentedControl } from '@/components/ds'
@@ -74,7 +74,7 @@ function SearchBox({ value, onCommit }: { value: string; onCommit: (v: string) =
   )
 }
 
-export function InboxToolbar({ view, stats, search, params, specs, sort, density, grouped, onView, onFilter, onSearch, onSort, onDensity, onGroup, onResetFilters }: {
+export function InboxToolbar({ view, stats, search, params, specs, sort, density, grouped, layout, onLayout, onView, onFilter, onSearch, onSort, onDensity, onGroup, onResetFilters }: {
   view: ViewKey
   stats?: QueueStats
   search: string
@@ -83,6 +83,8 @@ export function InboxToolbar({ view, stats, search, params, specs, sort, density
   sort: string
   density: 'comfortable' | 'compact'
   grouped: boolean
+  layout: 'cards' | 'table'
+  onLayout: (v: 'cards' | 'table') => void
   onView: (v: ViewKey) => void
   onFilter: (key: string, value: string | null) => void
   onSearch: (v: string) => void
@@ -123,6 +125,17 @@ export function InboxToolbar({ view, stats, search, params, specs, sort, density
         <span className="sm:hidden">Group</span>
       </button>
       <DisplayPopover sort={sort} density={density} onSort={onSort} onDensity={onDensity} />
+      <SegmentedControl<'cards' | 'table'>
+        ariaLabel="Ticket layout"
+        size="sm"
+        className="ml-auto"
+        value={layout}
+        onChange={onLayout}
+        options={[
+          { value: 'cards', label: <span className="hidden sm:inline">Cards</span>, icon: LayoutGrid },
+          { value: 'table', label: <span className="hidden sm:inline">Table</span>, icon: Table2 },
+        ]}
+      />
     </div>
   )
 }

@@ -1,5 +1,5 @@
 import { CheckCheck, Inbox, Loader2, SearchX, UserCheck, X } from 'lucide-react'
-import { Fragment, useEffect, useRef } from 'react'
+import { Fragment, useEffect, useRef, type ReactNode } from 'react'
 
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -7,10 +7,13 @@ import { EmptyState, ErrorState } from '@/components/ds'
 import type { StaffTicket } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
+import { TicketCard, TicketCardSkeleton } from './TicketCard'
 import { GRID, TicketRow, TicketRowSkeleton } from './TicketRow'
 import type { Group } from './useInbox'
 
 export interface InboxListProps {
+  /** Page header, queue stats and toolbar. Rendered at the top of the scrolling area so the list gets the whole screen once you scroll. */
+  top?: ReactNode
   groups: Group[]
   ordered: StaffTicket[]
   total: number
@@ -27,6 +30,7 @@ export interface InboxListProps {
   selected: Set<number>
   fresh: Set<number>
   compact: boolean
+  layout: 'cards' | 'table'
   meId?: number
   filtered: boolean
   view: string
@@ -77,8 +81,9 @@ export function InboxList(p: InboxListProps) {
   return (
     <div className="relative flex min-h-0 flex-1 flex-col">
       <div ref={scroller} className="scroll-quiet min-h-0 flex-1 overflow-y-auto pb-28" aria-busy={p.fetching}>
+        {p.top && <div className="space-y-4 px-2 pt-6 pb-4">{p.top}</div>}
         {/* column header: sticky, lg+ only (below lg the rows are cards) */}
-        <div className="sticky top-0 z-20 hidden h-9 border-b border-line bg-canvas px-3 lg:block">
+        <div className={cn('sticky top-0 z-20 hidden h-9 border-b border-line bg-canvas px-3', p.layout === 'table' && 'lg:block')}>
           <div className={cn('h-full', GRID)}>
             <span className="flex items-center">{selectAll}</span>
             <span className={HEAD}>
@@ -93,7 +98,7 @@ export function InboxList(p: InboxListProps) {
             <span className={cn(HEAD, 'text-right')}>Updated</span>
           </div>
         </div>
-        <div className="flex items-center gap-2.5 px-3 py-2 text-xs text-ink-3 lg:hidden" aria-live="polite">
+        <div className={cn('flex items-center gap-2.5 px-3 py-2 text-xs text-ink-3', p.layout === 'table' && 'lg:hidden')} aria-live="polite">
           {selectAll}
           <span>
             {p.loading ? 'Loading…' : (
@@ -107,9 +112,15 @@ export function InboxList(p: InboxListProps) {
 
         <div className="px-2">
           {p.loading ? (
-            <div className="space-y-1 pt-1">
-              {Array.from({ length: 8 }).map((_, i) => <TicketRowSkeleton key={i} compact={p.compact} />)}
-            </div>
+            p.layout === 'cards' ? (
+              <div className="grid grid-cols-1 gap-5 pt-1 xl:grid-cols-2">
+                {Array.from({ length: 6 }).map((_, i) => <TicketCardSkeleton key={i} />)}
+              </div>
+            ) : (
+              <div className="space-y-1 pt-1">
+                {Array.from({ length: 8 }).map((_, i) => <TicketRowSkeleton key={i} compact={p.compact} />)}
+              </div>
+            )
           ) : p.error ? (
             <ErrorState error={p.error} onRetry={p.onRetry} className="m-2" />
           ) : p.ordered.length === 0 ? (
@@ -130,8 +141,20 @@ export function InboxList(p: InboxListProps) {
                       <span className="text-xs text-ink-3 tabular-nums">{g.items.length}</span>
                     </div>
                   )}
-                  <ul aria-label={g.label || 'Tickets'} className="space-y-0.5">
-                    {g.items.map((t) => (
+                  <ul aria-label={g.label || 'Tickets'} className={p.layout === 'cards' ? 'grid grid-cols-1 gap-x-5 gap-y-6 pb-3 xl:grid-cols-2' : 'space-y-0.5'}>
+                    {g.items.map((t) => p.layout === 'cards' ? (
+                      <TicketCard
+                        key={t.id}
+                        ticket={t}
+                        to={`${p.ticketsPath}/${t.id}`}
+                        cursor={p.cursor === t.id}
+                        checked={p.selected.has(t.id)}
+                        selecting={selecting}
+                        fresh={p.fresh.has(t.id)}
+                        meId={p.meId}
+                        onToggle={p.onToggle}
+                      />
+                    ) : (
                       <TicketRow
                         key={t.id}
                         ticket={t}

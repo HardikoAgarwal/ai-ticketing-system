@@ -11,6 +11,7 @@ import { PageHeader } from '@/features/shared/PageHeader'
 
 import { AppliedChips, InboxToolbar } from './InboxToolbar'
 import { InboxList } from './InboxList'
+import { QueueStrip } from './QueueStrip'
 import { inboxSearch } from './model'
 import { rememberQueue } from './queue-order'
 import { useFilterSpecs } from './useFilterSpecs'
@@ -86,7 +87,10 @@ export function TicketsPage() {
 
   return (
     <div className="mx-auto flex min-h-0 w-full max-w-[1600px] flex-1 flex-col">
-      <div className="space-y-4 px-4 pt-6 pb-3 md:px-8">
+      <div className="flex min-h-0 flex-1 flex-col px-2 md:px-6">
+        <InboxList
+          top={
+            <>
         <PageHeader
           icon={Inbox}
           title="Tickets"
@@ -100,7 +104,10 @@ export function TicketsPage() {
             )
           }
         />
+        <QueueStrip stats={stats.data} view={view} params={params} onPick={setView} />
         <InboxToolbar
+          layout={inbox.layout}
+          onLayout={(l) => patch({ layout: l === 'table' ? 'table' : null })}
           view={view}
           stats={stats.data}
           search={inbox.search}
@@ -118,9 +125,8 @@ export function TicketsPage() {
           onResetFilters={onResetFilters}
         />
         <AppliedChips specs={specs} params={params} search={inbox.search} onFilter={onFilter} onClear={clearAll} />
-      </div>
-      <div className="flex min-h-0 flex-1 flex-col px-2 md:px-6">
-        <InboxList
+            </>
+          }
           groups={groups}
           ordered={ordered}
           total={inbox.total}
@@ -136,6 +142,7 @@ export function TicketsPage() {
           selected={actions.selected}
           fresh={inbox.fresh}
           compact={inbox.density === 'compact'}
+          layout={inbox.layout}
           meId={user?.id}
           filtered={filtered}
           view={view}

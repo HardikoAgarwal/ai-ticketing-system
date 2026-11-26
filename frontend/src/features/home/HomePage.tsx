@@ -11,7 +11,8 @@ import type { Analytics } from '@/lib/types'
 
 import { CategoryChart, PriorityChart, SentimentChart, VolumeChart } from './Charts'
 import { KpiRow } from './KpiRow'
-import { TicketAging, Workload } from './QueueInsights'
+import { TicketAging } from './AgeTimeline'
+import { Workload } from './QueueInsights'
 import { SlaGauge } from './SlaGauge'
 import { useHomeData, useWorkload } from './useHomeData'
 
@@ -66,14 +67,14 @@ export function HomePage() {
         </Gate>
       </div>
 
+      <TicketAging data={open.data} loading={open.isLoading} error={openError} onRetry={() => open.refetch()} />
+
       <div className="grid grid-cols-1 gap-5 xl:grid-cols-5">
-        <Gate q={analytics} height="h-[560px]" className="xl:col-span-2">
+        <Gate q={analytics} height="h-[460px]" className="xl:col-span-2">
           {(a) => <SlaGauge data={a} />}
         </Gate>
-        <TicketAging className="xl:col-span-3" data={open.data} loading={open.isLoading} error={openError} onRetry={() => open.refetch()} />
+        <Workload className="xl:col-span-3" rows={workload} loading={open.isLoading} error={openError} onRetry={() => open.refetch()} inbox={inbox} />
       </div>
-
-      <Workload rows={workload} loading={open.isLoading} error={openError} onRetry={() => open.refetch()} inbox={inbox} />
     </div>
   )
 }

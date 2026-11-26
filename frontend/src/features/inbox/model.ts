@@ -26,7 +26,7 @@ export const SORT_OPTIONS = [
 export const FILTER_KEYS = ['status', 'priority', 'category', 'assigned', 'sla'] as const
 export type FilterKey = (typeof FILTER_KEYS)[number]
 /** URL params owned by the ticket list. Remembered with the queue so the ticket page can link back with the same filters. */
-export const INBOX_PARAMS = ['view', 'q', 'sort', 'density', 'group', ...FILTER_KEYS] as const
+export const INBOX_PARAMS = ['view', 'q', 'sort', 'density', 'group', 'layout', ...FILTER_KEYS] as const
 
 export const PAGE_SIZE = 25
 

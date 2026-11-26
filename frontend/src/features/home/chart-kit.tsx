@@ -1,7 +1,7 @@
 import type { LucideIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 
-import { Panel } from '@/components/ds'
+import { ErrorState, Panel, Skeleton } from '@/components/ds'
 import { cn } from '@/lib/utils'
 
 /**
@@ -55,4 +55,9 @@ export function Figure({ value, label, color, tone }: { value: ReactNode; label:
       </div>
     </div>
   )
+}
+
+/** The card-shaped placeholder shown while a chart's data loads, or the retry state if it failed. */
+export function PendingChart({ error, onRetry, className }: { error?: unknown; onRetry: () => void; className?: string }) {
+  return <div className={className}>{error ? <ErrorState error={error} onRetry={onRetry} /> : <Skeleton className="h-72 rounded-panel" />}</div>
 }

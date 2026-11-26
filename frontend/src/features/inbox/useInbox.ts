@@ -26,6 +26,7 @@ export function useInbox() {
   const sort = params.get('sort') ?? 'default'
   const density: 'compact' | 'comfortable' = params.get('density') === 'compact' ? 'compact' : 'comfortable'
   const search = params.get('q') ?? ''
+  const layout: 'cards' | 'table' = params.get('layout') === 'table' ? 'table' : 'cards'
   const query = useMemo(() => buildQuery(params), [params])
   const queryKey = JSON.stringify(query)
 
@@ -108,7 +109,7 @@ export function useInbox() {
         (prev) => {
           const out = new URLSearchParams()
           if (next !== 'attention') out.set('view', next)
-          for (const k of ['sort', 'density']) if (prev.get(k)) out.set(k, prev.get(k)!)
+          for (const k of ['sort', 'density', 'layout']) if (prev.get(k)) out.set(k, prev.get(k)!)
           for (const [k, v] of Object.entries(filters)) out.set(k, v)
           return out
         },
@@ -119,7 +120,19 @@ export function useInbox() {
 
   const activeFilters = FILTER_KEYS.filter((k) => params.get(k))
   /** Drop filters, search and sort but keep the current view. */
-  const clearAll = useCallback(() => setParams(view === 'attention' ? new URLSearchParams() : new URLSearchParams({ view }), { replace: true }), [setParams, view])
+  const clearAll = useCallback(
+    () =>
+      setParams(
+        (prev) => {
+          const out = new URLSearchParams()
+          if (view !== 'attention') out.set('view', view)
+          if (prev.get('layout')) out.set('layout', prev.get('layout')!)
+          return out
+        },
+        { replace: true },
+      ),
+    [setParams, view],
+  )
 
   return {
     slug,
@@ -127,6 +140,7 @@ export function useInbox() {
     view: view as ViewKey,
     sort,
     density,
+    layout,
     search,
     activeFilters: activeFilters as FilterKey[],
     patch,
