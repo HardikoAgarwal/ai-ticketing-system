@@ -37,8 +37,8 @@ function SearchBox({ value, onCommit }: { value: string; onCommit: (v: string) =
   useShortcut('/', () => ref.current?.focus(), { description: 'Search tickets', group: 'Inbox' })
 
   return (
-    <div className="relative min-w-0 basis-full sm:basis-auto sm:max-w-lg sm:flex-1">
-      <Search className="pointer-events-none absolute top-1/2 left-4 size-[18px] -translate-y-1/2 text-ink-3" aria-hidden />
+    <div className="relative min-w-0 basis-full sm:basis-auto sm:w-60">
+      <Search className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-ink-3" aria-hidden />
       <input
         ref={ref}
         type="search"
@@ -50,9 +50,9 @@ function SearchBox({ value, onCommit }: { value: string; onCommit: (v: string) =
             else ref.current?.blur()
           }
         }}
-        placeholder="Search by subject, customer or reference"
+        placeholder="Search tickets"
         aria-label="Search tickets"
-        className="h-11 w-full rounded-control border border-line-strong bg-surface pr-11 pl-11 text-[15px] text-ink shadow-card transition-colors outline-none placeholder:text-ink-3 focus:border-violet focus:ring-2 focus:ring-violet/30 [&::-webkit-search-cancel-button]:hidden"
+        className="h-10 w-full rounded-control border border-line-strong bg-surface pr-10 pl-10 text-sm text-ink shadow-card transition-colors outline-none placeholder:text-ink-3 focus:border-violet focus:ring-2 focus:ring-violet/30 [&::-webkit-search-cancel-button]:hidden"
       />
       {text ? (
         <button
@@ -92,7 +92,7 @@ export function InboxToolbar({ search, params, specs, sort, layout, onLayout, on
       <SortPopover sort={sort} onSort={onSort} />
       <SegmentedControl<'cards' | 'table'>
         ariaLabel="Ticket layout"
-        className="ml-auto h-11"
+        className="h-10"
         value={layout}
         onChange={onLayout}
         options={[

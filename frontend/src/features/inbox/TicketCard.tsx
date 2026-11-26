@@ -40,7 +40,7 @@ export const TicketCard = forwardRef<HTMLLIElement, TicketRowProps>(function Tic
   const main: CSSProperties | undefined = checked ? { background: 'color-mix(in srgb, var(--violet) 7%, var(--surface))' } : undefined
   return (
     <li ref={ref} data-ticket-id={ticket.id} className={cn('group relative', tabs.length > 0 && 'mt-10')}>
-      <div className={cn('relative rounded-panel [--stub-w:21rem]', checked && 'ring-2 ring-violet', cursor && 'ring-2 ring-ink ring-offset-2 ring-offset-canvas', fresh && 'ring-2 ring-ai ring-offset-2 ring-offset-canvas motion-safe:animate-pulse')}>
+      <div className={cn('relative rounded-panel [--stub-w:23rem]', checked && 'ring-2 ring-violet', cursor && 'ring-2 ring-ink ring-offset-2 ring-offset-canvas', fresh && 'ring-2 ring-ai ring-offset-2 ring-offset-canvas motion-safe:animate-pulse')}>
         <div className="drop-shadow-[0_1px_2px_rgb(60_40_20/0.10)] drop-shadow-[0_14px_22px_rgb(60_40_20/0.10)]">
           <article className={cn('ticket-notch overflow-hidden rounded-panel bg-surface')}>
             <Link to={to} aria-label={`${ticket.reference}: ${ticket.subject}`} className="grid outline-none focus-visible:ring-2 focus-visible:ring-violet focus-visible:ring-inset lg:grid-cols-[minmax(0,1fr)_var(--stub-w)]">
@@ -92,25 +92,25 @@ export const TicketCard = forwardRef<HTMLLIElement, TicketRowProps>(function Tic
                     </SolidChip>
                   )}
                 </span>
-                <span className="grid grid-cols-2 gap-x-4">
+                <span className="grid grid-cols-2 gap-x-3">
                   <span className="block min-w-0">
                     <span className={LABEL}>Customer</span>
                     <span className="mt-1.5 flex min-w-0 items-center gap-2">
-                      <Avatar name={ticket.requester.name} size="sm" />
-                      <span className="block min-w-0 truncate text-sm font-semibold text-ink">{ticket.requester.name}</span>
+                      <Avatar name={ticket.requester.name} size="md" />
+                      <span className="block min-w-0 truncate text-[15px] font-semibold text-ink">{ticket.requester.name}</span>
                     </span>
                   </span>
                   <span className="block min-w-0">
                     <span className={LABEL}>Owner</span>
-                    <span className="mt-1.5 flex min-w-0 items-center gap-2 text-sm font-semibold text-ink">
+                    <span className="mt-1.5 flex min-w-0 items-center gap-2 text-[15px] font-semibold text-ink">
                       {ticket.assigned_to ? (
                         <>
-                          <Avatar name={ticket.assigned_to.full_name} size="sm" />
+                          <Avatar name={ticket.assigned_to.full_name} size="md" />
                           <span className={cn('truncate', mine && 'text-violet')}>{mine ? 'You' : ticket.assigned_to.full_name}</span>
                         </>
                       ) : (
                         <>
-                          <span aria-hidden className="flex size-6 shrink-0 items-center justify-center rounded-md border border-dashed border-line-strong text-[10px] text-ink-3">
+                          <span aria-hidden className="flex size-8 shrink-0 items-center justify-center rounded-control border border-dashed border-line-strong text-xs text-ink-3">
                             ?
                           </span>
                           <span className="font-medium text-ink-2 italic">Unassigned</span>

@@ -79,8 +79,6 @@ export function TicketsPage() {
   const onFilter = useCallback((k: string, v: string | null) => patch({ [k]: v }), [patch])
   const onResetFilters = useCallback(() => patch({ status: null, priority: null, category: null, assigned: null, sla: null }), [patch])
 
-  const open = stats.data ? stats.data.open + stats.data.in_progress : undefined
-
   return (
     <div className="mx-auto w-full max-w-[1400px] pb-8">
       <div>
@@ -90,29 +88,22 @@ export function TicketsPage() {
         <PageHeader
           icon={Inbox}
           title="Tickets"
-          description={
-            list.isLoading ? 'Loading tickets…' : (
-              <>
-                <span className="font-semibold text-ink tabular-nums">{inbox.total}</span> {inbox.total === 1 ? 'ticket' : 'tickets'}
-                {filtered ? ' match your filters' : ''}
-                {!filtered && open !== undefined && view !== 'all' ? <> · {stats.data?.overdue ? <span className="tabular-nums">{stats.data.overdue} overdue</span> : 'none overdue'}</> : null}
-              </>
-            )
+          actions={
+            <InboxToolbar
+              layout={inbox.layout}
+              onLayout={(l) => patch({ layout: l === 'table' ? 'table' : null })}
+              search={inbox.search}
+              params={params}
+              specs={specs}
+              sort={inbox.sort}
+              onFilter={onFilter}
+              onSearch={onSearch}
+              onSort={(v) => patch({ sort: v === 'default' ? null : v })}
+              onResetFilters={onResetFilters}
+            />
           }
         />
         <QueueStrip stats={stats.data} view={view} params={params} onPick={setView} />
-        <InboxToolbar
-          layout={inbox.layout}
-          onLayout={(l) => patch({ layout: l === 'table' ? 'table' : null })}
-          search={inbox.search}
-          params={params}
-          specs={specs}
-          sort={inbox.sort}
-          onFilter={onFilter}
-          onSearch={onSearch}
-          onSort={(v) => patch({ sort: v === 'default' ? null : v })}
-          onResetFilters={onResetFilters}
-        />
         <AppliedChips specs={specs} params={params} search={inbox.search} onFilter={onFilter} onClear={clearAll} />
             </>
           }

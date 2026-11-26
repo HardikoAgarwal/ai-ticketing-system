@@ -9,7 +9,7 @@ import { categoryHue, PRIORITY_HUE, SORT_OPTIONS, STATUS_HUE } from './model'
 import type { FilterSpec } from './useFilterSpecs'
 
 const triggerCls =
-  'inline-flex h-11 shrink-0 items-center gap-2 rounded-control border border-line-strong bg-surface px-4 text-sm font-semibold text-ink shadow-card transition-colors hover:bg-surface-2 focus-visible:ring-2 focus-visible:ring-violet focus-visible:outline-none data-[state=open]:bg-surface-2'
+  'inline-flex h-10 shrink-0 items-center gap-2 rounded-control border border-line-strong bg-surface px-4 text-sm font-semibold text-ink shadow-card transition-colors hover:bg-surface-2 focus-visible:ring-2 focus-visible:ring-violet focus-visible:outline-none data-[state=open]:bg-surface-2'
 
 /** The colour an option is drawn in when selected: status, priority and category each use the colours the tickets themselves wear. */
 function hueFor(spec: FilterSpec, value: string, label: string): Hue {
@@ -61,7 +61,7 @@ export function FilterPopover({ specs, params, onChange, onReset }: {
         <span className="hidden sm:inline">Filters</span>
         {count > 0 && <span className="rounded-md bg-ink px-1.5 text-xs font-semibold text-canvas tabular-nums">{count}</span>}
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-[26rem] max-w-[calc(100vw-2rem)] gap-0 overflow-hidden rounded-panel p-0">
+      <PopoverContent align="end" className="w-[26rem] max-w-[calc(100vw-2rem)] gap-0 overflow-hidden rounded-panel p-0">
         <div className="flex items-center gap-3 border-b border-line px-5 py-4">
           <span className="flex size-9 items-center justify-center rounded-control bg-violet-soft text-violet ring-1 ring-violet/20 ring-inset" aria-hidden>
             <ListFilter className="size-[18px]" />
@@ -113,7 +113,7 @@ export function SortPopover({ sort, onSort }: { sort: string; onSort: (v: string
         <ArrowUpDown className="size-4" aria-hidden />
         <span className="hidden sm:inline">Sort</span>
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-72 gap-0 overflow-hidden rounded-panel p-0">
+      <PopoverContent align="end" className="w-72 gap-0 overflow-hidden rounded-panel p-0">
         <div className="border-b border-line px-5 py-4 text-[15px] font-semibold text-ink">Sort by</div>
         <div role="radiogroup" aria-label="Sort by" className="space-y-1 p-2">
           {SORT_OPTIONS.map((o) => (
