@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { BookOpen, Inbox, Keyboard, LayoutDashboard, Monitor, Moon, Settings, Sun } from 'lucide-react'
+import { BookOpen, History, Inbox, Keyboard, LayoutDashboard, Monitor, Moon, Settings, Sun } from 'lucide-react'
 import { Suspense, useMemo } from 'react'
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 
@@ -38,7 +38,7 @@ function TabBar({ items }: { items: DockItem[] }) {
               <it.icon className="size-[18px]" aria-hidden />
               {!!it.count && !active && <span className="absolute top-0.5 right-2 size-2 rounded-full bg-violet" aria-hidden />}
             </span>
-            {it.label}
+            {it.mobileLabel ?? it.label}
           </Link>
         )
       })}
@@ -58,8 +58,9 @@ function Frame() {
   const items = useMemo<DockItem[]>(
     () => [
       { to: base, label: 'Home', icon: LayoutDashboard, end: true },
-      // active on the list and on /tickets/:id; the badge is the needs-attention count
-      { to: `${base}/tickets`, label: 'Tickets', icon: Inbox, count: stats ? stats.open + stats.in_progress : undefined },
+      // Active is the list and /tickets/:id; History (resolved and closed) lives under its own URL. The badge is the open count.
+      { to: `${base}/tickets`, label: 'Active', mobileLabel: 'Tickets', group: 'Tickets', icon: Inbox, exclude: `${base}/tickets/history`, count: stats ? stats.open + stats.in_progress : undefined },
+      { to: `${base}/tickets/history`, label: 'History', group: 'Tickets', icon: History },
       { to: `${base}/knowledge`, label: 'Knowledge', icon: BookOpen },
       { to: `${base}/settings`, label: manager ? 'Settings' : 'Team', icon: Settings },
     ],
@@ -69,6 +70,7 @@ function Frame() {
   const commands = useMemo<Command[]>(
     () => [
       { id: 'go.home', title: 'Go to Home', group: 'Navigate', icon: LayoutDashboard, shortcut: 'g h', keywords: ['dashboard', 'overview', 'analytics', 'stats', 'reports'], perform: () => navigate(base) },
+      { id: 'go.history', title: 'Go to Ticket history', group: 'Navigate', icon: History, shortcut: 'g y', keywords: ['resolved', 'closed', 'archive', 'old tickets'], perform: () => navigate(`${base}/tickets/history`) },
       { id: 'go.tickets', title: 'Go to Tickets', group: 'Navigate', icon: Inbox, shortcut: 'g t', keywords: ['inbox', 'queue', 'list'], perform: () => navigate(`${base}/tickets`) },
       { id: 'go.mine', title: 'Show tickets assigned to me', group: 'Navigate', icon: Inbox, keywords: ['mine', 'assigned'], perform: () => navigate(`${base}/tickets?view=mine`) },
       { id: 'go.kb', title: 'Go to Knowledge base', group: 'Navigate', icon: BookOpen, shortcut: 'g k', keywords: ['articles', 'kb'], perform: () => navigate(`${base}/knowledge`) },
@@ -83,6 +85,7 @@ function Frame() {
   useRegisterCommands(commands)
   useShortcut('g h', () => navigate(base), { description: 'Go to Home', group: 'Navigate' })
   useShortcut('g t', () => navigate(`${base}/tickets`), { description: 'Go to Tickets', group: 'Navigate' })
+  useShortcut('g y', () => navigate(`${base}/tickets/history`), { description: 'Go to Ticket history', group: 'Navigate' })
   useShortcut('g k', () => navigate(`${base}/knowledge`), { description: 'Go to Knowledge base', group: 'Navigate' })
   useShortcut('g s', () => navigate(`${base}/settings`), { description: 'Go to Settings', group: 'Navigate' })
 

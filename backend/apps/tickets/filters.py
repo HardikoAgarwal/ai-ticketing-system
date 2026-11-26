@@ -19,6 +19,8 @@ class TicketFilter(django_filters.FilterSet):
     assigned = django_filters.CharFilter(method="filter_assigned", help_text="me | unassigned | <user id>")
     created_after = django_filters.IsoDateTimeFilter(field_name="created_at", lookup_expr="gte")
     created_before = django_filters.IsoDateTimeFilter(field_name="created_at", lookup_expr="lte")
+    resolved_after = django_filters.IsoDateTimeFilter(field_name="resolved_at", lookup_expr="gte")
+    resolved_before = django_filters.IsoDateTimeFilter(field_name="resolved_at", lookup_expr="lte")
     sla = django_filters.CharFilter(method="filter_sla", help_text="overdue | at_risk")
     record = django_filters.NumberFilter(field_name="record_id")
     q = django_filters.CharFilter(method="filter_search", help_text="Search subject, description, requester, TKT-0001")

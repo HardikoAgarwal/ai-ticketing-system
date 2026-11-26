@@ -12,6 +12,7 @@ export interface WorkspaceForm {
   agent_title: string
   tone: string
   ai_enabled: boolean
+  auto_close_days: number
   sla_hours: Record<TicketPriority, number>
 }
 
@@ -21,10 +22,11 @@ const fromWorkspace = (ws: Workspace): WorkspaceForm => ({
   agent_title: ws.agent_title,
   tone: ws.tone,
   ai_enabled: ws.ai_enabled,
+  auto_close_days: ws.auto_close_days,
   sla_hours: { ...ws.sla_hours },
 })
 
-/** Shared form state for General, AI and Response targets so one save bar covers all three. */
+/** Shared form state for General, AI, Response targets and Automation so one save bar covers them all. */
 export function useWorkspaceForm(ws: Workspace) {
   const { slug, api } = useWorkspace()
   const queryClient = useQueryClient()

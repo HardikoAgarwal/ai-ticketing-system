@@ -34,9 +34,10 @@ class WorkspaceSerializer(serializers.ModelSerializer):
         model = Workspace
         fields = (
             "id", "name", "slug", "template", "tagline", "agent_title", "tone", "sla_hours",
-            "ai_enabled", "is_demo", "expires_at", "created_at",
+            "ai_enabled", "auto_close_days", "is_demo", "expires_at", "created_at",
         )
         read_only_fields = ("id", "slug", "template", "is_demo", "expires_at", "created_at")
+        extra_kwargs = {"auto_close_days": {"min_value": 0, "max_value": 90}}
 
 
 class WorkspaceBriefSerializer(serializers.ModelSerializer):

@@ -14,6 +14,7 @@ import { TicketDetailPage } from '@/pages/customer/TicketDetailPage'
 import { TicketsPage } from '@/pages/customer/TicketsPage'
 
 const HomePage = lazy(() => import('@/features/home/HomePage').then((m) => ({ default: m.HomePage })))
+const AgentHistoryPage = lazy(() => import('@/features/history/HistoryPage').then((m) => ({ default: m.HistoryPage })))
 const AgentTicketsPage = lazy(() => import('@/features/inbox/TicketsPage').then((m) => ({ default: m.TicketsPage })))
 const TicketPage = lazy(() => import('@/features/ticket/TicketPage').then((m) => ({ default: m.TicketPage })))
 const KnowledgePage = lazy(() => import('@/pages/agent/KnowledgePage').then((m) => ({ default: m.KnowledgePage })))
@@ -54,6 +55,7 @@ export default function App() {
           <Route path="/w/:slug/agent" element={<AgentLayout />}>
             <Route index element={<HomePage />} />
             <Route path="tickets" element={<AgentTicketsPage />} />
+            <Route path="tickets/history" element={<AgentHistoryPage />} />
             <Route path="tickets/:id" element={<TicketPage />} />
             {/* analytics now lives on the home dashboard; keep old links and bookmarks working */}
             <Route path="analytics" element={<Navigate to=".." replace />} />

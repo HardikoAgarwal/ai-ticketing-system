@@ -34,6 +34,10 @@ class Workspace(models.Model):
     tone = models.TextField(blank=True, help_text="Tone and style guidelines injected into AI drafts")
     sla_hours = models.JSONField(default=default_sla_hours)
     ai_enabled = models.BooleanField(default=True)
+    auto_close_days = models.PositiveSmallIntegerField(
+        default=7,
+        help_text="Close Resolved tickets after this many days with no customer reply. 0 turns it off.",
+    )
     is_demo = models.BooleanField(default=False, db_index=True)
     expires_at = models.DateTimeField(null=True, blank=True, db_index=True)
     ticket_counter = models.PositiveIntegerField(default=0)

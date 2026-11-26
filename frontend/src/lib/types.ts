@@ -35,6 +35,8 @@ export interface Workspace {
   tone: string
   sla_hours: Record<TicketPriority, number>
   ai_enabled: boolean
+  /** Resolved tickets close themselves after this many days with no customer reply. 0 = off. */
+  auto_close_days: number
   is_demo: boolean
   expires_at: string | null
   created_at: string

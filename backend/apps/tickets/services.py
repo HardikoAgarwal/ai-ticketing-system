@@ -1,6 +1,9 @@
 """Ticket business logic. Views stay thin; every state change goes through here."""
 
+from datetime import timedelta
+
 from django.conf import settings
+from django.core.cache import cache
 from django.db import transaction
 from django.utils import timezone
 
@@ -332,3 +335,57 @@ def submit_csat(ticket: Ticket, requester, *, score: int, comment: str = "") -> 
 def mark_seen(ticket: Ticket, *, staff: bool) -> None:
     field = "staff_last_seen_at" if staff else "requester_last_seen_at"
     Ticket.objects.filter(pk=ticket.pk).update(**{field: timezone.now()})
+
+
+# --------------------------------------------------------------------------- auto-close
+
+AUTO_CLOSE_BATCH = 200
+AUTO_CLOSE_EVERY = 3600  # seconds between sweeps for one workspace
+
+
+def auto_close_resolved(workspace: Workspace | None = None, *, now=None) -> int:
+    """Close Resolved tickets that have waited out their workspace's auto-close period.
+
+    A customer reply moves a ticket back to In progress, so a ticket that is still Resolved after N days is by
+    definition one the customer never answered. Returns how many tickets were closed.
+    """
+    now = now or timezone.now()
+    workspaces = [workspace] if workspace else list(Workspace.objects.filter(auto_close_days__gt=0))
+    closed = 0
+    for ws in workspaces:
+        if not ws.auto_close_days:
+            continue
+        cutoff = now - timedelta(days=ws.auto_close_days)
+        due = Ticket.objects.filter(workspace=ws, status=TicketStatus.RESOLVED, resolved_at__lte=cutoff)
+        for pk in list(due.values_list("pk", flat=True)[:AUTO_CLOSE_BATCH]):
+            closed += _auto_close_one(pk, ws.auto_close_days, now)
+    return closed
+
+
+@transaction.atomic
+def _auto_close_one(ticket_id: int, days: int, now) -> int:
+    ticket = Ticket.objects.select_for_update(of=("self",), skip_locked=True).filter(pk=ticket_id).first()
+    if ticket is None or ticket.status != TicketStatus.RESOLVED:
+        return 0  # taken by someone else, or the customer replied in the meantime
+    _log(ticket, ActivityAction.AUTO_CLOSED, None, TicketStatus.RESOLVED.label, f"Closed after {days} days")
+    ticket.status = TicketStatus.CLOSED
+    ticket.closed_at = now
+    ticket.resolved_at = ticket.resolved_at or now
+    ticket.save()
+    ticket_event(ticket, "ticket.updated", actor_id=None)
+    return 1
+
+
+def schedule_auto_close(workspace: Workspace, *, force: bool = False) -> None:
+    """Queue an auto-close pass for a workspace, at most once an hour unless `force` (used when the setting changes).
+
+    Called when staff load the queue, so an active workspace tidies itself without a scheduler or a worker process.
+    """
+    if not workspace.auto_close_days:
+        return
+    key = f"auto-close:{workspace.pk}"
+    if force:
+        cache.set(key, 1, AUTO_CLOSE_EVERY)
+    elif not cache.add(key, 1, AUTO_CLOSE_EVERY):
+        return
+    runner.enqueue("tickets.auto_close", workspace_id=workspace.pk)

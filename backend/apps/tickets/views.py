@@ -58,7 +58,7 @@ class TicketViewSet(
     viewsets.GenericViewSet,
 ):
     filterset_class = TicketFilter
-    ordering_fields = ("created_at", "updated_at", "priority_rank", "sla_due_at")
+    ordering_fields = ("created_at", "updated_at", "priority_rank", "sla_due_at", "resolved_at")
     ordering = ("priority_rank", "created_at")
     parser_classes = (JSONParser, MultiPartParser, FormParser)
     http_method_names = ("get", "post", "patch")
@@ -308,6 +308,7 @@ class TicketViewSet(
     )
     @action(detail=False, methods=["get"])
     def stats(self, request, slug=None):
+        services.schedule_auto_close(request.workspace)
         active = tickets_visible_to(request).filter(status__in=Ticket.ACTIVE_STATUSES)
         counts = active.aggregate(
             open=Count("id", filter=Q(status="OPEN")),

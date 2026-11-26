@@ -1,10 +1,10 @@
-import { Check, Clock, Inbox, UserCheck, UserX, type LucideIcon } from 'lucide-react'
+import { Clock, Inbox, UserCheck, UserX, type LucideIcon } from 'lucide-react'
 
-import { fill, on, type Hue } from '@/components/ds'
+import { fill, type Hue } from '@/components/ds'
 import type { QueueStats } from '@/lib/types'
-import { cn } from '@/lib/utils'
 
 import { TILE_HUE, type ViewKey } from './model'
+import { StatTile } from './StatTile'
 
 interface Tile {
   key: string
@@ -46,25 +46,7 @@ export function QueueStrip({ stats, view, params, onPick }: { stats?: QueueStats
   return (
     <div className="grid grid-cols-2 gap-3 lg:grid-cols-4" role="group" aria-label="Queue summary. Select one to filter the list">
       {tiles.map((t) => (
-        <button
-          key={t.key}
-          type="button"
-          aria-pressed={t.active}
-          onClick={t.onPick}
-          style={{ background: fill(t.hue), color: on(t.hue) }}
-          className={cn(
-            'relative flex flex-col rounded-panel p-5 text-left shadow-card transition-transform focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink sm:p-6',
-            t.active ? 'ring-2 ring-ink ring-offset-2 ring-offset-canvas' : 'hover:-translate-y-0.5',
-          )}
-        >
-          <span className="flex items-center gap-2 text-base font-semibold">
-            <t.icon className="size-5" aria-hidden />
-            {t.label}
-            {t.active && <Check className="ml-auto size-4" aria-label="Showing" />}
-          </span>
-          <span className="mt-3 text-5xl leading-[52px] font-semibold tracking-tight tabular-nums">{t.value}</span>
-          <span className="mt-1.5 truncate text-sm font-medium opacity-90">{t.foot}</span>
-        </button>
+        <StatTile key={t.key} icon={t.icon} hue={t.hue} label={t.label} value={t.value} foot={t.foot} active={t.active} onPick={t.onPick} />
       ))}
     </div>
   )

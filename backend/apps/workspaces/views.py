@@ -11,6 +11,7 @@ from apps.kb import retrieval
 from apps.kb.indexing import reindex_article
 from apps.kb.models import Article
 from apps.kb.serializers import ArticleListSerializer, ArticleSerializer
+from apps.tickets import services as ticket_services
 from apps.tickets.models import Macro
 from apps.tickets.serializers import MacroSerializer
 from common.exceptions import DomainError
@@ -50,6 +51,9 @@ class WorkspaceDetailView(WorkspaceViewMixin, GenericAPIView):
         if sla is not None and (set(sla) != {"CRITICAL", "HIGH", "MEDIUM", "LOW"} or any(not isinstance(v, int) or v < 1 for v in sla.values())):
             raise DomainError("sla_hours needs positive integer hours for CRITICAL, HIGH, MEDIUM and LOW.", code="validation_error", status_code=400)
         serializer.save()
+        if "auto_close_days" in serializer.validated_data:
+            # a new setting takes effect now, not at the next hourly sweep
+            ticket_services.schedule_auto_close(request.workspace, force=True)
         data = serializer.data
         data["role"] = request.membership.role
         return Response(data)

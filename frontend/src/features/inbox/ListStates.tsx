@@ -1,4 +1,4 @@
-import { CheckCheck, Inbox, RotateCcw, SearchX, type LucideIcon } from 'lucide-react'
+import { CheckCheck, History, Inbox, RotateCcw, SearchX, type LucideIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 
 import { fill, on, type Hue } from '@/components/ds'
@@ -57,6 +57,15 @@ export function NothingHere({ view }: { view: string }) {
   return (
     <Message icon={copy.icon} hue="mint" title={copy.title}>
       {copy.text}
+    </Message>
+  )
+}
+
+/** Nothing has been resolved or closed yet. */
+export function NoHistory() {
+  return (
+    <Message icon={History} hue="lav" title="Nothing here yet">
+      Tickets you resolve, and tickets that close on their own, are kept here so you can always look them up.
     </Message>
   )
 }

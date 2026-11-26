@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { Bot, Clock, Palette, Settings as SettingsIcon, Tags, Users, type LucideIcon } from 'lucide-react'
+import { Bot, Clock, Palette, Settings as SettingsIcon, Tags, Timer, Users, type LucideIcon } from 'lucide-react'
 import { useEffect, useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
 
@@ -11,6 +11,7 @@ import type { Workspace } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
 import { AiSettings } from './AiSettings'
+import { AutomationSettings } from './AutomationSettings'
 import { CategorySettings } from './CategorySettings'
 import { GeneralSettings } from './GeneralSettings'
 import { ReadOnlyNote, SaveBar } from './rows'
@@ -22,6 +23,7 @@ const SECTIONS = [
   { key: 'general', label: 'General', hint: 'Name, sign-off, tone', icon: Palette },
   { key: 'ai', label: 'AI assistant', hint: 'What it does, budget', icon: Bot },
   { key: 'sla', label: 'Response targets', hint: 'SLA by priority', icon: Clock },
+  { key: 'automation', label: 'Automation', hint: 'Auto-close resolved', icon: Timer },
   { key: 'categories', label: 'Categories', hint: 'How tickets are sorted', icon: Tags },
   { key: 'team', label: 'Team & roles', hint: 'People and permissions', icon: Users },
 ] as const satisfies readonly { key: string; label: string; hint: string; icon: LucideIcon }[]
@@ -40,6 +42,7 @@ function SettingsBody({ ws, tab, readOnly }: { ws: Workspace; tab: SectionKey; r
       {tab === 'general' && <GeneralSettings f={f} readOnly={readOnly} />}
       {tab === 'ai' && <AiSettings f={f} readOnly={readOnly} />}
       {tab === 'sla' && <SlaSettings f={f} readOnly={readOnly} />}
+      {tab === 'automation' && <AutomationSettings f={f} readOnly={readOnly} />}
       {tab === 'categories' && <CategorySettings readOnly={readOnly} />}
       {tab === 'team' && <TeamSettings readOnly={readOnly} />}
       {!readOnly && <SaveBar dirty={f.dirty} saving={f.save.isPending} saved={f.saved} error={f.save.error} disabled={!f.valid} onSave={() => f.save.mutate()} onDiscard={f.discard} />}

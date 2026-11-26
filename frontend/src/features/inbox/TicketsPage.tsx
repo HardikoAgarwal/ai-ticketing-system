@@ -63,7 +63,6 @@ export function TicketsPage() {
       { id: 'tickets.view.attention', title: 'Tickets: needs attention', group: 'Tickets', keywords: ['open', 'queue'], perform: () => setView('attention') },
       { id: 'tickets.view.mine', title: 'Tickets: assigned to me', group: 'Tickets', keywords: ['mine', 'my tickets'], perform: () => setView('mine') },
       { id: 'tickets.view.unassigned', title: 'Tickets: unassigned', group: 'Tickets', perform: () => setView('unassigned') },
-      { id: 'tickets.view.all', title: 'Tickets: all, including resolved', group: 'Tickets', keywords: ['resolved', 'closed', 'history'], perform: () => setView('all') },
       { id: 'tickets.filter.overdue', title: 'Show overdue tickets', group: 'Tickets', keywords: ['sla', 'late'], perform: () => setView('attention', { sla: 'overdue' }) },
       { id: 'tickets.filter.critical', title: 'Show critical tickets', group: 'Tickets', keywords: ['urgent', 'priority'], perform: () => setView('attention', { priority: 'CRITICAL' }) },
       { id: 'tickets.filter.clear', title: 'Clear ticket filters', group: 'Tickets', icon: Eraser, when: filtered, perform: clearAll },

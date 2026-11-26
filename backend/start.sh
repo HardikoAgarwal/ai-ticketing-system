@@ -8,5 +8,6 @@ export DJANGO_SETTINGS_MODULE="${DJANGO_SETTINGS_MODULE:-config.settings.prod}"
 
 python manage.py migrate --noinput
 python manage.py purge_demos || true
+python manage.py auto_close_tickets || true
 
 exec daphne -b 0.0.0.0 -p "${PORT:-8000}" --proxy-headers config.asgi:application

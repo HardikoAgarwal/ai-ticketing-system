@@ -189,6 +189,7 @@ class ActivityAction(models.TextChoices):
     REQUESTER_CONFIRMED = "REQUESTER_CONFIRMED", "Requester confirmed resolution"
     REQUESTER_REOPENED = "REQUESTER_REOPENED", "Requester reopened"
     CSAT_RECEIVED = "CSAT_RECEIVED", "Satisfaction rating received"
+    AUTO_CLOSED = "AUTO_CLOSED", "Closed automatically"
 
 
 class TicketActivity(models.Model):

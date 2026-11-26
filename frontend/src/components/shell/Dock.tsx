@@ -21,11 +21,18 @@ export interface DockItem {
   /** Exact match only (no sub-routes), e.g. Home, so it is not active on every page below it. */
   end?: boolean
   count?: number
+  /** Items with the same group sit together under a small heading (shown when the dock is open). */
+  group?: string
+  /** Not active on this path prefix, for a sibling that lives under the same URL (Active vs History). */
+  exclude?: string
+  /** Label for the phone tab bar, where there is no group heading to explain "Active". */
+  mobileLabel?: string
 }
 
 /** Active-state for a nav item; tolerant of trailing slashes. */
 export function isItemActive(item: DockItem, pathname: string) {
   const path = pathname.replace(/\/+$/, '') || '/'
+  if (item.exclude && (path === item.exclude || path.startsWith(`${item.exclude}/`))) return false
   if (path === item.to) return true
   return !item.end && path.startsWith(`${item.to}/`)
 }
@@ -111,7 +118,7 @@ function NavRow({ item }: { item: DockItem }) {
     <Link
       to={item.to}
       aria-current={active ? 'page' : undefined}
-      aria-label={item.count ? `${item.label}, ${item.count}` : item.label}
+      aria-label={[item.group, item.label].filter(Boolean).join(': ') + (item.count ? `, ${item.count}` : '')}
       className={cn(ROW, 'relative', active ? 'bg-ink text-canvas' : 'text-ink-2 hover:bg-sunken hover:text-ink')}
     >
       <span className="relative flex size-[18px] shrink-0 items-center justify-center">
@@ -148,8 +155,9 @@ export function Dock({ items }: { items: DockItem[] }) {
           <Kbd keys="mod+k" className="hidden group-hover/dock:inline-flex group-focus-within/dock:inline-flex group-data-[pinned=true]/dock:inline-flex" />
         </button>
         <ul className="mt-3 flex flex-1 flex-col gap-1">
-          {items.map((it) => (
-            <li key={it.to}>
+          {items.map((it, i) => (
+            <li key={it.to} className={it.group && items[i - 1]?.group !== it.group ? 'mt-3 border-t border-line pt-2' : undefined}>
+              {it.group && items[i - 1]?.group !== it.group && <p className={cn(LABEL, 'px-[11px] pb-1 text-[11px] font-semibold tracking-[0.1em] text-ink-3 uppercase')}>{it.group}</p>}
               <NavRow item={it} />
             </li>
           ))}

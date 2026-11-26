@@ -19,7 +19,7 @@ export interface FilterSpec {
 }
 
 /**
- * The filters offered in the popup: status, priority and category. Overdue and owner (me / unassigned) are left out on purpose,
+ * The filters offered in the popup: status (Open or In progress; finished tickets live in History), priority and category. Overdue and owner (me / unassigned) are left out on purpose,
  * because the tiles at the top of the page already set them.
  */
 export function useFilterSpecs(): FilterSpec[] {
@@ -28,7 +28,7 @@ export function useFilterSpecs(): FilterSpec[] {
 
   return useMemo(() => {
     const specs: FilterSpec[] = [
-      { key: 'status', label: 'Status', multi: true, options: STATUSES.map((s) => ({ value: s, label: STATUS_META[s].label })) },
+      { key: 'status', label: 'Status', multi: true, options: STATUSES.filter((s) => s === 'OPEN' || s === 'IN_PROGRESS').map((s) => ({ value: s, label: STATUS_META[s].label })) },
       { key: 'priority', label: 'Priority', multi: true, options: PRIORITIES.map((p) => ({ value: p, label: PRIORITY_META[p].label })) },
       { key: 'category', label: 'Category', multi: true, options: (categories.data ?? []).map((c) => ({ value: c.key, label: c.name })) },
     ]

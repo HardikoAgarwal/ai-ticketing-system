@@ -67,7 +67,7 @@ export const wsApi = (slug: string) => {
   const base = `/w/${slug}`
   return {
     workspace: () => api.get<Workspace>(`${base}/`).then((r) => r.data),
-    updateWorkspace: (data: Partial<Pick<Workspace, 'name' | 'tagline' | 'agent_title' | 'tone' | 'sla_hours' | 'ai_enabled'>>) =>
+    updateWorkspace: (data: Partial<Pick<Workspace, 'name' | 'tagline' | 'agent_title' | 'tone' | 'sla_hours' | 'ai_enabled' | 'auto_close_days'>>) =>
       api.patch<Workspace>(`${base}/`, data).then((r) => r.data),
 
     categories: () => api.get<Category[]>(`${base}/categories/`).then((r) => r.data),

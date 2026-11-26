@@ -63,7 +63,7 @@ export function TicketHeader({ ticket, a }: { ticket: StaffTicketDetail; a: Head
     <header aria-label="Ticket summary" className="shrink-0 border-b border-line bg-surface">
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 px-3 pt-2.5 sm:px-5">
         <Button asChild variant="ghost" size="sm" className="-ml-2 text-ink-2">
-          <Link to={a.nav.backTo} aria-label="Back to all tickets"><ArrowLeft /> <span className="max-sm:hidden">All tickets</span></Link>
+          <Link to={a.nav.backTo} aria-label={`Back to ${a.nav.backLabel.toLowerCase()}`}><ArrowLeft /> <span className="max-sm:hidden">{a.nav.backLabel}</span></Link>
         </Button>
         {a.nav.position && a.nav.total ? (
           <div className="flex items-center gap-0.5" role="group" aria-label="Move between tickets">

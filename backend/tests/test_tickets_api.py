@@ -140,3 +140,80 @@ def test_staff_override_beats_ai(client_for, ws, customer, agent, fake_openai, d
     services.apply_ai_classification(t, category=ws.categories.get(key="technical"), priority="LOW", confidence=0.5, reasoning="again")
     t.refresh_from_db()
     assert t.category_id == billing.id and t.priority == "CRITICAL" and t.ai_status == AIStatus.COMPLETED
+
+
+# ---------------------------------------------------------------------------- auto-close
+
+from datetime import timedelta  # noqa: E402
+
+from django.utils import timezone  # noqa: E402
+
+from apps.tickets.models import ActivityAction, Ticket  # noqa: E402
+
+
+def _resolved_ticket(ws, customer, agent, days_ago):
+    t = services.create_ticket(workspace=ws, requester=customer, subject="Hello there", description="A question about my plan details.")
+    services.update_ticket(t, agent, status="RESOLVED")
+    Ticket.objects.filter(pk=t.pk).update(resolved_at=timezone.now() - timedelta(days=days_ago))
+    return t
+
+
+def test_auto_close_closes_only_old_resolved_tickets(ws, customer, agent):
+    old = _resolved_ticket(ws, customer, agent, days_ago=8)
+    recent = _resolved_ticket(ws, customer, agent, days_ago=2)
+    assert services.auto_close_resolved(ws) == 1
+    old.refresh_from_db()
+    recent.refresh_from_db()
+    assert old.status == TicketStatus.CLOSED and old.closed_at is not None
+    assert recent.status == TicketStatus.RESOLVED
+    activity = old.activities.filter(action=ActivityAction.AUTO_CLOSED).get()
+    assert activity.actor is None and "7 days" in activity.to_value
+
+
+def test_auto_close_can_be_switched_off_and_respects_the_period(ws, customer, agent):
+    t = _resolved_ticket(ws, customer, agent, days_ago=20)
+    ws.auto_close_days = 0
+    ws.save(update_fields=["auto_close_days"])
+    assert services.auto_close_resolved(ws) == 0
+    ws.auto_close_days = 30
+    ws.save(update_fields=["auto_close_days"])
+    assert services.auto_close_resolved(ws) == 0  # 20 days is inside a 30 day window
+    ws.auto_close_days = 14
+    ws.save(update_fields=["auto_close_days"])
+    assert services.auto_close_resolved(ws) == 1
+    t.refresh_from_db()
+    assert t.status == TicketStatus.CLOSED
+
+
+def test_auto_close_never_touches_active_tickets(ws, customer, agent):
+    t = services.create_ticket(workspace=ws, requester=customer, subject="Hello there", description="A question about my plan details.")
+    Ticket.objects.filter(pk=t.pk).update(created_at=timezone.now() - timedelta(days=60))
+    assert services.auto_close_resolved(ws) == 0
+    t.refresh_from_db()
+    assert t.status == TicketStatus.OPEN
+
+
+def test_auto_close_setting_is_validated_and_manager_only(client_for, ws, owner, agent):
+    assert client_for(owner).patch(url(ws, ""), {"auto_close_days": 3}, format="json").data["auto_close_days"] == 3
+    assert client_for(owner).patch(url(ws, ""), {"auto_close_days": 0}, format="json").status_code == 200
+    assert client_for(owner).patch(url(ws, ""), {"auto_close_days": 500}, format="json").status_code == 400
+    assert client_for(agent).patch(url(ws, ""), {"auto_close_days": 3}, format="json").status_code == 403
+
+
+def test_saving_the_setting_runs_a_pass_now(client_for, ws, owner, customer, agent, django_capture_on_commit_callbacks):
+    t = _resolved_ticket(ws, customer, agent, days_ago=10)
+    with django_capture_on_commit_callbacks(execute=True):
+        client_for(owner).patch(url(ws, ""), {"auto_close_days": 5}, format="json")
+    t.refresh_from_db()
+    assert t.status == TicketStatus.CLOSED
+
+
+def test_history_filters_and_ordering(client_for, ws, customer, agent):
+    a = _resolved_ticket(ws, customer, agent, days_ago=1)
+    b = _resolved_ticket(ws, customer, agent, days_ago=40)
+    staff = client_for(agent)
+    since = (timezone.now() - timedelta(days=10)).isoformat()
+    ids = [r["id"] for r in staff.get(url(ws, "tickets/"), {"status": "RESOLVED,CLOSED", "resolved_after": since}).data["results"]]
+    assert ids == [a.id]
+    ordered = [r["id"] for r in staff.get(url(ws, "tickets/"), {"status": "RESOLVED,CLOSED", "ordering": "-resolved_at"}).data["results"]]
+    assert ordered == [a.id, b.id]
