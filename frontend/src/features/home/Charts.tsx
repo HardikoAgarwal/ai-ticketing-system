@@ -1,11 +1,12 @@
 import { format, parseISO } from 'date-fns'
+import { Flag, LayoutGrid, Smile, TrendingUp } from 'lucide-react'
 import { Area, AreaChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, Treemap, XAxis, YAxis } from 'recharts'
 
 import type { Analytics } from '@/lib/types'
 
 import { StackBar } from './bars'
 import { ChartPanel, Figure } from './chart-kit'
-import { AXIS, CATEGORY_HUES, CHART, fill, on, PRIORITY_HUE, SENTIMENT_HUE, TOOLTIP, type Hue } from './chart-tokens'
+import { AXIS, CHART, fill, on, PRIORITY_HUE, SENTIMENT_HUE, TOOLTIP, type Hue } from './chart-tokens'
 
 /** Daily points are noisy on long ranges, so 30 days is shown in 2-day steps and 90 days in weeks. Steps are counted back from today so the last one is complete. */
 function bucketed(volume: Analytics['volume'], days: number) {
@@ -22,16 +23,19 @@ function bucketed(volume: Analytics['volume'], days: number) {
 /** Opened vs resolved over time, edge to edge. The two totals sit in the card header, colour-keyed to the lines. */
 export function VolumeChart({ data, days, className }: { data: Analytics; days: number; className?: string }) {
   const { rows, size } = bucketed(data.volume, days)
+  const net = data.totals.created - data.totals.resolved
   const step = size === 1 ? 'per day' : size === 2 ? 'every 2 days' : 'per week'
   return (
     <ChartPanel
+      icon={TrendingUp}
       className={className}
       title="Ticket volume"
-      description={`New and resolved tickets ${step}.`}
+      description={`Tickets opened and resolved ${step}. When the green line stays above the grey one, the backlog is shrinking.`}
       figure={
         <div className="flex gap-6">
           <Figure value={data.totals.created} label="Opened" color={CHART.opened} />
           <Figure value={data.totals.resolved} label="Resolved" color={CHART.resolved} />
+          <Figure value={`${net > 0 ? '+' : ''}${net}`} label="Backlog change" tone={net > 0 ? 'bad' : net < 0 ? 'good' : undefined} />
         </div>
       }
       summary={`Area chart of tickets opened and resolved over the last ${days} days. ${data.totals.created} opened, ${data.totals.resolved} resolved.`}
@@ -70,10 +74,11 @@ export function SentimentChart({ data, className }: { data: Analytics; className
   const negative = items.find((i) => i.key === 'NEGATIVE')?.value ?? 0
   return (
     <ChartPanel
+      icon={Smile}
       className={className}
       title="Customer sentiment"
-      description="The tone the AI read in new tickets. A growing negative share is an early warning."
-      figure={total ? <Figure value={`${Math.round((negative / total) * 100)}%`} label="negative" color={fill('rose')} /> : undefined}
+      description="The tone the AI read in new tickets. A growing red share is an early warning."
+      figure={total ? <Figure value={`${Math.round((negative / total) * 100)}%`} label="negative" tone={negative / total > 0.3 ? 'bad' : undefined} /> : undefined}
       summary={`Bar of ticket sentiment: ${items.map((s) => `${s.label} ${s.value}`).join(', ')}${top ? `. Mostly ${top.label.toLowerCase()}` : ''}.`}
       empty={!total}
     >
@@ -109,6 +114,7 @@ export function PriorityChart({ data, className }: { data: Analytics; className?
   }
   return (
     <ChartPanel
+      icon={Flag}
       className={className}
       title="By priority"
       description="How urgent new tickets are."
@@ -144,24 +150,29 @@ interface TileProps {
   value: number
   index: number
   depth: number
+  total: number
 }
 
-/** One treemap rectangle: solid fill, the category name top-left and its count bottom-left, both inside. */
-function Tile({ x, y, width, height, name, value, index, depth }: TileProps) {
+/** One treemap rectangle. Neutral on purpose (a category is not good or bad): the biggest is solid ink, the rest are soft grey, names and counts inside. */
+function Tile({ x, y, width, height, name, value, index, depth, total }: TileProps) {
   if (depth !== 1 || width < 6 || height < 6) return null
-  const hue = CATEGORY_HUES[index % CATEGORY_HUES.length]
+  const top = index === 0
   const room = width > 84 && height > 56
   const chars = Math.max(4, Math.floor((width - 28) / 7.4))
+  const color = top ? 'var(--canvas)' : 'var(--ink)'
   return (
     <g>
-      <rect x={x} y={y} width={width} height={height} rx={14} fill={fill(hue)} stroke="var(--surface)" strokeWidth={4} />
+      <rect x={x} y={y} width={width} height={height} rx={14} fill={top ? 'var(--ink)' : 'color-mix(in srgb, var(--ink) 9%, var(--surface))'} stroke="var(--surface)" strokeWidth={4} />
       {room && (
         <>
-          <text x={x + 16} y={y + 30} fill={on(hue)} fontSize={14} fontWeight={600}>
+          <text x={x + 16} y={y + 30} fill={color} fontSize={14} fontWeight={600}>
             {name.length > chars ? `${name.slice(0, chars - 1)}…` : name}
           </text>
-          <text x={x + 16} y={y + height - 18} fill={on(hue)} fontSize={Math.min(40, Math.max(24, height / 4))} fontWeight={700}>
+          <text x={x + 16} y={y + height - 18} fill={color} fontSize={Math.min(40, Math.max(24, height / 4))} fontWeight={700}>
             {value}
+            <tspan dx={8} fontSize={13} fontWeight={500} fillOpacity={0.75}>
+              {Math.round((value / total) * 100)}%
+            </tspan>
           </text>
         </>
       )}
@@ -169,19 +180,22 @@ function Tile({ x, y, width, height, name, value, index, depth }: TileProps) {
   )
 }
 
-/** What customers ask about, as a treemap: bigger rectangle, more tickets. Names and counts live inside the rectangles. */
+/** What customers ask about, as a treemap: bigger tile, more tickets. Names and counts live inside the tiles. */
 export function CategoryChart({ data, className }: { data: Analytics; className?: string }) {
   const rows = [...data.by_category].filter((c) => c.count > 0).sort((a, b) => b.count - a.count)
+  const total = rows.reduce((n, c) => n + c.count, 0)
   return (
     <ChartPanel
+      icon={LayoutGrid}
       className={className}
       title="By category"
-      description="What customers ask about most. Bigger tile, more tickets. A good guide for which help articles to write."
+      description="What customers ask about most. Bigger tile, more tickets."
+      figure={rows[0] ? <Figure value={`${Math.round((rows[0].count / total) * 100)}%`} label={rows[0].label} /> : undefined}
       summary={`Treemap of tickets by category: ${rows.map((c) => `${c.label} ${c.count}`).join(', ')}.`}
       empty={!rows.length}
     >
       <ResponsiveContainer width="100%" height={340}>
-        <Treemap data={rows.map((c) => ({ name: c.label, value: c.count }))} dataKey="value" isAnimationActive={false} content={Tile as never} />
+        <Treemap data={rows.map((c) => ({ name: c.label, value: c.count }))} dataKey="value" isAnimationActive={false} content={<Tile {...({ total } as TileProps)} />} />
       </ResponsiveContainer>
     </ChartPanel>
   )

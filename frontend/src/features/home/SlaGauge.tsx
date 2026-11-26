@@ -1,3 +1,5 @@
+import { Timer } from 'lucide-react'
+
 import type { Analytics } from '@/lib/types'
 
 import { ChartPanel } from './chart-kit'
@@ -19,9 +21,10 @@ export function SlaGauge({ data, className }: { data: Analytics; className?: str
   let offset = 0
   return (
     <ChartPanel
+      icon={Timer}
       className={className}
       title="Response targets"
-      description="Replies sent within the target, late, and tickets still waiting past it."
+      description="Replies on time, late, and still waiting."
       summary={`Gauge of response targets: ${met} met, ${breached} missed, ${overdue} overdue now.`}
       empty={!total}
     >

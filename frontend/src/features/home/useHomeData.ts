@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { differenceInHours, parseISO } from 'date-fns'
+import { differenceInDays, differenceInHours, parseISO } from 'date-fns'
 import { useMemo } from 'react'
 
 import { useWorkspace } from '@/auth/workspace'
@@ -18,15 +18,15 @@ export function useHomeData(days: number) {
     queryFn: () => api.tickets.listStaff({ status: 'OPEN,IN_PROGRESS', page_size: 100 }),
     refetchInterval: live,
   })
-  const usage = useQuery({ queryKey: ['ai-usage', slug], queryFn: api.tickets.aiUsage, refetchInterval: live })
-  return { analytics, open, usage }
+  return { analytics, open }
 }
 
+/** Age buckets for open tickets. The colour runs from calm to urgent, so a tall red column is the thing to act on. */
 export const AGING_BUCKETS = [
-  { key: 'd1', label: 'Under 1 day', hint: 'Fresh', tone: 'green' },
-  { key: 'd3', label: '1–3 days', hint: 'Getting older', tone: 'blue' },
-  { key: 'd7', label: '3–7 days', hint: 'Needs a nudge', tone: 'amber' },
-  { key: 'd7p', label: 'Over 7 days', hint: 'Stale', tone: 'red' },
+  { key: 'd1', label: 'Under 1 day', hint: 'Fresh', hue: 'mint' },
+  { key: 'd3', label: '1–3 days', hint: 'Getting older', hue: 'butter' },
+  { key: 'd7', label: '3–7 days', hint: 'Needs a nudge', hue: 'peach' },
+  { key: 'd7p', label: 'Over 7 days', hint: 'Stale', hue: 'rose' },
 ] as const
 export type AgingKey = (typeof AGING_BUCKETS)[number]['key']
 
@@ -41,6 +41,13 @@ export function agingOf(tickets: StaffTicket[]): Record<AgingKey, number> {
     else out.d7p++
   }
   return out
+}
+
+/** The longest-waiting open ticket, for the card headline. */
+export function oldestOf(tickets: StaffTicket[]): { days: number; reference: string } | null {
+  let best: StaffTicket | null = null
+  for (const t of tickets) if (!best || t.created_at < best.created_at) best = t
+  return best ? { days: Math.max(0, differenceInDays(new Date(), parseISO(best.created_at))), reference: best.reference } : null
 }
 
 export interface WorkloadRow {

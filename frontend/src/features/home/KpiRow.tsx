@@ -71,11 +71,11 @@ function Stars({ value }: { value: number }) {
   )
 }
 
-function Kpi({ icon: Icon, hue, label, value, compare, visual }: { icon: LucideIcon; hue: Hue; label: string; value: ReactNode; compare: ReactNode; visual: ReactNode }) {
+function Kpi({ icon: Icon, label, value, compare, visual }: { icon: LucideIcon; label: string; value: ReactNode; compare: ReactNode; visual: ReactNode }) {
   return (
     <Panel className="flex min-w-0 flex-col p-4 sm:p-5">
       <div className="flex items-center gap-2.5 text-sm font-semibold text-ink-2">
-        <span className="flex size-9 items-center justify-center rounded-control" style={{ background: fill(hue), color: on(hue) }}>
+        <span className="flex size-9 items-center justify-center rounded-control bg-sunken text-ink">
           <Icon className="size-[18px]" aria-hidden />
         </span>
         {label}
@@ -105,7 +105,6 @@ export function KpiRow({ analytics: a, days }: { analytics?: Analytics; days: nu
     <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
       <Kpi
         icon={CheckCheck}
-        hue="mint"
         label="Resolved"
         value={a.totals.resolved}
         compare={<Compare now={a.totals.resolved} before={prev.resolved} goodWhen="up" periodLabel={period} />}
@@ -113,7 +112,6 @@ export function KpiRow({ analytics: a, days }: { analytics?: Analytics; days: nu
       />
       <Kpi
         icon={Inbox}
-        hue="lav"
         label="New tickets"
         value={a.totals.created}
         compare={<Compare now={a.totals.created} before={prev.created} goodWhen="down" periodLabel={period} />}
@@ -121,7 +119,6 @@ export function KpiRow({ analytics: a, days }: { analytics?: Analytics; days: nu
       />
       <Kpi
         icon={Timer}
-        hue="sky"
         label="First response"
         value={<Duration minutes={a.avg_first_response_minutes} />}
         compare={<Compare now={a.avg_first_response_minutes} before={prev.avg_first_response_minutes} goodWhen="down" periodLabel={period} show={(n) => <Duration minutes={n} className="text-ink" unitClassName="text-ink-2" />} />}
@@ -136,7 +133,6 @@ export function KpiRow({ analytics: a, days }: { analytics?: Analytics; days: nu
       />
       <Kpi
         icon={Star}
-        hue="butter"
         label="Satisfaction"
         value={csat ? <>{csat.toFixed(1)}<span className="text-xl font-medium text-ink-3"> / 5</span></> : '—'}
         compare={csat ? <Compare now={csat} before={prev.csat_average} goodWhen="up" unit="abs" periodLabel={period} show={(n) => n.toFixed(1)} /> : <p className="text-xs text-ink-2">No ratings yet</p>}

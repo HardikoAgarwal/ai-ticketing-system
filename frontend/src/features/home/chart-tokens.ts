@@ -6,11 +6,10 @@ export const on = (h: Hue) => `var(--on-${h})`
 
 export const PRIORITY_HUE: Record<string, Hue> = { CRITICAL: 'rose', HIGH: 'peach', MEDIUM: 'butter', LOW: 'slate' }
 export const SENTIMENT_HUE: Record<string, Hue> = { NEGATIVE: 'rose', NEUTRAL: 'slate', POSITIVE: 'mint' }
-export const CATEGORY_HUES: Hue[] = ['mint', 'lav', 'peach', 'sky', 'rose', 'butter']
 
 export const CHART = {
-  opened: 'var(--chart-2)',
-  resolved: 'var(--chart-1)',
+  opened: 'var(--viz-slate)',
+  resolved: 'var(--viz-mint)',
   grid: 'var(--line)',
   axis: 'var(--ink-3)',
 } as const
