@@ -1,4 +1,3 @@
-import { Tag } from 'lucide-react'
 import { forwardRef, type CSSProperties } from 'react'
 import { Link } from 'react-router-dom'
 
@@ -6,7 +5,7 @@ import { RelativeTime } from '@/components/common'
 import { Avatar, fill, SolidChip } from '@/components/ds'
 import { cn } from '@/lib/utils'
 
-import { attentionOf, categoryHue, PRIORITY_HUE, PRIORITY_LOOK, STATUS_CHIP, STATUS_HUE, TONE_HUE } from './model'
+import { attentionOf, PRIORITY_HUE, PRIORITY_LOOK, STATUS_CHIP, STATUS_HUE, TONE_HUE } from './model'
 import { NewMessageBadge } from './NewMessageBadge'
 import { SelectBox } from './SelectBox'
 import type { TicketRowProps } from './TicketRow'
@@ -44,9 +43,9 @@ export const TicketCard = forwardRef<HTMLLIElement, TicketRowProps>(function Tic
   const main: CSSProperties | undefined = checked ? { background: 'color-mix(in srgb, var(--violet) 7%, var(--surface))' } : undefined
   return (
     <li ref={ref} data-ticket-id={ticket.id} className="group relative">
-      <div className={cn('relative [--stub-w:21rem]', cursor && 'ring-2 ring-violet ring-offset-2 ring-offset-canvas', fresh && 'ring-2 ring-ai ring-offset-2 ring-offset-canvas motion-safe:animate-pulse')}>
-        <div className="drop-shadow-[0_10px_14px_rgb(60_40_20/0.10)]">
-          <article className={cn('ticket-notch overflow-hidden border-2 bg-surface transition-colors', checked ? 'border-violet' : 'border-line')}>
+      <div className={cn('relative rounded-panel [--stub-w:21rem]', cursor && 'ring-2 ring-violet ring-offset-2 ring-offset-canvas', fresh && 'ring-2 ring-ai ring-offset-2 ring-offset-canvas motion-safe:animate-pulse')}>
+        <div className="drop-shadow-[0_1px_2px_rgb(60_40_20/0.10)] drop-shadow-[0_14px_22px_rgb(60_40_20/0.10)]">
+          <article className={cn('ticket-notch overflow-hidden rounded-panel border-2 bg-surface transition-colors', checked ? 'border-violet' : 'border-transparent')}>
             <Link to={to} aria-label={`${ticket.reference}: ${ticket.subject}`} className="grid outline-none focus-visible:ring-2 focus-visible:ring-violet focus-visible:ring-inset lg:grid-cols-[minmax(0,1fr)_var(--stub-w)]">
               <span className="flex min-w-0 flex-col gap-4 p-5 pt-6 pl-9 sm:pl-10" style={main}>
                 <span className="block">
@@ -56,11 +55,28 @@ export const TicketCard = forwardRef<HTMLLIElement, TicketRowProps>(function Tic
                   </span>
                   <span className="mt-1.5 line-clamp-2 block max-w-[68ch] text-[15px] leading-6 text-ink-2">{ticket.description}</span>
                 </span>
-                <span className="mt-auto flex flex-wrap items-center gap-x-2 gap-y-2">
-                  <SolidChip hue={STATUS_HUE[ticket.status]} icon={status.icon}>{status.label}</SolidChip>
-                  {ticket.category && <SolidChip hue={categoryHue(ticket.category.name)} icon={Tag}>{ticket.category.name}</SolidChip>}
-                  <span className="ml-auto text-xs text-ink-2">
-                    Opened <RelativeTime value={ticket.created_at} /> · Updated <RelativeTime value={ticket.updated_at} />
+                <span className="mt-auto grid grid-cols-2 gap-x-6 gap-y-4 border-t border-line pt-4 sm:grid-cols-4">
+                  <span className="block">
+                    <span className={LABEL}>Status</span>
+                    <span className="mt-1.5 block">
+                      <SolidChip hue={STATUS_HUE[ticket.status]} icon={status.icon}>{status.label}</SolidChip>
+                    </span>
+                  </span>
+                  <span className="block min-w-0">
+                    <span className={LABEL}>Category</span>
+                    <span className="mt-1.5 block truncate text-[15px] leading-7 font-semibold text-ink">{ticket.category?.name ?? '—'}</span>
+                  </span>
+                  <span className="block">
+                    <span className={LABEL}>Opened</span>
+                    <span className="mt-1.5 block text-[15px] leading-7 font-semibold text-ink">
+                      <RelativeTime value={ticket.created_at} />
+                    </span>
+                  </span>
+                  <span className="block">
+                    <span className={LABEL}>Updated</span>
+                    <span className="mt-1.5 block text-[15px] leading-7 font-semibold text-ink">
+                      <RelativeTime value={ticket.updated_at} />
+                    </span>
                   </span>
                 </span>
               </span>
@@ -128,7 +144,7 @@ export const TicketCard = forwardRef<HTMLLIElement, TicketRowProps>(function Tic
 
 export function TicketCardSkeleton() {
   return (
-    <div className="overflow-hidden border border-line bg-surface" aria-hidden>
+    <div className="overflow-hidden rounded-panel bg-surface shadow-card" aria-hidden>
       <div className="grid lg:grid-cols-[1fr_17rem]">
         <div className="space-y-3 p-6">
           <div className="h-4 w-28 animate-pulse rounded bg-sunken" />

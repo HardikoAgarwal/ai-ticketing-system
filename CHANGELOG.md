@@ -2,6 +2,7 @@
 
 ## Unreleased: Helpdesk AI rewrite (from the BookLeaf author portal)
 ### Changed
+- Tickets page v8: ticket cards have rounded corners again, no visible border (a soft two-layer shadow instead; a selected card gets a green border), and status, category, opened and updated are back as a structured, labelled row at the bottom of the card with the status as a badge.
 - Tickets page v7: priority (High / Critical) moved into the ticket stub next to the reference; ticket cards have square corners. Attention badges (overdue, draft ready) and "New message" still hang off the top edge.
 - Tickets page v6: much shorter ticket cards (wider stub with reference, barcode, customer and owner side by side; status and category tags back at the bottom of the card with the times). Badges take no room: "New message" (now a bright amber highlight, not dark) hangs off the top-left edge, priority and attention badges off the top-right edge. Selection is a round button on the left edge that fills green with a check; a selected card gets a green outline and a light green wash.
 - Tickets page v5: AI triage removed from the list cards (it belongs in the ticket details); the stub is a stronger tint and carries the status badge; "New message" is a distinct dark pill with an envelope and a pulsing green dot (cards and table); a clean select box (empty rounded square, solid ink with a check when chosen, dash for select-all) sits in the stub corner, and a selected card gets a clean ink outline. `ai-halo` and `AiSurface animated` are kept for the ticket page.
