@@ -2,6 +2,7 @@
 
 ## Unreleased: Helpdesk AI rewrite (from the BookLeaf author portal)
 ### Changed
+- Tickets page v9: "New message" (green) and "Overdue" (red) are tabs sitting on the top-left edge of a card, side by side, like the Back button tab; the unread dot and the amber badge are gone; cards have no border at all (the white frame around the stub is gone) and a selected card gets a green outline.
 - Tickets page v8: ticket cards have rounded corners again, no visible border (a soft two-layer shadow instead; a selected card gets a green border), and status, category, opened and updated are back as a structured, labelled row at the bottom of the card with the status as a badge.
 - Tickets page v7: priority (High / Critical) moved into the ticket stub next to the reference; ticket cards have square corners. Attention badges (overdue, draft ready) and "New message" still hang off the top edge.
 - Tickets page v6: much shorter ticket cards (wider stub with reference, barcode, customer and owner side by side; status and category tags back at the bottom of the card with the times). Badges take no room: "New message" (now a bright amber highlight, not dark) hangs off the top-left edge, priority and attention badges off the top-right edge. Selection is a round button on the left edge that fills green with a check; a selected card gets a green outline and a light green wash.

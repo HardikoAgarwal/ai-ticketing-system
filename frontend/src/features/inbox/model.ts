@@ -1,4 +1,4 @@
-import { AlertTriangle, ArrowDown, ArrowUp, CircleCheck, CircleDot, Clock, Flame, Loader2, MessageSquare, Minus, Sparkles, Timer, type LucideIcon } from 'lucide-react'
+import { AlertTriangle, ArrowDown, ArrowUp, CircleCheck, CircleDot, Clock, Flame, Loader2, Mail, MessageSquare, Minus, Sparkles, Timer, type LucideIcon } from 'lucide-react'
 
 import { ticketStates } from '@/components/dashboard/badges'
 import type { ChipTone, Hue } from '@/components/ds'
@@ -101,6 +101,25 @@ export function attentionOf(ticket: StaffTicket): Attention | null {
   if (ticket.ai_status === 'PENDING' && ticket.category_source !== 'STAFF') return { kind: 'triaging', tone: 'ai', icon: Loader2, label: 'AI triaging', working: true }
   if (ticket.ai_draft_status === 'COMPLETED') return { kind: 'draft', tone: 'ai', icon: Sparkles, label: 'Draft ready' }
   return null
+}
+
+/**
+ * What to show as the tabs above a card: "New message" (green) and "Overdue" (red) when they apply, side by side; otherwise the single
+ * most important state, if any.
+ */
+export function attentionTabs(ticket: StaffTicket): Attention[] {
+  if (ticket.status === 'RESOLVED' || ticket.status === 'CLOSED') return []
+  const states = ticketStates(ticket)
+  const out: Attention[] = []
+  const msg = states.find((s) => s.kind === 'message')
+  if (msg) out.push({ kind: 'message', tone: 'green', icon: Mail, label: msg.label })
+  const overdue = states.find((s) => s.kind === 'overdue')
+  if (overdue) out.push({ kind: 'overdue', tone: 'red', icon: Timer, label: overdue.label })
+  if (!out.length) {
+    const one = attentionOf(ticket)
+    if (one) out.push(one)
+  }
+  return out
 }
 
 /* ---------- solid colours for this page (the faded pastel chips are not used here) ---------- */

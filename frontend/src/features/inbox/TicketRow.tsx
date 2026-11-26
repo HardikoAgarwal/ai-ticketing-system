@@ -1,4 +1,4 @@
-import { UserRound } from 'lucide-react'
+import { Mail, UserRound } from 'lucide-react'
 import { forwardRef } from 'react'
 import { Link } from 'react-router-dom'
 
@@ -7,7 +7,6 @@ import { AiSpark, Avatar, SolidChip } from '@/components/ds'
 import { cn } from '@/lib/utils'
 import type { StaffTicket } from '@/lib/types'
 
-import { NewMessageBadge } from './NewMessageBadge'
 import { SelectBox } from './SelectBox'
 import { attentionOf, categoryHue, PRIORITY_HUE, PRIORITY_LOOK, STATUS_CHIP, STATUS_HUE, TONE_HUE } from './model'
 
@@ -45,7 +44,7 @@ export const TicketRow = forwardRef<HTMLLIElement, TicketRowProps>(function Tick
   const spin = attn?.working ? '[&>svg]:animate-spin motion-reduce:[&>svg]:animate-none' : undefined
   // The one chip that matters most: what needs attention, else the plain status.
   const lead = attn && AttnIcon ? (
-    attn.kind === 'message' ? <NewMessageBadge label={attn.label} size="sm" /> : <SolidChip hue={TONE_HUE[attn.tone]} icon={AttnIcon} size="sm" className={spin}>
+    <SolidChip hue={attn.kind === 'message' ? 'mint' : TONE_HUE[attn.tone]} icon={attn.kind === 'message' ? Mail : AttnIcon} size="sm" className={spin}>
       {attn.label}
     </SolidChip>
   ) : (

@@ -2,11 +2,10 @@ import { forwardRef, type CSSProperties } from 'react'
 import { Link } from 'react-router-dom'
 
 import { RelativeTime } from '@/components/common'
-import { Avatar, fill, SolidChip } from '@/components/ds'
+import { Avatar, CHIP_TONES, fill, SolidChip } from '@/components/ds'
 import { cn } from '@/lib/utils'
 
-import { attentionOf, PRIORITY_HUE, PRIORITY_LOOK, STATUS_CHIP, STATUS_HUE, TONE_HUE } from './model'
-import { NewMessageBadge } from './NewMessageBadge'
+import { attentionTabs, PRIORITY_HUE, PRIORITY_LOOK, STATUS_CHIP, STATUS_HUE } from './model'
 import { SelectBox } from './SelectBox'
 import type { TicketRowProps } from './TicketRow'
 
@@ -32,25 +31,22 @@ const LABEL = 'text-[11px] font-semibold tracking-[0.1em] text-ink-3 uppercase'
  */
 export const TicketCard = forwardRef<HTMLLIElement, TicketRowProps>(function TicketCard({ ticket, to, cursor, checked, fresh, meId, onToggle }, ref) {
   const closed = ticket.status === 'RESOLVED' || ticket.status === 'CLOSED'
-  const attn = attentionOf(ticket)
+  const tabs = attentionTabs(ticket)
   const status = STATUS_CHIP[ticket.status]
   const prio = PRIORITY_LOOK[ticket.priority]
   const band = closed ? STATUS_HUE[ticket.status] : (PRIORITY_HUE[ticket.priority] ?? 'slate')
   const mine = !!meId && ticket.assigned_to?.id === meId
-  const AttnIcon = attn?.icon
-  const isMessage = attn?.kind === 'message'
   const stub: CSSProperties = { background: `color-mix(in srgb, ${fill(band)} 24%, var(--surface))`, borderColor: `color-mix(in srgb, ${fill(band)} 65%, transparent)` }
   const main: CSSProperties | undefined = checked ? { background: 'color-mix(in srgb, var(--violet) 7%, var(--surface))' } : undefined
   return (
-    <li ref={ref} data-ticket-id={ticket.id} className="group relative">
-      <div className={cn('relative rounded-panel [--stub-w:21rem]', cursor && 'ring-2 ring-violet ring-offset-2 ring-offset-canvas', fresh && 'ring-2 ring-ai ring-offset-2 ring-offset-canvas motion-safe:animate-pulse')}>
+    <li ref={ref} data-ticket-id={ticket.id} className={cn('group relative', tabs.length > 0 && 'mt-10')}>
+      <div className={cn('relative rounded-panel [--stub-w:21rem]', checked && 'ring-2 ring-violet', cursor && 'ring-2 ring-ink ring-offset-2 ring-offset-canvas', fresh && 'ring-2 ring-ai ring-offset-2 ring-offset-canvas motion-safe:animate-pulse')}>
         <div className="drop-shadow-[0_1px_2px_rgb(60_40_20/0.10)] drop-shadow-[0_14px_22px_rgb(60_40_20/0.10)]">
-          <article className={cn('ticket-notch overflow-hidden rounded-panel border-2 bg-surface transition-colors', checked ? 'border-violet' : 'border-transparent')}>
+          <article className={cn('ticket-notch overflow-hidden rounded-panel bg-surface')}>
             <Link to={to} aria-label={`${ticket.reference}: ${ticket.subject}`} className="grid outline-none focus-visible:ring-2 focus-visible:ring-violet focus-visible:ring-inset lg:grid-cols-[minmax(0,1fr)_var(--stub-w)]">
               <span className="flex min-w-0 flex-col gap-4 p-5 pt-6 pl-9 sm:pl-10" style={main}>
                 <span className="block">
                   <span className={cn('line-clamp-2 block text-[22px] leading-7 tracking-tight text-ink', ticket.has_unread ? 'font-bold' : 'font-semibold')}>
-                    {ticket.has_unread && <span className="mr-2 inline-block size-2.5 rounded-full bg-violet align-middle" role="img" aria-label="Unread" />}
                     {ticket.subject}
                   </span>
                   <span className="mt-1.5 line-clamp-2 block max-w-[68ch] text-[15px] leading-6 text-ink-2">{ticket.description}</span>
@@ -128,14 +124,16 @@ export const TicketCard = forwardRef<HTMLLIElement, TicketRowProps>(function Tic
           </article>
         </div>
 
-        {isMessage && attn && <NewMessageBadge label={attn.label} className="pointer-events-none absolute -top-4 left-12 z-10 sm:left-14" />}
-        <span className="pointer-events-none absolute -top-4 right-6 z-10 flex items-center gap-2 lg:right-[calc(var(--stub-w)+1.5rem)]">
-          {attn && AttnIcon && !isMessage && (
-            <SolidChip hue={TONE_HUE[attn.tone]} icon={AttnIcon} size="lg" className={cn('shadow-sm', attn.working && '[&>svg]:animate-spin motion-reduce:[&>svg]:animate-none')}>
-              {attn.label}
-            </SolidChip>
-          )}
-        </span>
+        {tabs.length > 0 && (
+          <span className="absolute bottom-full left-8 z-0 flex items-end gap-1.5">
+            {tabs.map((t) => (
+              <span key={t.kind} className={cn('inline-flex h-9 items-center gap-2 rounded-t-xl border border-b-0 px-4 text-sm font-semibold whitespace-nowrap', CHIP_TONES[t.tone])}>
+                <t.icon className={cn('size-4', t.working && 'animate-spin motion-reduce:animate-none')} aria-hidden />
+                {t.label}
+              </span>
+            ))}
+          </span>
+        )}
         <SelectBox checked={checked} onChange={() => onToggle(ticket.id)} label={`Select ${ticket.reference}`} className="absolute top-1/2 -left-3.5 z-10 -translate-y-1/2" />
       </div>
     </li>
