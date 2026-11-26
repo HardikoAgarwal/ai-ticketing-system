@@ -2,6 +2,7 @@
 
 ## Unreleased: Helpdesk AI rewrite (from the BookLeaf author portal)
 ### Changed
+- Select buttons: in tables the select control is a smaller rounded square placed further left; on cards the round select button on the left edge is now filled with the page colour (not the card colour) when empty.
 - Tables: the coloured priority and category badges are back (status stays the quiet outlined label unless a ticket is overdue, at risk or has a customer waiting).
 - Tables, round three (quieter): the badge now follows the ticket title; only things that need a person (overdue, at risk, a customer waiting) get a coloured badge, everything else is a neutral status label with a small coloured dot (no "Draft ready"); priority is a dot and a word; category is plain text; the unread dot is gone from the table; the first and last columns have more side padding.
 - Tables, round two: the status (or attention) badge now sits beside the ticket title and the Status column is gone; the AI summary line is removed (reference only underneath); the header row is darker with stronger labels; rows hover and select with an accent tint that is clearly different from the page colour (the old hover matched the background in light mode); category shows from xl.

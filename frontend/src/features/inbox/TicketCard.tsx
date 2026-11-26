@@ -136,7 +136,7 @@ export const TicketCard = forwardRef<HTMLLIElement, TicketRowProps>(function Tic
           </span>
         )}
         {fresh && <NewTag className="absolute -top-[22px] right-6" />}
-        <SelectBox checked={checked} onChange={() => onToggle(ticket.id)} label={`Select ${ticket.reference}`} className="absolute top-1/2 -left-3.5 z-10 -translate-y-1/2" />
+        <SelectBox checked={checked} onChange={() => onToggle(ticket.id)} label={`Select ${ticket.reference}`} onCanvas className="absolute top-1/2 -left-3.5 z-10 -translate-y-1/2" />
       </div>
     </li>
   )

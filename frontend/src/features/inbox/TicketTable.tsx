@@ -39,8 +39,8 @@ function Row({ ticket: t, to, cursor, checked, fresh, meId, onToggle }: { ticket
       }}
       className={cn('group', ROW, checked && ROW_SELECTED, cursor && 'outline-2 -outline-offset-2 outline-violet')}
     >
-      <Td className="w-12 pr-0 pl-4">
-        <SelectBox checked={checked} onChange={() => onToggle(t.id)} label={`Select ${t.reference}`} className="size-6" />
+      <Td className="w-12 pr-0 first:pl-3.5">
+        <SelectBox shape="square" checked={checked} onChange={() => onToggle(t.id)} label={`Select ${t.reference}`} className="size-5" />
       </Td>
       <Td>
         <div className="flex min-w-0 items-center gap-3">
@@ -111,7 +111,7 @@ export function TicketTable({ tickets, ticketsPath, cursor, selected, fresh, meI
     <DataTable caption="Active tickets">
       <thead>
         <tr>
-          <Th className="w-12">
+          <Th className="w-12 first:pl-3.5">
             <span className="sr-only">Select</span>
           </Th>
           <Th>Ticket</Th>
