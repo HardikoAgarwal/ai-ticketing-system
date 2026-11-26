@@ -67,14 +67,14 @@ export function HomePage() {
         </Gate>
       </div>
 
-      <TicketAging data={open.data} loading={open.isLoading} error={openError} onRetry={() => open.refetch()} />
-
       <div className="grid grid-cols-1 gap-5 xl:grid-cols-5">
+        <TicketAging className="xl:col-span-3" data={open.data} loading={open.isLoading} error={openError} onRetry={() => open.refetch()} />
         <Gate q={analytics} height="h-[460px]" className="xl:col-span-2">
           {(a) => <SlaGauge data={a} />}
         </Gate>
-        <Workload className="xl:col-span-3" rows={workload} loading={open.isLoading} error={openError} onRetry={() => open.refetch()} inbox={inbox} />
       </div>
+
+      <Workload rows={workload} loading={open.isLoading} error={openError} onRetry={() => open.refetch()} inbox={inbox} />
     </div>
   )
 }
