@@ -6,17 +6,16 @@ import { useWorkspace } from '@/auth/workspace'
 import { ErrorState, Kbd, SegmentedControl, Skeleton } from '@/components/ds'
 import { Button } from '@/components/ui/button'
 import { useShortcut } from '@/components/shell/shortcuts'
-import { cn } from '@/lib/utils'
 import { EndOfList, NoHistory, NoMatches } from '@/features/inbox/ListStates'
 import { rememberQueue } from '@/features/inbox/queue-order'
 import { StatTile } from '@/features/inbox/StatTile'
-import { TicketRowSkeleton } from '@/features/inbox/TicketRow'
+import { HISTORY_COLUMNS } from '@/features/inbox/table-columns'
+import { TableSkeleton } from '@/features/inbox/TableSkeleton'
 import { PageHeader } from '@/features/shared/PageHeader'
 
-import { HISTORY_GRID, HistoryRow } from './HistoryRow'
+import { HistoryRow } from './HistoryRow'
+import { HistoryTable } from './HistoryTable'
 import { RANGES, useHistory, type FinishedStatus, type Range } from './useHistory'
-
-const HEAD = 'text-[11px] font-semibold tracking-[0.08em] text-ink-3 uppercase'
 
 function SearchBox({ value, onCommit }: { value: string; onCommit: (v: string) => void }) {
   const [text, setText] = useState(value)
@@ -130,32 +129,28 @@ export function HistoryPage() {
         </div>
       </div>
 
-      <div className={cn('sticky top-0 z-20 hidden h-9 border-b border-line bg-canvas px-5 lg:block')}>
-        <div className={cn('h-full', HISTORY_GRID)}>
-          <span className={HEAD}>Ticket</span>
-          <span className={HEAD}>Status</span>
-          <span className={HEAD}>Customer</span>
-          <span className={cn(HEAD, 'hidden xl:block')}>Category</span>
-          <span className={HEAD}>Finished</span>
-          <span className={cn(HEAD, 'hidden xl:block')}>Took</span>
-          <span className={cn(HEAD, 'text-right')}>Rating</span>
-        </div>
-      </div>
-
       <div className="pt-3">
         {showSkeleton ? (
-          <div className="space-y-3" role="status" aria-label="Loading history">
-            {Array.from({ length: 7 }).map((_, i) => (
-              <TicketRowSkeleton key={i} />
-            ))}
-          </div>
+          <>
+            <div className="hidden lg:block">
+              <TableSkeleton columns={HISTORY_COLUMNS} caption="Loading history" />
+            </div>
+            <div className="space-y-3 lg:hidden" role="status" aria-label="Loading history">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="sk h-28 rounded-panel bg-sunken" aria-hidden />
+              ))}
+            </div>
+          </>
         ) : list.isError ? (
           <ErrorState error={list.error} onRetry={() => list.refetch()} />
         ) : tickets.length === 0 ? (
           h.filtered ? <NoMatches onClear={h.clearAll} /> : <NoHistory />
         ) : (
           <>
-            <ul aria-label="Resolved and closed tickets" className="space-y-3 pb-3">
+            <div className="hidden pb-3 lg:block">
+              <HistoryTable tickets={tickets} basePath={`/w/${slug}/agent/tickets`} />
+            </div>
+            <ul aria-label="Resolved and closed tickets" className="space-y-3 pb-3 lg:hidden">
               {tickets.map((t) => (
                 <HistoryRow key={t.id} ticket={t} to={`/w/${slug}/agent/tickets/${t.id}`} />
               ))}
