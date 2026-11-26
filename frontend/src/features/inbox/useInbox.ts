@@ -71,7 +71,9 @@ export function useInbox() {
   const known = useRef<{ key: string; ids: Set<number>; pages: number } | null>(null)
   const [fresh, setFresh] = useState<Set<number>>(new Set())
   useEffect(() => {
-    if (!list.data) return
+    // While a new filter is loading, `list.data` is still the OLD list under the NEW key. Comparing against that would call every
+    // ticket in the new result "just arrived" and highlight it, so wait for the real answer.
+    if (!list.data || list.isPlaceholderData) return
     const pages = list.data.pages.length
     const ids = new Set(tickets.map((t) => t.id))
     const prev = known.current
@@ -85,7 +87,7 @@ export function useInbox() {
       }
     }
     known.current = { key: queryKey, ids, pages }
-  }, [list.data, tickets, queryKey])
+  }, [list.data, list.isPlaceholderData, tickets, queryKey])
 
   /** Switch view: filters and search reset, display preferences (sort, layout) stay. */
   const setView = useCallback(
