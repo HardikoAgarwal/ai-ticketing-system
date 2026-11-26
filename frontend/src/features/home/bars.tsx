@@ -20,13 +20,13 @@ export function StackBar({ items, height = 120 }: { items: BarItem[]; height?: n
             <div
               key={it.key}
               title={`${it.label}: ${it.value} (${Math.round(share * 100)}%)`}
-              className="flex min-w-0 flex-col justify-between overflow-hidden rounded-control p-4 transition-[flex-grow] duration-500"
+              className="flex min-w-0 flex-col justify-between overflow-hidden rounded-control p-3 transition sm:p-4-[flex-grow] duration-500"
               style={{ flexGrow: it.value, flexBasis: 0, background: fill(it.hue), color: on(it.hue) }}
             >
               {share >= 0.1 && <span className="truncate text-sm font-semibold">{it.label}</span>}
-              <span className="text-[32px] leading-8 font-semibold tracking-tight tabular-nums">
+              <span className="text-2xl leading-8 font-semibold tracking-tight tabular-nums sm:text-[32px]">
                 {share >= 0.06 ? `${Math.round(share * 100)}%` : ''}
-                {share >= 0.12 && <span className="ml-2 text-sm font-medium opacity-80">{it.value} tickets</span>}
+                {share >= 0.12 && <span className="ml-2 text-sm font-medium opacity-80 max-sm:hidden">{it.value} tickets</span>}
               </span>
             </div>
           )

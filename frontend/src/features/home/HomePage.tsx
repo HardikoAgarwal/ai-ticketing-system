@@ -58,16 +58,16 @@ export function HomePage() {
       </Gate>
 
       <div className="grid grid-cols-1 gap-5 xl:grid-cols-5">
-        <Gate q={analytics} height="h-[500px]" className="xl:col-span-2">
+        <Gate q={analytics} height="h-[600px]" className="xl:col-span-2">
           {(a) => <PriorityChart data={a} />}
         </Gate>
-        <Gate q={analytics} height="h-[500px]" className="xl:col-span-3">
+        <Gate q={analytics} height="h-[600px]" className="xl:col-span-3">
           {(a) => <CategoryChart data={a} />}
         </Gate>
       </div>
 
       <div className="grid grid-cols-1 gap-5 xl:grid-cols-5">
-        <Gate q={analytics} height="h-[460px]" className="xl:col-span-2">
+        <Gate q={analytics} height="h-[560px]" className="xl:col-span-2">
           {(a) => <SlaGauge data={a} />}
         </Gate>
         <TicketAging className="xl:col-span-3" data={open.data} loading={open.isLoading} error={openError} onRetry={() => open.refetch()} />

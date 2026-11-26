@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { differenceInDays, differenceInHours, parseISO } from 'date-fns'
+import { differenceInDays, parseISO } from 'date-fns'
 import { useMemo } from 'react'
 
 import { useWorkspace } from '@/auth/workspace'
@@ -21,33 +21,29 @@ export function useHomeData(days: number) {
   return { analytics, open }
 }
 
-/** Age buckets for open tickets. The colour runs from calm to urgent, so a tall red column is the thing to act on. */
-export const AGING_BUCKETS = [
-  { key: 'd1', label: 'Under 1 day', hint: 'Fresh', hue: 'mint' },
-  { key: 'd3', label: '1–3 days', hint: 'Getting older', hue: 'butter' },
-  { key: 'd7', label: '3–7 days', hint: 'Needs a nudge', hue: 'peach' },
-  { key: 'd7p', label: 'Over 7 days', hint: 'Stale', hue: 'rose' },
-] as const
-export type AgingKey = (typeof AGING_BUCKETS)[number]['key']
-
-export function agingOf(tickets: StaffTicket[]): Record<AgingKey, number> {
-  const out: Record<AgingKey, number> = { d1: 0, d3: 0, d7: 0, d7p: 0 }
-  const now = new Date()
-  for (const t of tickets) {
-    const h = differenceInHours(now, parseISO(t.created_at))
-    if (h < 24) out.d1++
-    else if (h < 72) out.d3++
-    else if (h < 168) out.d7++
-    else out.d7p++
-  }
-  return out
+/** Days waiting, 0 to 13, then "14+". The colour of a column follows how worrying that wait is. */
+export const MAX_DAY = 14
+export function zoneOf(day: number): 'mint' | 'butter' | 'peach' | 'rose' {
+  return day < 1 ? 'mint' : day < 3 ? 'butter' : day < 7 ? 'peach' : 'rose'
 }
 
-/** The longest-waiting open ticket, for the card headline. */
-export function oldestOf(tickets: StaffTicket[]): { days: number; reference: string } | null {
-  let best: StaffTicket | null = null
-  for (const t of tickets) if (!best || t.created_at < best.created_at) best = t
-  return best ? { days: Math.max(0, differenceInDays(new Date(), parseISO(best.created_at))), reference: best.reference } : null
+export interface AgeSummary {
+  rows: { day: number; label: string; count: number }[]
+  median: number | null
+  oldest: { days: number; reference: string } | null
+  stale: number
+}
+
+/** Open tickets grouped by whole days since they arrived, plus the median wait, the oldest ticket and how many are over a week old. */
+export function ageOf(tickets: StaffTicket[]): AgeSummary {
+  const now = new Date()
+  const rows = Array.from({ length: MAX_DAY + 1 }, (_, day) => ({ day, label: day === MAX_DAY ? `${MAX_DAY}+` : String(day), count: 0 }))
+  const days = tickets.map((t) => Math.max(0, differenceInDays(now, parseISO(t.created_at))))
+  for (const d of days) rows[Math.min(d, MAX_DAY)].count++
+  const sorted = [...days].sort((x, y) => x - y)
+  let oldest: AgeSummary['oldest'] = null
+  for (const t of tickets) if (!oldest || differenceInDays(now, parseISO(t.created_at)) > oldest.days) oldest = { days: Math.max(0, differenceInDays(now, parseISO(t.created_at))), reference: t.reference }
+  return { rows, median: sorted.length ? sorted[Math.floor(sorted.length / 2)] : null, oldest, stale: days.filter((d) => d >= 7).length }
 }
 
 export interface WorkloadRow {

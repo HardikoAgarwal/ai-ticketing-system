@@ -13,20 +13,20 @@ import { Duration } from './Duration'
  * Green means better and red means worse (`goodWhen` says which direction is better); direction is also spelled out in text and for screen readers.
  */
 function Compare({ now, before, goodWhen, periodLabel, show = (n) => String(n), unit = 'pct' }: { now: number | null; before: number | null; goodWhen: 'up' | 'down'; periodLabel: string; show?: (n: number) => ReactNode; unit?: 'pct' | 'abs' }) {
-  if (before === null) return <p className="text-xs text-ink-2">No data for the {periodLabel}</p>
+  if (before === null) return <p className="truncate text-xs whitespace-nowrap text-ink-2">No earlier data</p>
   const diff = (now ?? 0) - before
   const hue: Hue = diff === 0 ? 'slate' : (diff > 0) === (goodWhen === 'up') ? 'mint' : 'rose'
   const Icon = diff === 0 ? Minus : diff > 0 ? ArrowUpRight : ArrowDownRight
   const amount = unit === 'abs' || before === 0 ? Math.abs(diff).toFixed(unit === 'abs' ? 1 : 0) : `${Math.abs(Math.round((diff / before) * 100))}%`
   return (
-    <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
-      <span className="inline-flex items-center gap-0.5 rounded-chip px-2 py-0.5 text-xs font-semibold tabular-nums" style={{ background: fill(hue), color: on(hue) }}>
+    <div className="flex items-center gap-2 whitespace-nowrap" title={`${periodLabel}: ${typeof show(before) === 'string' ? show(before) : ''}`}>
+      <span className="inline-flex shrink-0 items-center gap-0.5 rounded-chip py-0.5 pr-2 pl-1.5 text-xs font-semibold tabular-nums" style={{ background: fill(hue), color: on(hue) }}>
         <Icon className="size-3.5" aria-hidden />
-        {diff === 0 ? 'No change' : amount}
-        <span className="sr-only">{diff > 0 ? ' higher' : diff < 0 ? ' lower' : ''}, {hue === 'mint' ? 'an improvement' : hue === 'rose' ? 'worse' : 'unchanged'}</span>
+        {diff === 0 ? 'Same' : amount}
+        <span className="sr-only">{diff > 0 ? ' higher' : diff < 0 ? ' lower' : ''}, {hue === 'mint' ? 'an improvement' : hue === 'rose' ? 'worse' : 'unchanged'}, compared with the {periodLabel}</span>
       </span>
-      <span className="text-xs text-ink-2">
-        was <span className="font-semibold text-ink">{show(before)}</span> in the {periodLabel}
+      <span className="min-w-0 truncate text-xs text-ink-2">
+        vs <span className="font-semibold text-ink">{show(before)}</span> last period
       </span>
     </div>
   )
@@ -55,14 +55,14 @@ function Spark({ data, color, id }: { data: number[]; color: string; id: string 
 
 function Stars({ value }: { value: number }) {
   return (
-    <div className="flex items-center gap-1" role="img" aria-label={`${value.toFixed(1)} out of 5 stars`}>
+    <div className="flex items-center gap-0.5 sm:gap-1" role="img" aria-label={`${value.toFixed(1)} out of 5 stars`}>
       {[1, 2, 3, 4, 5].map((n) => {
         const part = Math.max(0, Math.min(1, value - (n - 1)))
         return (
           <span key={n} className="relative inline-flex">
-            <Star className="size-7 text-line-strong" aria-hidden />
+            <Star className="size-5 text-line-strong sm:size-7" aria-hidden />
             <span className="absolute inset-0 overflow-hidden" style={{ width: `${part * 100}%` }}>
-              <Star className="size-7 text-transparent" style={{ fill: fill('butter') }} aria-hidden />
+              <Star className="size-5 text-transparent sm:size-7" style={{ fill: fill('butter') }} aria-hidden />
             </span>
           </span>
         )
@@ -123,7 +123,7 @@ export function KpiRow({ analytics: a, days }: { analytics?: Analytics; days: nu
         value={<Duration minutes={a.avg_first_response_minutes} />}
         compare={<Compare now={a.avg_first_response_minutes} before={prev.avg_first_response_minutes} goodWhen="down" periodLabel={period} show={(n) => <Duration minutes={n} className="text-ink" unitClassName="text-ink-2" />} />}
         visual={
-          <dl className="flex w-full items-center justify-between gap-3 rounded-control bg-sunken px-3.5 py-3">
+          <dl className="flex w-full flex-col gap-0.5 rounded-control bg-sunken px-3.5 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
             <dt className="text-xs font-medium text-ink-2">Average time to resolve</dt>
             <dd className="text-xl leading-6 font-semibold text-ink">
               <Duration minutes={a.avg_resolution_minutes} />

@@ -7,72 +7,68 @@ import type { Paginated, StaffTicket } from '@/lib/types'
 
 import { ChartPanel, Figure } from './chart-kit'
 import { CHART, fill, TOOLTIP } from './chart-tokens'
-import { AGING_BUCKETS, agingOf, oldestOf, type WorkloadRow } from './useHomeData'
+import { ageOf, MAX_DAY, zoneOf, type WorkloadRow } from './useHomeData'
 
 function Pending({ error, onRetry, className }: { error?: unknown; onRetry: () => void; className?: string }) {
   return <div className={className}>{error ? <ErrorState error={error} onRetry={onRetry} /> : <Skeleton className="h-72 rounded-panel" />}</div>
 }
 
-function AgeTick({ x, y, payload }: { x?: number; y?: number; payload?: { value: string } }) {
-  const hint = AGING_BUCKETS.find((b) => b.label === payload?.value)?.hint
-  return (
-    <g transform={`translate(${x},${y})`}>
-      <text y={20} textAnchor="middle" fill="var(--ink)" fontSize={13} fontWeight={600}>
-        {payload?.value}
-      </text>
-      <text y={38} textAnchor="middle" fill="var(--ink-3)" fontSize={12} className="max-sm:hidden">
-        {hint}
-      </text>
-    </g>
-  )
-}
+const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`
 
 /**
- * Open tickets by how long they have waited, as four columns that go from calm green to urgent red.
- * The card headline is the single longest-waiting ticket, which is usually the first thing to look at.
+ * How long open tickets have been waiting, as a histogram: one column per day of waiting (0, 1, 2 ... 14+).
+ * Columns go from green (arrived today) through amber and orange to red (a week or more), so mass on the right means a stale queue.
+ * The headline figures are the median wait and the single oldest ticket.
  */
 export function TicketAging({ data, loading, error, onRetry, className }: { data?: Paginated<StaffTicket>; loading: boolean; error?: unknown; onRetry: () => void; className?: string }) {
   if (loading || error) return <Pending error={error} onRetry={onRetry} className={className} />
   const tickets = data?.results ?? []
-  const aging = agingOf(tickets)
-  const rows = AGING_BUCKETS.map((b) => ({ key: b.key, label: b.label, value: aging[b.key], hue: b.hue }))
-  const oldest = oldestOf(tickets)
+  const { rows, median, oldest, stale } = ageOf(tickets)
   const sampled = data && data.count > data.results.length
   return (
     <ChartPanel
       icon={Hourglass}
       className={className}
       title="How long tickets have waited"
-      description={`Open tickets by age.${sampled ? ` Based on the ${data.results.length} most urgent of ${data.count}.` : ' Tall columns on the right mean stale tickets.'}`}
-      figure={oldest ? <Figure value={`${oldest.days} ${oldest.days === 1 ? 'day' : 'days'}`} label={`Oldest: ${oldest.reference}`} tone={oldest.days >= 7 ? 'bad' : undefined} /> : undefined}
-      summary={`Open ticket age: ${rows.map((r) => `${r.value} ${r.label}`).join(', ')}.`}
+      description={sampled ? `Open tickets by days waiting. The ${data.results.length} most urgent of ${data.count}.` : 'Open tickets by days waiting. Tall red columns mean stale tickets.'}
+      figure={
+        median === null ? undefined : (
+          <div className="flex gap-6">
+            <Figure value={plural(median, 'day')} label="Median wait" />
+            <Figure value={plural(oldest?.days ?? 0, 'day')} label={`Oldest ${oldest?.reference ?? ''}`} tone={stale ? 'bad' : undefined} />
+          </div>
+        )
+      }
+      summary={`Open tickets by days waiting: ${rows.filter((r) => r.count).map((r) => `${r.count} at ${r.label} days`).join(', ')}.`}
       empty={!tickets.length}
     >
-      <ResponsiveContainer width="100%" height={300}>
-        <BarChart data={rows} margin={{ top: 28, right: 8, left: -24, bottom: 4 }}>
+      <ResponsiveContainer width="100%" height={340}>
+        <BarChart data={rows} margin={{ top: 28, right: 4, left: -20, bottom: 0 }} barCategoryGap="14%">
           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={CHART.grid} />
-          <XAxis dataKey="label" tickLine={false} axisLine={false} tick={AgeTick as never} interval={0} height={52} />
+          <XAxis dataKey="label" tickLine={false} axisLine={false} tick={{ fill: 'var(--ink-2)', fontSize: 12 }} tickMargin={8} interval={0} label={{ value: 'Days waiting', position: 'insideBottom', offset: -18, fill: 'var(--ink-3)', fontSize: 12 }} height={56} />
           <YAxis allowDecimals={false} tickLine={false} axisLine={false} tick={{ fill: 'var(--ink-3)', fontSize: 12 }} width={44} />
-          <Tooltip {...TOOLTIP} />
-          <Bar dataKey="value" name="Open tickets" radius={[12, 12, 4, 4]} maxBarSize={110} isAnimationActive={false} minPointSize={4}>
+          <Tooltip {...TOOLTIP} formatter={(v) => [v, 'Open tickets']} labelFormatter={(l) => `${l} ${l === '1' ? 'day' : 'days'} waiting`} />
+          <Bar dataKey="count" radius={[8, 8, 3, 3]} isAnimationActive={false}>
             {rows.map((r) => (
-              <Cell key={r.key} fill={fill(r.hue)} />
+              <Cell key={r.day} fill={fill(zoneOf(r.day))} fillOpacity={r.count ? 1 : 0.18} />
             ))}
-            <LabelList dataKey="value" position="top" offset={8} style={{ fill: 'var(--ink)', fontSize: 18, fontWeight: 700 }} />
+            <LabelList dataKey="count" position="top" offset={6} formatter={(v: unknown) => (Number(v) ? String(v) : '')} style={{ fill: 'var(--ink)', fontSize: 14, fontWeight: 700 }} />
           </Bar>
         </BarChart>
       </ResponsiveContainer>
+      <p className="mt-1 text-center text-xs text-ink-2">Days since the ticket arrived (the last column is {MAX_DAY} or more)</p>
     </ChartPanel>
   )
 }
 
+const MAX_DOTS = 36
+
 /**
- * Open tickets per person as one bar each. The bar is dark for tickets still on time and red for overdue ones, so a red tail
- * shows who is behind. "Unassigned" is always first: tickets nobody owns are the ones most likely to slip.
+ * Open tickets per person as one tile each, with one dot per ticket: red for overdue (first), dark for on time.
+ * You can count them, and a tile with red dots is visibly behind. "Unassigned" always comes first (dashed): tickets nobody owns are the ones that slip.
  */
 export function Workload({ rows, loading, error, onRetry, inbox, className }: { rows: WorkloadRow[]; loading: boolean; error?: unknown; onRetry: () => void; inbox: (qs: string) => string; className?: string }) {
   if (loading || error) return <Pending error={error} onRetry={onRetry} className={className} />
-  const max = Math.max(1, ...rows.map((r) => r.count))
   const total = rows.reduce((n, r) => n + r.count, 0)
   const overdue = rows.reduce((n, r) => n + r.overdue, 0)
   return (
@@ -80,7 +76,7 @@ export function Workload({ rows, loading, error, onRetry, inbox, className }: { 
       icon={Users}
       className={className}
       title="Workload by owner"
-      description="Open tickets per person. Dark is on time, red is overdue. Select a row to open that list."
+      description="One dot per open ticket. Red dots are overdue. Select a tile to open that list."
       figure={
         <div className="flex gap-6">
           <Figure value={total} label="Open" />
@@ -89,36 +85,38 @@ export function Workload({ rows, loading, error, onRetry, inbox, className }: { 
       }
       summary={`Open tickets by owner: ${rows.map((r) => `${r.name} ${r.count}${r.overdue ? `, ${r.overdue} overdue` : ''}`).join('; ')}.`}
     >
-      <ul className="divide-y divide-line">
+      <ul className="grid grid-cols-[repeat(auto-fit,minmax(15rem,1fr))] gap-3">
         {rows.map((r) => {
           const unassigned = r.id === null
+          const onTime = r.count - r.overdue
+          const dots = [...Array.from({ length: r.overdue }, () => 'late'), ...Array.from({ length: onTime }, () => 'ok')]
           return (
             <li key={r.id ?? 'none'}>
               <Link
                 to={inbox(`view=${unassigned ? 'unassigned' : 'all'}&status=OPEN,IN_PROGRESS${unassigned ? '' : `&assigned=${r.id}`}`)}
-                className="group -mx-2 flex flex-wrap items-center gap-x-4 gap-y-2.5 rounded-control px-2 py-3 transition-colors hover:bg-surface-2 focus-visible:ring-2 focus-visible:ring-violet focus-visible:outline-none"
+                className={`group flex h-full flex-col rounded-panel border p-4 transition-colors hover:bg-surface-2 focus-visible:ring-2 focus-visible:ring-violet focus-visible:outline-none ${unassigned ? 'border-dashed border-line-strong' : 'border-line'}`}
               >
-                <span className="flex min-w-0 flex-1 items-center gap-3 sm:w-52 sm:flex-none">
+                <span className="flex items-center gap-3">
                   {unassigned ? (
-                    <span aria-hidden className="flex size-8 shrink-0 items-center justify-center rounded-control border border-dashed border-line-strong text-xs text-ink-3">
+                    <span aria-hidden className="flex size-9 shrink-0 items-center justify-center rounded-control border border-dashed border-line-strong text-sm text-ink-3">
                       ?
                     </span>
                   ) : (
-                    <Avatar name={r.name} size="md" />
+                    <Avatar name={r.name} size="lg" />
                   )}
-                  <span className={unassigned ? 'truncate text-sm font-medium text-ink-2 italic' : 'truncate text-sm font-semibold text-ink group-hover:underline'}>{r.name}</span>
-                </span>
-                <span className="order-last flex h-7 basis-full sm:order-none sm:basis-0 sm:flex-1" aria-hidden>
-                  <span className="flex h-full overflow-hidden rounded-chip bg-sunken" style={{ width: '100%' }}>
-                    <span className="flex h-full overflow-hidden rounded-chip transition-[width] duration-500 motion-reduce:transition-none" style={{ width: `${(r.count / max) * 100}%` }}>
-                      <span className="h-full bg-ink" style={{ width: `${((r.count - r.overdue) / Math.max(r.count, 1)) * 100}%` }} />
-                      <span className="h-full" style={{ width: `${(r.overdue / Math.max(r.count, 1)) * 100}%`, background: fill('rose') }} />
+                  <span className="min-w-0 flex-1">
+                    <span className={`block truncate text-sm font-semibold text-ink group-hover:underline ${unassigned ? 'italic' : ''}`}>{r.name}</span>
+                    <span className="block text-xs text-ink-2" style={r.overdue ? { color: fill('rose') } : undefined}>
+                      {r.overdue ? `${r.overdue} overdue` : r.count ? 'All on time' : unassigned ? 'Everything has an owner' : 'Nothing open'}
                     </span>
                   </span>
+                  <span className="text-3xl leading-8 font-semibold tracking-tight text-ink tabular-nums">{r.count}</span>
                 </span>
-                <span className="flex shrink-0 items-baseline justify-end gap-2 tabular-nums sm:w-28">
-                  <span className="text-lg font-semibold text-ink">{r.count}</span>
-                  {r.overdue > 0 ? <span className="text-xs font-semibold" style={{ color: fill('rose') }}>{r.overdue} overdue</span> : <span className="text-xs text-ink-3">open</span>}
+                <span className="mt-4 flex min-h-3.5 flex-wrap gap-1.5" aria-hidden>
+                  {dots.slice(0, MAX_DOTS).map((kind, i) => (
+                    <span key={i} className="size-3.5 rounded-full" style={{ background: kind === 'late' ? fill('rose') : 'var(--ink)' }} />
+                  ))}
+                  {dots.length > MAX_DOTS && <span className="text-xs font-semibold text-ink-2">+{dots.length - MAX_DOTS}</span>}
                 </span>
               </Link>
             </li>

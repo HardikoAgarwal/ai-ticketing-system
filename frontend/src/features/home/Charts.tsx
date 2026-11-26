@@ -6,7 +6,7 @@ import type { Analytics } from '@/lib/types'
 
 import { StackBar } from './bars'
 import { ChartPanel, Figure } from './chart-kit'
-import { AXIS, CHART, fill, on, PRIORITY_HUE, SENTIMENT_HUE, TOOLTIP, type Hue } from './chart-tokens'
+import { AXIS, CATEGORY_HUES, CHART, fill, on, PRIORITY_HUE, SENTIMENT_HUE, TOOLTIP, type Hue } from './chart-tokens'
 
 /** Daily points are noisy on long ranges, so 30 days is shown in 2-day steps and 90 days in weeks. Steps are counted back from today so the last one is complete. */
 function bucketed(volume: Analytics['volume'], days: number) {
@@ -121,10 +121,10 @@ export function PriorityChart({ data, className }: { data: Analytics; className?
       summary={`Ring chart of tickets by priority: ${data.by_priority.map((p) => `${p.label} ${p.count}`).join(', ')}.`}
       empty={!total}
     >
-      <div className="relative">
-        <ResponsiveContainer width="100%" height={340}>
-          <PieChart margin={{ top: 4, right: 4, bottom: 4, left: 4 }}>
-            <Pie data={slices} dataKey="count" nameKey="label" innerRadius="42%" outerRadius="100%" paddingAngle={2} cornerRadius={8} stroke="var(--surface)" strokeWidth={2} isAnimationActive={false} label={label as never} labelLine={false}>
+      <div className="relative h-[320px] w-full sm:h-[420px]">
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
+            <Pie data={slices} dataKey="count" nameKey="label" innerRadius="40%" outerRadius="100%" paddingAngle={2} cornerRadius={8} stroke="var(--surface)" strokeWidth={2} isAnimationActive={false} label={label as never} labelLine={false}>
               {slices.map((s) => (
                 <Cell key={s.key} fill={fill(s.hue)} />
               ))}
@@ -153,16 +153,16 @@ interface TileProps {
   total: number
 }
 
-/** One treemap rectangle. Neutral on purpose (a category is not good or bad): the biggest is solid ink, the rest are soft grey, names and counts inside. */
+/** One treemap rectangle: a solid colour per category, the name top-left, the count and share bottom-left, all inside the tile. */
 function Tile({ x, y, width, height, name, value, index, depth, total }: TileProps) {
   if (depth !== 1 || width < 6 || height < 6) return null
-  const top = index === 0
+  const hue = CATEGORY_HUES[index % CATEGORY_HUES.length]
   const room = width > 84 && height > 56
   const chars = Math.max(4, Math.floor((width - 28) / 7.4))
-  const color = top ? 'var(--canvas)' : 'var(--ink)'
+  const color = on(hue)
   return (
     <g>
-      <rect x={x} y={y} width={width} height={height} rx={14} fill={top ? 'var(--ink)' : 'color-mix(in srgb, var(--ink) 9%, var(--surface))'} stroke="var(--surface)" strokeWidth={4} />
+      <rect x={x} y={y} width={width} height={height} rx={14} fill={fill(hue)} stroke="var(--surface)" strokeWidth={4} />
       {room && (
         <>
           <text x={x + 16} y={y + 30} fill={color} fontSize={14} fontWeight={600}>
@@ -170,7 +170,7 @@ function Tile({ x, y, width, height, name, value, index, depth, total }: TilePro
           </text>
           <text x={x + 16} y={y + height - 18} fill={color} fontSize={Math.min(40, Math.max(24, height / 4))} fontWeight={700}>
             {value}
-            <tspan dx={8} fontSize={13} fontWeight={500} fillOpacity={0.75}>
+            <tspan dx={8} fontSize={13} fontWeight={500} fillOpacity={0.8}>
               {Math.round((value / total) * 100)}%
             </tspan>
           </text>
@@ -194,7 +194,7 @@ export function CategoryChart({ data, className }: { data: Analytics; className?
       summary={`Treemap of tickets by category: ${rows.map((c) => `${c.label} ${c.count}`).join(', ')}.`}
       empty={!rows.length}
     >
-      <ResponsiveContainer width="100%" height={340}>
+      <ResponsiveContainer width="100%" height={420}>
         <Treemap data={rows.map((c) => ({ name: c.label, value: c.count }))} dataKey="value" isAnimationActive={false} content={<Tile {...({ total } as TileProps)} />} />
       </ResponsiveContainer>
     </ChartPanel>
