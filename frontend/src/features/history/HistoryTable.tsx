@@ -2,8 +2,8 @@ import { Star } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 
 import { RelativeTime } from '@/components/common'
-import { Avatar, DataTable, ROW, TBODY, Td, Th } from '@/components/ds'
-import { STATUS_CHIP, STATUS_HUE } from '@/features/inbox/model'
+import { Avatar, DataTable, ROW, SolidChip, TBODY, Td, Th } from '@/components/ds'
+import { categoryHue, STATUS_CHIP, STATUS_HUE } from '@/features/inbox/model'
 import { StatusPill } from '@/features/inbox/StatusPill'
 import { formatDate } from '@/lib/format'
 import type { StaffTicket } from '@/lib/types'
@@ -54,7 +54,13 @@ function Row({ ticket: t, to }: { ticket: StaffTicket; to: string }) {
         </div>
       </Td>
       <Td className="hidden w-44 xl:table-cell">
-        <span className="block truncate text-sm text-ink-2">{t.category?.name ?? '—'}</span>
+        {t.category ? (
+          <SolidChip hue={categoryHue(t.category.name)} size="sm" className="max-w-full truncate">
+            {t.category.name}
+          </SolidChip>
+        ) : (
+          <span className="text-ink-3">—</span>
+        )}
       </Td>
       <Td className="w-32">
         <span className="block text-sm font-semibold text-ink">{t.resolved_at ? formatDate(t.resolved_at) : '—'}</span>

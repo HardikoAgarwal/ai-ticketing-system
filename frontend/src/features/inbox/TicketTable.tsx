@@ -6,7 +6,7 @@ import { Avatar, DataTable, ROW, ROW_SELECTED, SolidChip, TBODY, Td, Th } from '
 import type { StaffTicket } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
-import { attentionOf, PRIORITY_HUE, PRIORITY_LOOK, STATUS_CHIP, STATUS_HUE, TONE_HUE } from './model'
+import { attentionOf, categoryHue, PRIORITY_HUE, PRIORITY_LOOK, STATUS_CHIP, STATUS_HUE, TONE_HUE } from './model'
 import { NewTag } from './NewTag'
 import { StatusPill } from './StatusPill'
 import { SelectBox } from './SelectBox'
@@ -68,10 +68,9 @@ function Row({ ticket: t, to, cursor, checked, fresh, meId, onToggle }: { ticket
       </Td>
       <Td className="w-28">
         {prio && (
-          <span className="inline-flex items-center gap-2 text-sm font-medium text-ink">
-            <span className="size-2.5 rounded-full" style={{ background: `var(--viz-${PRIORITY_HUE[t.priority] ?? 'slate'})` }} aria-hidden />
+          <SolidChip hue={PRIORITY_HUE[t.priority] ?? 'slate'} icon={prio.icon} size="sm">
             {prio.label}
-          </span>
+          </SolidChip>
         )}
       </Td>
       <Td className="w-44">
@@ -81,7 +80,13 @@ function Row({ ticket: t, to, cursor, checked, fresh, meId, onToggle }: { ticket
         </div>
       </Td>
       <Td className="hidden w-44 xl:table-cell">
-        <span className="block truncate text-sm text-ink-2">{t.category?.name ?? '—'}</span>
+        {t.category ? (
+          <SolidChip hue={categoryHue(t.category.name)} size="sm" className="max-w-full truncate">
+            {t.category.name}
+          </SolidChip>
+        ) : (
+          <span className="text-ink-3">—</span>
+        )}
       </Td>
       <Td className="hidden w-36 xl:table-cell">
         {t.assigned_to ? (
