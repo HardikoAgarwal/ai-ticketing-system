@@ -161,14 +161,23 @@ export const TicketRow = forwardRef<HTMLLIElement, TicketRowProps>(function Tick
   )
 })
 
+/** A table-row-shaped placeholder: select circle, two text lines, then chip, customer and date blocks, softly shimmering. */
 export function TicketRowSkeleton() {
+  const bar = 'sk rounded-md bg-sunken'
   return (
-    <div className="flex items-start gap-3 px-3 py-3" aria-hidden>
-      <div className="size-8 animate-pulse rounded-control bg-sunken" />
-      <div className="flex-1 space-y-2">
-        <div className="h-4 w-2/3 animate-pulse rounded bg-sunken" />
-        <div className="h-3.5 w-5/6 animate-pulse rounded bg-sunken" />
-        <div className="h-3 w-1/2 animate-pulse rounded bg-sunken" />
+    <div className="rounded-panel bg-surface px-4 py-5 shadow-card" aria-hidden>
+      <div className={cn('items-center gap-x-4', GRID, 'flex')}>
+        <div className="size-6 shrink-0 rounded-full bg-sunken sk lg:size-6" />
+        <div className="min-w-0 flex-1 space-y-2.5">
+          <div className={`${bar} h-4 w-3/5`} />
+          <div className={`${bar} h-3.5 w-4/5`} />
+        </div>
+        <div className="sk hidden h-6 w-28 rounded-chip bg-sunken lg:block" />
+        <div className="sk hidden h-6 w-20 rounded-chip bg-sunken lg:block" />
+        <div className={`${bar} hidden h-4 w-28 lg:block`} />
+        <div className="sk hidden h-6 w-24 rounded-chip bg-sunken xl:block" />
+        <div className={`${bar} hidden h-4 w-16 xl:block`} />
+        <div className={`${bar} hidden h-4 w-14 lg:block`} />
       </div>
     </div>
   )

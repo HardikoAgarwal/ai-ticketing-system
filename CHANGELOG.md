@@ -2,6 +2,7 @@
 
 ## Unreleased: Helpdesk AI rewrite (from the BookLeaf author portal)
 ### Changed
+- Tickets page v12: the select-all box and "N tickets" row are gone; "Select all N" lives in the bulk dock that appears when you select a ticket. Filters popup rebuilt (sectioned cards with coloured options, count badges, Clear all and a "Show N tickets" button); the Filters button gets a count dot when anything is applied. Applied filters show as coloured chips with remove buttons, the match count and a Clear all button in a bar under the stat tiles. Coloured, shimmering skeletons for the stat tiles on load and for the cards / table rows whenever a tile, filter or sort changes the list; the list eases in when it arrives.
 - Tickets page v11: a selected card (or table row) no longer gets a green border; it shows the filled check and a light green wash only.
 - Tickets page v10: search (smaller), Filters, Sort and the Cards / Table switch now live in the page header (the "N tickets · N overdue" line is gone), followed by the stat tiles and then the tickets; applied filters show under the tiles. The ticket stub is wider and shows customer and owner names larger. A selected card shows a green border.
 - Tickets page v9: "New message" (green) and "Overdue" (red) are tabs sitting on the top-left edge of a card, side by side, like the Back button tab; the unread dot and the amber badge are gone; cards have no border at all (the white frame around the stub is gone) and a selected card gets a green outline.

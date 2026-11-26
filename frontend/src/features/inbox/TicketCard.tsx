@@ -2,7 +2,7 @@ import { forwardRef, type CSSProperties } from 'react'
 import { Link } from 'react-router-dom'
 
 import { RelativeTime } from '@/components/common'
-import { Avatar, CHIP_TONES, fill, SolidChip } from '@/components/ds'
+import { Avatar, CHIP_TONES, fill, SolidChip, type Hue } from '@/components/ds'
 import { cn } from '@/lib/utils'
 
 import { attentionTabs, PRIORITY_HUE, PRIORITY_LOOK, STATUS_CHIP, STATUS_HUE } from './model'
@@ -140,20 +140,53 @@ export const TicketCard = forwardRef<HTMLLIElement, TicketRowProps>(function Tic
   )
 })
 
-export function TicketCardSkeleton() {
+const tint = (hue: Hue, pct: number) => `color-mix(in srgb, ${fill(hue)} ${pct}%, var(--surface))`
+
+/** A card-shaped placeholder: attention tab, title and text lines, the facts row, and a tinted stub, all softly shimmering. */
+export function TicketCardSkeleton({ hue = 'slate' }: { hue?: Hue }) {
+  const bar = 'sk rounded-md bg-sunken'
   return (
-    <div className="overflow-hidden rounded-panel bg-surface shadow-card" aria-hidden>
-      <div className="grid lg:grid-cols-[1fr_17rem]">
-        <div className="space-y-3 p-6">
-          <div className="h-4 w-28 animate-pulse rounded bg-sunken" />
-          <div className="h-6 w-2/3 animate-pulse rounded bg-sunken" />
-          <div className="h-4 w-5/6 animate-pulse rounded bg-sunken" />
-          <div className="flex gap-2 pt-3">
-            <div className="h-7 w-20 animate-pulse rounded-chip bg-sunken" />
-            <div className="h-7 w-24 animate-pulse rounded-chip bg-sunken" />
+    <div className="relative mt-10" aria-hidden>
+      <span className="absolute bottom-full left-8 h-9 w-32 rounded-t-xl sk" style={{ background: tint(hue, 22) }} />
+      <div className="overflow-hidden rounded-panel bg-surface shadow-card">
+        <div className="grid lg:grid-cols-[minmax(0,1fr)_23rem]">
+          <div className="flex flex-col gap-4 p-5 pt-6 pl-9 sm:pl-10">
+            <div className="space-y-2.5">
+              <div className={`${bar} h-6 w-3/5`} />
+              <div className={`${bar} h-4 w-11/12`} />
+              <div className={`${bar} h-4 w-2/3`} />
+            </div>
+            <div className="mt-2 grid grid-cols-4 gap-6 border-t border-line pt-4">
+              {[28, 20, 16, 16].map((w, i) => (
+                <div key={i} className="space-y-2">
+                  <div className={`${bar} h-2.5 w-12`} />
+                  <div className={`${bar} h-5`} style={{ width: `${w * 3}px`, maxWidth: '100%' }} />
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="flex flex-col justify-between gap-5 p-5 sk" style={{ background: tint(hue, 22) }}>
+            <div className="flex items-start justify-between">
+              <div className="space-y-2">
+                <div className="h-2.5 w-12 rounded-md" style={{ background: tint(hue, 38) }} />
+                <div className="h-6 w-28 rounded-md" style={{ background: tint(hue, 38) }} />
+                <div className="h-7 w-24 rounded-md" style={{ background: tint(hue, 30) }} />
+              </div>
+              <div className="h-8 w-20 rounded-chip" style={{ background: tint(hue, 48) }} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              {[0, 1].map((i) => (
+                <div key={i} className="space-y-2">
+                  <div className="h-2.5 w-14 rounded-md" style={{ background: tint(hue, 38) }} />
+                  <div className="flex items-center gap-2">
+                    <div className="size-8 rounded-control" style={{ background: tint(hue, 44) }} />
+                    <div className="h-4 w-16 rounded-md" style={{ background: tint(hue, 38) }} />
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
-        <div className="h-40 animate-pulse bg-sunken" />
       </div>
     </div>
   )

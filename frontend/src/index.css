@@ -487,6 +487,35 @@
   }
 }
 
+/* Skeleton shimmer: lay it over a tinted block (bg colour + this class) for a soft light sweep. */
+@keyframes sk-shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+@utility sk {
+  background-image: linear-gradient(100deg, transparent 30%, color-mix(in srgb, var(--surface) 65%, transparent) 50%, transparent 70%);
+  background-size: 200% 100%;
+  animation: sk-shimmer 1.5s linear infinite;
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
+/* Content easing in after it loads. */
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+@utility fade-up {
+  animation: fade-up 0.28s ease-out both;
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
 /* A blurred, slowly rotating aurora behind an AI block. Put it on a wrapper (no background) around an <AiSurface>. */
 @utility ai-halo {
   position: relative;

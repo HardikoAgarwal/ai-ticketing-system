@@ -135,3 +135,10 @@ export function categoryHue(name: string): Hue {
   for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0
   return CATEGORY_HUES[h % CATEGORY_HUES.length]
 }
+
+/** The colour a filter value wears: status, priority and category use the colours the tickets themselves wear. */
+export function hueFor(key: string, value: string, label: string): Hue {
+  if (key === 'status') return STATUS_HUE[value as TicketStatus] ?? 'slate'
+  if (key === 'priority') return PRIORITY_HUE[value] ?? 'slate'
+  return categoryHue(label)
+}

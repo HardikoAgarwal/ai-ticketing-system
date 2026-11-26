@@ -1,6 +1,6 @@
 import { Check, Clock, Flame, Inbox, UserCheck, UserX, type LucideIcon } from 'lucide-react'
 
-import { fill, on, Skeleton, type Hue } from '@/components/ds'
+import { fill, on, type Hue } from '@/components/ds'
 import type { QueueStats } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
@@ -24,9 +24,13 @@ interface Tile {
 export function QueueStrip({ stats, view, params, onPick }: { stats?: QueueStats; view: ViewKey; params: URLSearchParams; onPick: (view: ViewKey, filters?: Record<string, string>) => void }) {
   if (!stats) {
     return (
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
-        {Array.from({ length: 5 }).map((_, i) => (
-          <Skeleton key={i} className="h-36 rounded-panel" />
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-5" role="status" aria-label="Loading queue summary">
+        {(['sky', 'rose', 'lav', 'peach', 'mint'] as const).map((hue) => (
+          <div key={hue} className="sk flex h-[158px] flex-col rounded-panel p-5 sm:p-6 max-lg:last:col-span-2" style={{ background: `color-mix(in srgb, ${fill(hue)} 26%, var(--surface))` }} aria-hidden>
+            <div className="h-5 w-28 rounded-md" style={{ background: `color-mix(in srgb, ${fill(hue)} 42%, transparent)` }} />
+            <div className="mt-4 h-11 w-16 rounded-md" style={{ background: `color-mix(in srgb, ${fill(hue)} 50%, transparent)` }} />
+            <div className="mt-3 h-3.5 w-32 rounded-md" style={{ background: `color-mix(in srgb, ${fill(hue)} 36%, transparent)` }} />
+          </div>
         ))}
       </div>
     )

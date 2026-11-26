@@ -1,12 +1,11 @@
-import { LayoutGrid, Search, Table2, X } from 'lucide-react'
+import { ListFilter, LayoutGrid, Search, Table2, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 
-import { Kbd, SegmentedControl } from '@/components/ds'
+import { fill, Kbd, on, SegmentedControl, type Hue } from '@/components/ds'
 import { useShortcut } from '@/components/shell/shortcuts'
-import { cn } from '@/lib/utils'
 
 import { FilterPopover, SortPopover } from './FilterPopover'
-import { FILTER_KEYS } from './model'
+import { FILTER_KEYS, hueFor } from './model'
 import type { FilterSpec } from './useFilterSpecs'
 
 const split = (v: string | null) => (v ? v.split(',').filter(Boolean) : [])
@@ -73,11 +72,12 @@ function SearchBox({ value, onCommit }: { value: string; onCommit: (v: string) =
   )
 }
 
-export function InboxToolbar({ search, params, specs, sort, layout, onLayout, onFilter, onSearch, onSort, onResetFilters }: {
+export function InboxToolbar({ search, params, specs, sort, total, layout, onLayout, onFilter, onSearch, onSort, onResetFilters }: {
   search: string
   params: URLSearchParams
   specs: FilterSpec[]
   sort: string
+  total: number
   layout: 'cards' | 'table'
   onLayout: (v: 'cards' | 'table') => void
   onFilter: (key: string, value: string | null) => void
@@ -88,7 +88,7 @@ export function InboxToolbar({ search, params, specs, sort, layout, onLayout, on
   return (
     <div className="flex flex-wrap items-center gap-2">
       <SearchBox value={search} onCommit={onSearch} />
-      <FilterPopover specs={specs} params={params} onChange={onFilter} onReset={onResetFilters} />
+      <FilterPopover specs={specs} params={params} total={total} onChange={onFilter} onReset={onResetFilters} />
       <SortPopover sort={sort} onSort={onSort} />
       <SegmentedControl<'cards' | 'table'>
         ariaLabel="Ticket layout"
@@ -104,24 +104,30 @@ export function InboxToolbar({ search, params, specs, sort, layout, onLayout, on
   )
 }
 
-/** Only what is currently applied, each removable, plus Clear all. Renders nothing when no filter is set. */
-export function AppliedChips({ specs, params, search, onFilter, onClear }: {
+/**
+ * Only what is currently applied, below the stat tiles: a solid chip per filter value (in the colour that value wears on the cards),
+ * each with its own remove button, the number of matching tickets, and a Clear all button. Renders nothing when no filter is set.
+ */
+export function AppliedChips({ specs, params, search, total, loading, onFilter, onClear }: {
   specs: FilterSpec[]
   params: URLSearchParams
   search: string
+  total: number
+  loading: boolean
   onFilter: (key: string, value: string | null) => void
   onClear: () => void
 }) {
-  const chips: { id: string; text: string; remove: () => void }[] = []
+  const chips: { id: string; text: string; hue: Hue; remove: () => void }[] = []
   for (const key of FILTER_KEYS) {
     const spec = specs.find((s) => s.key === key)
     if (!spec) continue
     const values = split(params.get(key))
     for (const v of values) {
-      const text = spec?.options.find((o) => o.value === v)?.label ?? v
+      const label = spec.options.find((o) => o.value === v)?.label ?? v
       chips.push({
         id: `${key}:${v}`,
-        text: `${spec?.label ?? key}: ${text}`,
+        text: label,
+        hue: hueFor(key, v, label),
         remove: () => {
           const rest = values.filter((x) => x !== v)
           onFilter(key, rest.length ? rest.join(',') : null)
@@ -129,26 +135,39 @@ export function AppliedChips({ specs, params, search, onFilter, onClear }: {
       })
     }
   }
-  if (search) chips.push({ id: 'q', text: `“${search}”`, remove: () => onFilter('q', null) })
+  if (search) chips.push({ id: 'q', text: `“${search}”`, hue: 'slate', remove: () => onFilter('q', null) })
   if (!chips.length) return null
   return (
-    <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="Applied filters">
+    <div className="fade-up flex flex-wrap items-center gap-2.5 rounded-panel bg-surface px-4 py-3 shadow-card" role="group" aria-label="Applied filters">
+      <span className="flex items-center gap-2 text-sm font-semibold text-ink">
+        <ListFilter className="size-4 text-ink-2" aria-hidden />
+        Filtered by
+      </span>
       {chips.map((c) => (
-        <span key={c.id} className="inline-flex h-7 items-center gap-1 rounded-chip border border-line-strong bg-surface-2 pr-1 pl-2.5 text-xs font-medium text-ink">
+        <span key={c.id} className="inline-flex h-8 items-center gap-1 rounded-chip pr-1 pl-3 text-sm font-semibold" style={{ background: fill(c.hue), color: on(c.hue) }}>
           {c.text}
           <button
             type="button"
             onClick={c.remove}
             aria-label={`Remove filter ${c.text}`}
-            className={cn('flex size-5 items-center justify-center rounded-md text-ink-3 hover:bg-sunken hover:text-ink focus-visible:ring-2 focus-visible:ring-violet focus-visible:outline-none')}
+            className="flex size-6 items-center justify-center rounded-md transition-colors hover:bg-black/15 focus-visible:ring-2 focus-visible:ring-current focus-visible:outline-none"
           >
-            <X className="size-3" aria-hidden />
+            <X className="size-3.5" strokeWidth={3} aria-hidden />
           </button>
         </span>
       ))}
-      <button type="button" onClick={onClear} className="h-7 rounded-md px-2 text-xs font-medium text-ink-2 hover:text-ink focus-visible:ring-2 focus-visible:ring-violet focus-visible:outline-none">
-        Clear all
-      </button>
+      <span className="ml-auto flex items-center gap-3">
+        <span className="text-sm text-ink-2" aria-live="polite">
+          {loading ? 'Updating…' : (
+            <>
+              <span className="font-semibold text-ink tabular-nums">{total}</span> {total === 1 ? 'ticket matches' : 'tickets match'}
+            </>
+          )}
+        </span>
+        <button type="button" onClick={onClear} className="inline-flex h-8 items-center gap-1.5 rounded-control border border-line-strong bg-surface px-3 text-sm font-semibold text-ink transition-colors hover:bg-surface-2 focus-visible:ring-2 focus-visible:ring-violet focus-visible:outline-none">
+          <X className="size-3.5" aria-hidden /> Clear all
+        </button>
+      </span>
     </div>
   )
 }

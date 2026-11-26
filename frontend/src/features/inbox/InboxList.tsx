@@ -6,7 +6,6 @@ import { EmptyState, ErrorState } from '@/components/ds'
 import type { StaffTicket } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
-import { SelectBox } from './SelectBox'
 import { TicketCard, TicketCardSkeleton } from './TicketCard'
 import { GRID, TicketRow, TicketRowSkeleton } from './TicketRow'
 
@@ -65,16 +64,7 @@ export function InboxList(p: InboxListProps) {
   }, [p.cursor])
 
   const selecting = p.selected.size > 0
-  const allChecked = p.ordered.length > 0 && p.selected.size === p.ordered.length
-  const selectAll = (
-    <SelectBox
-      checked={allChecked ? true : selecting ? 'mixed' : false}
-      onChange={() => p.onSelectAll(!allChecked)}
-      label="Select all loaded tickets"
-      disabled={!p.ordered.length}
-      className="size-6"
-    />
-  )
+  const allSelected = p.ordered.length > 0 && p.selected.size === p.ordered.length
 
   return (
     <div ref={scroller} className="relative" aria-busy={p.fetching}>
@@ -82,7 +72,7 @@ export function InboxList(p: InboxListProps) {
         {/* column header: sticky, lg+ only (below lg the rows are cards) */}
         <div className={cn('sticky top-0 z-20 hidden h-9 border-b border-line bg-canvas px-3', p.layout === 'table' && 'lg:block')}>
           <div className={cn('h-full', GRID)}>
-            <span className="flex items-center">{selectAll}</span>
+            <span />
             <span className={HEAD}>
               Ticket
               {p.fetching && !p.loading && <Loader2 className="ml-2 inline size-3 animate-spin text-ink-3 motion-reduce:animate-none" aria-label="Refreshing" />}
@@ -95,27 +85,15 @@ export function InboxList(p: InboxListProps) {
             <span className={cn(HEAD, 'text-right')}>Updated</span>
           </div>
         </div>
-        <div className={cn('flex items-center gap-2.5 px-3 py-2 text-xs text-ink-3', p.layout === 'table' && 'lg:hidden')} aria-live="polite">
-          {selectAll}
-          <span>
-            {p.loading ? 'Loading…' : (
-              <>
-                <span className="font-medium text-ink-2 tabular-nums">{p.ordered.length}</span>
-                {p.total > p.ordered.length ? <> of <span className="tabular-nums">{p.total}</span></> : null} ticket{p.total === 1 ? '' : 's'}
-              </>
-            )}
-          </span>
-        </div>
-
         <div>
           {p.loading ? (
             p.layout === 'cards' ? (
-              <div className="space-y-6 pt-1">
-                {Array.from({ length: 4 }).map((_, i) => <TicketCardSkeleton key={i} />)}
+              <div className="flex flex-col gap-6" role="status" aria-label="Loading tickets">
+                {(['rose', 'peach', 'butter', 'slate'] as const).map((hue) => <TicketCardSkeleton key={hue} hue={hue} />)}
               </div>
             ) : (
-              <div className="space-y-1 pt-1">
-                {Array.from({ length: 8 }).map((_, i) => <TicketRowSkeleton key={i} />)}
+              <div className="space-y-3" role="status" aria-label="Loading tickets">
+                {Array.from({ length: 7 }).map((_, i) => <TicketRowSkeleton key={i} />)}
               </div>
             )
           ) : p.error ? (
@@ -129,7 +107,7 @@ export function InboxList(p: InboxListProps) {
             />
           ) : (
             <>
-              <ul aria-label="Tickets" className={p.layout === 'cards' ? 'flex flex-col gap-6 pb-4' : 'space-y-3 pb-3'}>
+              <ul aria-label="Tickets" className={p.layout === 'cards' ? 'fade-up flex flex-col gap-6 pb-4' : 'fade-up space-y-3 pb-3'}>
                 {p.ordered.map((t) => p.layout === 'cards' ? (
                   <TicketCard
                     key={t.id}
@@ -172,6 +150,13 @@ export function InboxList(p: InboxListProps) {
       {selecting && (
         <div role="region" aria-label="Bulk actions" className="sticky bottom-4 z-30 mx-auto mt-4 flex w-full max-w-2xl items-center gap-2 rounded-panel border border-line-strong bg-ink px-3 py-2 text-canvas shadow-pop md:bottom-6">
           <span className="text-sm font-medium whitespace-nowrap tabular-nums">{p.selected.size} selected</span>
+          <button
+            type="button"
+            onClick={() => p.onSelectAll(!allSelected)}
+            className="rounded-md px-2 py-1 text-sm font-semibold whitespace-nowrap text-canvas underline decoration-canvas/40 underline-offset-4 hover:decoration-canvas focus-visible:ring-2 focus-visible:ring-canvas focus-visible:outline-none"
+          >
+            {allSelected ? 'Deselect all' : `Select all ${p.ordered.length}`}
+          </button>
           <span className="flex-1" />
           <Button size="sm" variant="secondary" className="whitespace-nowrap" onClick={p.onBulkAssign} disabled={p.busy}>
             <UserCheck /> Assign to me
