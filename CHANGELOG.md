@@ -2,6 +2,7 @@
 
 ## Unreleased: Helpdesk AI rewrite (from the BookLeaf author portal)
 ### Changed
+- Tables: alternate rows are plain neutral shades, no colour: white and a near-white in light mode, two blacks in dark mode (`--row-alt`).
 - Tables: the sticky header now stops a little below the top edge (a page-coloured band above it hides the rows passing underneath), and the alternate-row shading uses a theme-aware tint of the accent colour (`--row-alt`, defined for light and dark) instead of a grey, so it reads cleanly in both themes.
 - Tables: alternate rows are faintly shaded so a long row is easy to follow (hover and selected tints still win); the last column (Updated / Rating) has space on its left as well as its right, in the header too, and its column is wider to fit.
 - Select buttons: in tables the select control is a smaller rounded square placed further left; on cards the round select button on the left edge is now filled with the page colour (not the card colour) when empty.

@@ -38,7 +38,7 @@ export function Td({ className, children, ...rest }: ComponentProps<'td'>) {
 }
 
 /**
- * A row you can click. Even rows carry a faint tint of the accent colour (`--row-alt`, defined per theme) so a long line is easy to follow across the table; the hover and selected tints
+ * A row you can click. Even rows use a second neutral shade (`--row-alt`: white then near-white in light, two blacks in dark) so a long line is easy to follow across the table; the hover and selected tints
  * are stronger (and marked important) so they always win over the striping.
  */
 export const ROW = 'cursor-pointer transition-colors even:bg-[var(--row-alt)] hover:bg-[color-mix(in_srgb,var(--violet)_11%,var(--surface))]!'
