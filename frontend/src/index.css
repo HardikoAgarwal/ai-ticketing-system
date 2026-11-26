@@ -107,6 +107,8 @@
     --surface: #ffffff;
     --surface-2: #f6f3ec;
     --sunken: #eeeae0;
+    /* faint accent tint for every second table row; follows each theme's own accent and surface */
+    --row-alt: color-mix(in srgb, var(--violet) 5%, var(--surface));
     --line: #e7e2d6;
     --line-strong: #d2cbba;
     /* text (ink-2 ~10:1, ink-3 >= 5:1 on every light surface) */
@@ -203,6 +205,7 @@
     --surface: #1a1917;
     --surface-2: #211f1c;
     --sunken: #0c0b0a;
+    --row-alt: color-mix(in srgb, var(--violet) 5%, var(--surface));
     --line: #2e2b27;
     --line-strong: #433f38;
     --ink: #f4efe6;
