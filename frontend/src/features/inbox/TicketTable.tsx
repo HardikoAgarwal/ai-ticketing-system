@@ -6,8 +6,9 @@ import { Avatar, DataTable, ROW, ROW_SELECTED, SolidChip, TBODY, Td, Th } from '
 import type { StaffTicket } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
-import { attentionOf, categoryHue, PRIORITY_HUE, PRIORITY_LOOK, STATUS_CHIP, STATUS_HUE, TONE_HUE } from './model'
+import { attentionOf, PRIORITY_HUE, PRIORITY_LOOK, STATUS_CHIP, STATUS_HUE, TONE_HUE } from './model'
 import { NewTag } from './NewTag'
+import { StatusPill } from './StatusPill'
 import { SelectBox } from './SelectBox'
 
 export interface TicketTableProps {
@@ -26,8 +27,9 @@ function Row({ ticket: t, to, cursor, checked, fresh, meId, onToggle }: { ticket
   const prio = PRIORITY_LOOK[t.priority]
   const status = STATUS_CHIP[t.status]
   const AttnIcon = attn?.icon
+  // Only what needs a person (overdue, at risk, a customer waiting) gets a coloured badge; everything else is the quiet status label.
+  const urgent = !!attn && ['overdue', 'message', 'atrisk'].includes(attn.kind)
   const mine = !!meId && t.assigned_to?.id === meId
-  const spin = attn?.working ? '[&>svg]:animate-spin motion-reduce:[&>svg]:animate-none' : undefined
   return (
     <tr
       data-ticket-id={t.id}
@@ -42,15 +44,6 @@ function Row({ ticket: t, to, cursor, checked, fresh, meId, onToggle }: { ticket
       </Td>
       <Td>
         <div className="flex min-w-0 items-center gap-3">
-          {attn && AttnIcon ? (
-            <SolidChip hue={attn.kind === 'message' ? 'mint' : TONE_HUE[attn.tone]} icon={attn.kind === 'message' ? Mail : AttnIcon} size="sm" className={spin}>
-              {attn.label}
-            </SolidChip>
-          ) : (
-            <SolidChip hue={STATUS_HUE[t.status]} icon={status.icon} size="sm">
-              {status.label}
-            </SolidChip>
-          )}
           <a
             href={to}
             onClick={(e) => {
@@ -62,16 +55,23 @@ function Row({ ticket: t, to, cursor, checked, fresh, meId, onToggle }: { ticket
           >
             {t.subject}
           </a>
-          {t.has_unread && <span className="size-2 shrink-0 rounded-full bg-violet" role="img" aria-label="Unread" />}
+          {urgent && AttnIcon ? (
+            <SolidChip hue={attn.kind === 'message' ? 'mint' : TONE_HUE[attn.tone]} icon={attn.kind === 'message' ? Mail : AttnIcon} size="sm" className="shrink-0">
+              {attn.label}
+            </SolidChip>
+          ) : (
+            <StatusPill hue={STATUS_HUE[t.status]}>{status.label}</StatusPill>
+          )}
           {fresh && <NewTag size="sm" className="shrink-0" />}
         </div>
         <div className="mt-1.5 font-mono text-xs text-ink-3">{t.reference}</div>
       </Td>
       <Td className="w-28">
         {prio && (
-          <SolidChip hue={PRIORITY_HUE[t.priority] ?? 'slate'} icon={prio.icon} size="sm">
+          <span className="inline-flex items-center gap-2 text-sm font-medium text-ink">
+            <span className="size-2.5 rounded-full" style={{ background: `var(--viz-${PRIORITY_HUE[t.priority] ?? 'slate'})` }} aria-hidden />
             {prio.label}
-          </SolidChip>
+          </span>
         )}
       </Td>
       <Td className="w-44">
@@ -81,13 +81,7 @@ function Row({ ticket: t, to, cursor, checked, fresh, meId, onToggle }: { ticket
         </div>
       </Td>
       <Td className="hidden w-44 xl:table-cell">
-        {t.category ? (
-          <SolidChip hue={categoryHue(t.category.name)} size="sm" className="max-w-full truncate">
-            {t.category.name}
-          </SolidChip>
-        ) : (
-          <span className="text-ink-3">—</span>
-        )}
+        <span className="block truncate text-sm text-ink-2">{t.category?.name ?? '—'}</span>
       </Td>
       <Td className="hidden w-36 xl:table-cell">
         {t.assigned_to ? (
@@ -99,7 +93,7 @@ function Row({ ticket: t, to, cursor, checked, fresh, meId, onToggle }: { ticket
           <span className="text-sm text-ink-3 italic">Unassigned</span>
         )}
       </Td>
-      <Td className="w-24 text-right text-sm text-ink-2">
+      <Td className="w-32 text-right text-sm text-ink-2">
         <RelativeTime value={t.updated_at} />
       </Td>
     </tr>
@@ -120,7 +114,7 @@ export function TicketTable({ tickets, ticketsPath, cursor, selected, fresh, meI
           <Th className="w-44">Customer</Th>
           <Th className="hidden w-44 xl:table-cell">Category</Th>
           <Th className="hidden w-36 xl:table-cell">Owner</Th>
-          <Th className="w-24 text-right">Updated</Th>
+          <Th className="w-32 text-right">Updated</Th>
         </tr>
       </thead>
       <tbody className={TBODY}>

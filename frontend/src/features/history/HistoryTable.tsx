@@ -2,8 +2,9 @@ import { Star } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 
 import { RelativeTime } from '@/components/common'
-import { Avatar, DataTable, ROW, SolidChip, TBODY, Td, Th } from '@/components/ds'
-import { categoryHue, STATUS_CHIP, STATUS_HUE } from '@/features/inbox/model'
+import { Avatar, DataTable, ROW, TBODY, Td, Th } from '@/components/ds'
+import { STATUS_CHIP, STATUS_HUE } from '@/features/inbox/model'
+import { StatusPill } from '@/features/inbox/StatusPill'
 import { formatDate } from '@/lib/format'
 import type { StaffTicket } from '@/lib/types'
 
@@ -31,9 +32,6 @@ function Row({ ticket: t, to }: { ticket: StaffTicket; to: string }) {
     >
       <Td>
         <div className="flex min-w-0 items-center gap-3">
-          <SolidChip hue={STATUS_HUE[t.status]} icon={status.icon} size="sm">
-            {status.label}
-          </SolidChip>
           <a
             href={to}
             onClick={(e) => {
@@ -45,6 +43,7 @@ function Row({ ticket: t, to }: { ticket: StaffTicket; to: string }) {
           >
             {t.subject}
           </a>
+          <StatusPill hue={STATUS_HUE[t.status]}>{status.label}</StatusPill>
         </div>
         <div className="mt-1.5 font-mono text-xs text-ink-3">{t.reference}</div>
       </Td>
@@ -55,13 +54,7 @@ function Row({ ticket: t, to }: { ticket: StaffTicket; to: string }) {
         </div>
       </Td>
       <Td className="hidden w-44 xl:table-cell">
-        {t.category ? (
-          <SolidChip hue={categoryHue(t.category.name)} size="sm" className="max-w-full truncate">
-            {t.category.name}
-          </SolidChip>
-        ) : (
-          <span className="text-ink-3">—</span>
-        )}
+        <span className="block truncate text-sm text-ink-2">{t.category?.name ?? '—'}</span>
       </Td>
       <Td className="w-32">
         <span className="block text-sm font-semibold text-ink">{t.resolved_at ? formatDate(t.resolved_at) : '—'}</span>
@@ -72,7 +65,7 @@ function Row({ ticket: t, to }: { ticket: StaffTicket; to: string }) {
         )}
       </Td>
       <Td className="hidden w-24 text-sm font-semibold text-ink tabular-nums xl:table-cell">{took(t)}</Td>
-      <Td className="w-20 text-right">
+      <Td className="w-28 text-right">
         <Rating score={t.csat_score} />
       </Td>
     </tr>
@@ -90,7 +83,7 @@ export function HistoryTable({ tickets, basePath }: { tickets: StaffTicket[]; ba
           <Th className="hidden w-44 xl:table-cell">Category</Th>
           <Th className="w-32">Finished</Th>
           <Th className="hidden w-24 xl:table-cell">Took</Th>
-          <Th className="w-20 text-right">Rating</Th>
+          <Th className="w-28 text-right">Rating</Th>
         </tr>
       </thead>
       <tbody className={TBODY}>

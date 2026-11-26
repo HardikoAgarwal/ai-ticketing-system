@@ -31,7 +31,7 @@ export function Th({ className, children, ...rest }: ComponentProps<'th'>) {
 
 export function Td({ className, children, ...rest }: ComponentProps<'td'>) {
   return (
-    <td className={cn('border-b border-line px-4 py-4 align-middle first:pl-5 last:pr-5', className)} {...rest}>
+    <td className={cn('border-b border-line px-4 py-4 align-middle first:pl-6 last:pr-8', className)} {...rest}>
       {children}
     </td>
   )
