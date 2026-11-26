@@ -5,7 +5,6 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/auth/AuthContext'
 import { useWorkspace } from '@/auth/workspace'
 import { useRegisterCommands, type Command } from '@/components/shell/commands'
-import { useShellBleed } from '@/components/shell/shell-context'
 import { useShortcut } from '@/components/shell/shortcuts'
 import { PageHeader } from '@/features/shared/PageHeader'
 
@@ -23,7 +22,6 @@ import { useInboxActions } from './useInboxActions'
  * The visible order is remembered so the ticket page can offer Back / Previous / Next.
  */
 export function TicketsPage() {
-  useShellBleed()
   const { slug } = useWorkspace()
   const { user } = useAuth()
   const navigate = useNavigate()
@@ -84,8 +82,8 @@ export function TicketsPage() {
   const open = stats.data ? stats.data.open + stats.data.in_progress : undefined
 
   return (
-    <div className="mx-auto flex min-h-0 w-full max-w-[1600px] flex-1 flex-col">
-      <div className="flex min-h-0 flex-1 flex-col px-2 md:px-6">
+    <div className="mx-auto w-full max-w-[1400px] pb-8">
+      <div>
         <InboxList
           top={
             <>

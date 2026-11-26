@@ -53,7 +53,7 @@ export function InboxList(p: InboxListProps) {
   useEffect(() => {
     const el = sentinel.current
     if (!el || !hasNext) return
-    const io = new IntersectionObserver((entries) => entries[0]?.isIntersecting && !fetchingNext && onLoadMore(), { root: scroller.current, rootMargin: '240px' })
+    const io = new IntersectionObserver((entries) => entries[0]?.isIntersecting && !fetchingNext && onLoadMore(), { rootMargin: '480px' })
     io.observe(el)
     return () => io.disconnect()
   }, [hasNext, fetchingNext, onLoadMore, count])
@@ -76,9 +76,8 @@ export function InboxList(p: InboxListProps) {
   )
 
   return (
-    <div className="relative flex min-h-0 flex-1 flex-col">
-      <div ref={scroller} className="scroll-quiet min-h-0 flex-1 overflow-y-auto pb-28" aria-busy={p.fetching}>
-        {p.top && <div className="space-y-4 px-2 pt-6 pb-4">{p.top}</div>}
+    <div ref={scroller} className="relative" aria-busy={p.fetching}>
+        {p.top && <div className="space-y-5 pb-6">{p.top}</div>}
         {/* column header: sticky, lg+ only (below lg the rows are cards) */}
         <div className={cn('sticky top-0 z-20 hidden h-9 border-b border-line bg-canvas px-3', p.layout === 'table' && 'lg:block')}>
           <div className={cn('h-full', GRID)}>
@@ -107,7 +106,7 @@ export function InboxList(p: InboxListProps) {
           </span>
         </div>
 
-        <div className="px-2">
+        <div>
           {p.loading ? (
             p.layout === 'cards' ? (
               <div className="space-y-6 pt-1">
@@ -168,10 +167,9 @@ export function InboxList(p: InboxListProps) {
             </>
           )}
         </div>
-      </div>
 
       {selecting && (
-        <div role="region" aria-label="Bulk actions" className="absolute inset-x-3 bottom-4 z-30 mx-auto flex max-w-2xl items-center gap-2 rounded-panel border border-line-strong bg-ink px-3 py-2 text-canvas shadow-pop md:bottom-6">
+        <div role="region" aria-label="Bulk actions" className="sticky bottom-4 z-30 mx-auto mt-4 flex w-full max-w-2xl items-center gap-2 rounded-panel border border-line-strong bg-ink px-3 py-2 text-canvas shadow-pop md:bottom-6">
           <span className="text-sm font-medium whitespace-nowrap tabular-nums">{p.selected.size} selected</span>
           <span className="flex-1" />
           <Button size="sm" variant="secondary" className="whitespace-nowrap" onClick={p.onBulkAssign} disabled={p.busy}>
