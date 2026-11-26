@@ -98,7 +98,7 @@ function Row({ ticket: t, to, cursor, checked, fresh, meId, onToggle }: { ticket
           <span className="text-sm text-ink-3 italic">Unassigned</span>
         )}
       </Td>
-      <Td className="w-32 text-right text-sm text-ink-2">
+      <Td className="w-40 text-right text-sm whitespace-nowrap text-ink-2">
         <RelativeTime value={t.updated_at} />
       </Td>
     </tr>
@@ -119,7 +119,7 @@ export function TicketTable({ tickets, ticketsPath, cursor, selected, fresh, meI
           <Th className="w-44">Customer</Th>
           <Th className="hidden w-44 xl:table-cell">Category</Th>
           <Th className="hidden w-36 xl:table-cell">Owner</Th>
-          <Th className="w-32 text-right">Updated</Th>
+          <Th className="w-40 text-right">Updated</Th>
         </tr>
       </thead>
       <tbody className={TBODY}>

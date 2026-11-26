@@ -71,7 +71,7 @@ function Row({ ticket: t, to }: { ticket: StaffTicket; to: string }) {
         )}
       </Td>
       <Td className="hidden w-24 text-sm font-semibold text-ink tabular-nums xl:table-cell">{took(t)}</Td>
-      <Td className="w-28 text-right">
+      <Td className="w-36 text-right">
         <Rating score={t.csat_score} />
       </Td>
     </tr>
@@ -89,7 +89,7 @@ export function HistoryTable({ tickets, basePath }: { tickets: StaffTicket[]; ba
           <Th className="hidden w-44 xl:table-cell">Category</Th>
           <Th className="w-32">Finished</Th>
           <Th className="hidden w-24 xl:table-cell">Took</Th>
-          <Th className="w-28 text-right">Rating</Th>
+          <Th className="w-36 text-right">Rating</Th>
         </tr>
       </thead>
       <tbody className={TBODY}>
