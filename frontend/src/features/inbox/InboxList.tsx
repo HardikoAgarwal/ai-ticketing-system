@@ -1,11 +1,12 @@
-import { CheckCheck, Inbox, Loader2, SearchX, UserCheck, X } from 'lucide-react'
+import { CheckCheck, Loader2, UserCheck, X } from 'lucide-react'
 import { useEffect, useRef, type ReactNode } from 'react'
 
 import { Button } from '@/components/ui/button'
-import { EmptyState, ErrorState } from '@/components/ds'
+import { ErrorState } from '@/components/ds'
 import type { StaffTicket } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
+import { EndOfList, NoMatches, NothingHere } from './ListStates'
 import { TicketCard, TicketCardSkeleton } from './TicketCard'
 import { GRID, TicketRow, TicketRowSkeleton } from './TicketRow'
 
@@ -68,7 +69,7 @@ export function InboxList(p: InboxListProps) {
 
   return (
     <div ref={scroller} className="relative" aria-busy={p.fetching}>
-        {p.top && <div className="space-y-5 pb-6">{p.top}</div>}
+        {p.top && <div className="space-y-8 pb-8">{p.top}</div>}
         {/* column header: sticky, lg+ only (below lg the rows are cards) */}
         <div className={cn('sticky top-0 z-20 hidden h-9 border-b border-line bg-canvas px-3', p.layout === 'table' && 'lg:block')}>
           <div className={cn('h-full', GRID)}>
@@ -99,12 +100,7 @@ export function InboxList(p: InboxListProps) {
           ) : p.error ? (
             <ErrorState error={p.error} onRetry={p.onRetry} className="m-2" />
           ) : p.ordered.length === 0 ? (
-            <EmptyState
-              icon={p.filtered ? SearchX : Inbox}
-              title={p.filtered ? 'No tickets match' : p.view === 'mine' ? 'Nothing assigned to you' : 'Inbox zero'}
-              description={p.filtered ? 'Try removing a filter or searching for something else.' : 'New tickets appear here the moment they arrive.'}
-              action={p.filtered ? <Button variant="outline" size="sm" onClick={p.onClearFilters}>Clear filters</Button> : undefined}
-            />
+            p.filtered ? <NoMatches onClear={p.onClearFilters} /> : <NothingHere view={p.view} />
           ) : (
             <>
               <ul aria-label="Tickets" className={p.layout === 'cards' ? 'fade-up flex flex-col gap-6 pb-4' : 'fade-up space-y-3 pb-3'}>
@@ -140,7 +136,7 @@ export function InboxList(p: InboxListProps) {
                     {p.fetchingNext && <Loader2 className="animate-spin" />} Load more
                   </Button>
                 ) : (
-                  <span className="text-xs text-ink-3">You've reached the end</span>
+                  <EndOfList />
                 )}
               </div>
             </>

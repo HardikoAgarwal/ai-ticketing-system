@@ -72,12 +72,11 @@ function SearchBox({ value, onCommit }: { value: string; onCommit: (v: string) =
   )
 }
 
-export function InboxToolbar({ search, params, specs, sort, total, layout, onLayout, onFilter, onSearch, onSort, onResetFilters }: {
+export function InboxToolbar({ search, params, specs, sort, layout, onLayout, onFilter, onSearch, onSort, onResetFilters }: {
   search: string
   params: URLSearchParams
   specs: FilterSpec[]
   sort: string
-  total: number
   layout: 'cards' | 'table'
   onLayout: (v: 'cards' | 'table') => void
   onFilter: (key: string, value: string | null) => void
@@ -88,7 +87,7 @@ export function InboxToolbar({ search, params, specs, sort, total, layout, onLay
   return (
     <div className="flex flex-wrap items-center gap-2">
       <SearchBox value={search} onCommit={onSearch} />
-      <FilterPopover specs={specs} params={params} total={total} onChange={onFilter} onReset={onResetFilters} />
+      <FilterPopover specs={specs} params={params} onChange={onFilter} onReset={onResetFilters} />
       <SortPopover sort={sort} onSort={onSort} />
       <SegmentedControl<'cards' | 'table'>
         ariaLabel="Ticket layout"
@@ -108,12 +107,10 @@ export function InboxToolbar({ search, params, specs, sort, total, layout, onLay
  * Only what is currently applied, below the stat tiles: a solid chip per filter value (in the colour that value wears on the cards),
  * each with its own remove button, the number of matching tickets, and a Clear all button. Renders nothing when no filter is set.
  */
-export function AppliedChips({ specs, params, search, total, loading, onFilter, onClear }: {
+export function AppliedChips({ specs, params, search, onFilter, onClear }: {
   specs: FilterSpec[]
   params: URLSearchParams
   search: string
-  total: number
-  loading: boolean
   onFilter: (key: string, value: string | null) => void
   onClear: () => void
 }) {
@@ -138,9 +135,9 @@ export function AppliedChips({ specs, params, search, total, loading, onFilter, 
   if (search) chips.push({ id: 'q', text: `“${search}”`, hue: 'slate', remove: () => onFilter('q', null) })
   if (!chips.length) return null
   return (
-    <div className="fade-up flex flex-wrap items-center gap-2.5 rounded-panel bg-surface px-4 py-3 shadow-card" role="group" aria-label="Applied filters">
-      <span className="flex items-center gap-2 text-sm font-semibold text-ink">
-        <ListFilter className="size-4 text-ink-2" aria-hidden />
+    <div className="fade-up flex flex-wrap items-center gap-2.5" role="group" aria-label="Applied filters">
+      <span className="flex items-center gap-2 text-sm font-semibold text-ink-2">
+        <ListFilter className="size-4" aria-hidden />
         Filtered by
       </span>
       {chips.map((c) => (
@@ -156,18 +153,9 @@ export function AppliedChips({ specs, params, search, total, loading, onFilter, 
           </button>
         </span>
       ))}
-      <span className="ml-auto flex items-center gap-3">
-        <span className="text-sm text-ink-2" aria-live="polite">
-          {loading ? 'Updating…' : (
-            <>
-              <span className="font-semibold text-ink tabular-nums">{total}</span> {total === 1 ? 'ticket matches' : 'tickets match'}
-            </>
-          )}
-        </span>
-        <button type="button" onClick={onClear} className="inline-flex h-8 items-center gap-1.5 rounded-control border border-line-strong bg-surface px-3 text-sm font-semibold text-ink transition-colors hover:bg-surface-2 focus-visible:ring-2 focus-visible:ring-violet focus-visible:outline-none">
-          <X className="size-3.5" aria-hidden /> Clear all
-        </button>
-      </span>
+      <button type="button" onClick={onClear} className="inline-flex h-8 items-center gap-1.5 rounded-control px-2.5 text-sm font-semibold text-ink-2 transition-colors hover:bg-sunken hover:text-ink focus-visible:ring-2 focus-visible:ring-violet focus-visible:outline-none">
+        <X className="size-3.5" aria-hidden /> Clear all
+      </button>
     </div>
   )
 }

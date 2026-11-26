@@ -96,7 +96,6 @@ export function TicketsPage() {
               params={params}
               specs={specs}
               sort={inbox.sort}
-              total={inbox.total}
               onFilter={onFilter}
               onSearch={onSearch}
               onSort={(v) => patch({ sort: v === 'default' ? null : v })}
@@ -105,7 +104,7 @@ export function TicketsPage() {
           }
         />
         <QueueStrip stats={stats.data} view={view} params={params} onPick={setView} />
-        <AppliedChips specs={specs} params={params} search={inbox.search} total={inbox.total} loading={list.isLoading || list.isPlaceholderData} onFilter={onFilter} onClear={clearAll} />
+        <AppliedChips specs={specs} params={params} search={inbox.search} onFilter={onFilter} onClear={clearAll} />
             </>
           }
           ordered={ordered}

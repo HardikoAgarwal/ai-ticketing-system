@@ -34,10 +34,9 @@ function Option({ selected, hue, children, onClick }: { selected: boolean; hue: 
 const split = (v: string | null) => (v ? v.split(',').filter(Boolean) : [])
 
 /** Status, priority and category, applied live (no Apply button): the URL is the state. Overdue and owner are the tiles above the list. */
-export function FilterPopover({ specs, params, total, onChange, onReset }: {
+export function FilterPopover({ specs, params, onChange, onReset }: {
   specs: FilterSpec[]
   params: URLSearchParams
-  total: number
   onChange: (key: string, value: string | null) => void
   onReset: () => void
 }) {
@@ -108,7 +107,7 @@ export function FilterPopover({ specs, params, total, onChange, onReset }: {
             onClick={() => setOpen(false)}
             className="inline-flex h-10 items-center rounded-control bg-ink px-5 text-sm font-semibold text-canvas transition-colors hover:opacity-90 focus-visible:ring-2 focus-visible:ring-violet focus-visible:ring-offset-2 focus-visible:outline-none"
           >
-            Show {total} {total === 1 ? 'ticket' : 'tickets'}
+            Done
           </button>
         </div>
       </PopoverContent>
