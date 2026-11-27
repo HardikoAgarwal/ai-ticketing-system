@@ -9,7 +9,7 @@ import { hueFor, SORT_OPTIONS } from './model'
 import type { FilterSpec } from './useFilterSpecs'
 
 const triggerCls =
-  'relative inline-flex h-10 shrink-0 items-center gap-2 rounded-control border border-line-strong bg-surface px-4 text-sm font-semibold text-ink shadow-card transition-colors hover:bg-surface-2 focus-visible:ring-2 focus-visible:ring-violet focus-visible:outline-none data-[state=open]:bg-surface-2'
+  'relative inline-flex h-10 shrink-0 items-center gap-2 rounded-control border border-line-strong bg-surface px-4 text-sm font-semibold text-ink shadow-card transition-colors hover:bg-surface-2 focus-visible:ring-2 focus-visible:ring-violet focus-visible:outline-none data-[state=open]:border-violet data-[state=open]:bg-violet-soft data-[state=open]:ring-2 data-[state=open]:ring-violet/25'
 
 const SECTION_ICON: Record<string, LucideIcon> = { status: CircleDot, priority: Flag, category: Tag }
 
@@ -80,7 +80,7 @@ export function FilterPopover({ specs, params, onChange, onReset }: {
                 <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-ink" aria-hidden>
                   <Icon className="size-4 text-ink-2" />
                   {spec.label}
-                  {selected.length > 0 && <span className="ml-auto rounded-md bg-ink px-1.5 py-0.5 text-xs font-bold text-canvas tabular-nums">{selected.length}</span>}
+                  {selected.length > 0 && <span className="ml-auto rounded-md bg-violet px-1.5 py-0.5 text-xs font-bold text-white tabular-nums">{selected.length}</span>}
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {spec.options.map((o) => (
@@ -134,10 +134,10 @@ export function SortPopover({ sort, onSort }: { sort: string; onSort: (v: string
               role="radio"
               aria-checked={sort === o.value}
               onClick={() => onSort(o.value)}
-              className={cn('flex h-10 w-full items-center justify-between rounded-control px-3 text-sm transition-colors focus-visible:ring-2 focus-visible:ring-violet focus-visible:outline-none', sort === o.value ? 'bg-ink font-semibold text-canvas' : 'text-ink hover:bg-surface-2')}
+              className={cn('flex h-10 w-full items-center justify-between rounded-control px-3 text-sm transition-colors focus-visible:ring-2 focus-visible:ring-violet focus-visible:outline-none', sort === o.value ? 'bg-violet-soft font-semibold text-ink' : 'text-ink hover:bg-violet-soft/60')}
             >
               {o.label}
-              {sort === o.value && <Check className="size-4" aria-hidden />}
+              {sort === o.value && <Check className="size-4 text-violet" aria-hidden />}
             </button>
           ))}
         </div>

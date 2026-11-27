@@ -44,11 +44,11 @@ function ViewTab({ active, count, onClick, children }: { active: boolean; count:
       onClick={onClick}
       className={cn(
         'inline-flex h-11 items-center gap-2.5 rounded-control border px-5 text-[15px] font-semibold whitespace-nowrap transition-[transform,background-color,color] duration-150 hover:-translate-y-0.5 focus-visible:ring-2 focus-visible:ring-violet focus-visible:outline-none motion-reduce:transition-none motion-reduce:hover:translate-y-0',
-        active ? 'border-line-strong bg-ink text-canvas' : 'border-line bg-surface text-ink-2 hover:bg-surface-2 hover:text-ink',
+        active ? 'border-violet bg-violet text-white' : 'border-line bg-surface text-ink-2 hover:bg-violet-soft hover:text-ink',
       )}
     >
       {children}
-      <span className={cn('rounded-md px-1.5 text-xs tabular-nums', active ? 'bg-canvas/20 text-canvas' : 'bg-sunken text-ink-2')}>{count}</span>
+      <span className={cn('rounded-md px-1.5 text-xs tabular-nums', active ? 'bg-white/25 text-white' : 'bg-sunken text-ink-2')}>{count}</span>
     </button>
   )
 }

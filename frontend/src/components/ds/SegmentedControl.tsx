@@ -61,13 +61,13 @@ export function SegmentedControl<T extends string>({ value, onChange, options, a
               'inline-flex items-center justify-center gap-1.5 rounded-[8px] font-medium whitespace-nowrap transition-colors disabled:opacity-45',
               size === 'sm' ? 'h-8 px-2.5 text-[13px]' : 'h-9 px-3 text-sm',
               fullWidth && 'flex-1',
-              on ? 'bg-surface text-ink shadow-[0_1px_2px_rgb(40_30_110/0.14)] ring-1 ring-line' : 'text-ink-3 hover:text-ink',
+              on ? 'bg-violet text-white shadow-sm' : 'text-ink-3 hover:bg-violet-soft hover:text-ink',
             )}
           >
             {o.icon && <o.icon className="size-4" aria-hidden />}
             {o.label}
             {o.count !== undefined && (
-              <span className={cn('rounded-md px-1.5 text-xs font-semibold tabular-nums', on ? 'bg-ink text-canvas' : 'bg-line text-ink-2')}>{o.count}</span>
+              <span className={cn('rounded-md px-1.5 text-xs font-semibold tabular-nums', on ? 'bg-white/25 text-white' : 'bg-line text-ink-2')}>{o.count}</span>
             )}
           </button>
         )

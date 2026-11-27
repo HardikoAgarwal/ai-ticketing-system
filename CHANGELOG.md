@@ -2,6 +2,7 @@
 
 ## Unreleased: Helpdesk AI rewrite (from the BookLeaf author portal)
 ### Changed
+- Green theme, round two: the **segmented switches** (Cards / Table on Tickets, the date ranges on Overview and History, the Reply / Internal note and thread filters, the Agent / Customer picker and the Manage users tabs) now show the chosen option in solid green with white text, with a soft green hover. The **Sort** popover's chosen option is soft green with a green check (was black), its trigger gets the green open state, and the filter count badge is green.
 - Sidebar: the edge tab now moves with the sidebar when it opens on hover (and stays put while you move the pointer onto it, without opening a collapsed sidebar by itself); it is vertically level with the profile button, the profile sits a little higher, and there is more space between Notifications and the profile.
 - Dropdowns and selects use the green theme like inputs do: the highlighted option in select lists and dropdown menus is soft green (was neutral grey/black), the chosen option's check is green, an open select shows the green border and ring, and the category dropdown in the article editor matches.
 - Sidebar: Notifications is a plain full-width row like the other sidebar items (no border or background of its own), keeping the unread count as a badge on the right.
