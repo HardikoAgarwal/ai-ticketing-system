@@ -20,6 +20,8 @@ export interface SetupScreenProps {
   error?: string | null
   onRetry?: () => void
   onBack: () => void
+  /** `reveal` slides setup up to uncover the dashboard; default is a soft fade. */
+  exitMode?: 'fade' | 'reveal'
 }
 
 /** Strong landing colours, just a touch lighter. */
@@ -156,11 +158,12 @@ function TicketStampGame({ paused }: { paused?: boolean }) {
  * Full-screen "setting up your environment" view. Presentational: the caller owns the real request and tells it how far along it is;
  * the last one only completes when the caller says so. Announces each step to screen readers.
  */
-export function SetupScreen({ name, step, progress, waking = false, ready = false, error = null, onRetry, onBack }: SetupScreenProps) {
+export function SetupScreen({ name, step, progress, waking = false, ready = false, error = null, onRetry, onBack, exitMode = 'fade' }: SetupScreenProps) {
   const reduce = useReducedMotion()
   const headingRef = useRef<HTMLHeadingElement>(null)
   const retryRef = useRef<HTMLButtonElement>(null)
   const current = SETUP_STEPS[Math.min(step, SETUP_STEPS.length - 1)]
+  const reveal = exitMode === 'reveal'
 
   useEffect(() => {
     headingRef.current?.focus()
@@ -171,14 +174,20 @@ export function SetupScreen({ name, step, progress, waking = false, ready = fals
 
   return (
     <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={reduce ? { opacity: 0 } : { opacity: 0, y: -16, scale: 0.985, filter: 'blur(6px)' }}
+      initial={reveal ? false : { opacity: 0 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={
+        reduce
+          ? { opacity: 0 }
+          : reveal
+            ? { y: '-108%', transition: { duration: 0.7, ease: [0.22, 1, 0.36, 1] } }
+            : { opacity: 0, y: -16, scale: 0.985, filter: 'blur(6px)' }
+      }
       transition={{ duration: reduce ? 0.2 : 0.55, ease: [0.22, 1, 0.36, 1] }}
       role="dialog"
       aria-modal="true"
       aria-labelledby="setup-title"
-      className="lp fixed inset-0 z-[60] overflow-hidden bg-[#ffc9a8] text-(--lp-ink)"
+      className="lp fixed inset-0 z-[80] overflow-hidden bg-[#ffc9a8] text-(--lp-ink)"
     >
       {/* Landing shapes, faded so content stays readable */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>

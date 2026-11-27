@@ -3,10 +3,16 @@ import type { ReactNode } from 'react'
 
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
+import { peekSetupHandoff } from '@/features/auth/SetupHandoff'
 import { errorMessage } from '@/lib/api'
 import { cn } from '@/lib/utils'
 
 export function FullPageLoader() {
+  // Setup handoff paints its own overlay outside Suspense — stay blank so the peach screen never flashes away.
+  if (peekSetupHandoff()) {
+    return <div className="min-h-dvh bg-[#ffc9a8]" aria-hidden />
+  }
+
   return (
     <div role="status" aria-label="Loading" className="relative flex min-h-dvh flex-col items-center justify-center gap-4 overflow-hidden bg-canvas text-ink">
       <div className="pointer-events-none absolute inset-0" aria-hidden>

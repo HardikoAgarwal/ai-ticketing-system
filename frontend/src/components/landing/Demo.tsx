@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/auth/AuthContext'
 import { ApiError, errorMessage } from '@/lib/api'
 import { demoApi } from '@/lib/endpoints'
+import { beginSetupHandoff } from '@/features/auth/SetupHandoff'
 import { SetupScreen } from '@/features/auth/SetupScreen'
 import { SETUP_STEPS } from '@/features/auth/setup-steps'
 import { cn } from '@/lib/utils'
@@ -164,11 +165,11 @@ export function Demo({ notice }: { notice?: string | null }) {
       }
       if (!slug) return
       setDone(true)
-      // Hold on the ready state, then let SetupScreen exit before the dashboard enter loader takes over.
-      await new Promise((r) => setTimeout(r, 750))
-      setBusy(null)
-      await new Promise((r) => setTimeout(r, 560))
-      navigate(`/w/${slug}/agent`, { state: { enteringWorkspace: true, workspaceName: t.name } })
+      // Stay on setup while the dashboard chunk loads, then navigate under the same cover.
+      await new Promise((r) => setTimeout(r, 420))
+      beginSetupHandoff(t.name)
+      await import('@/features/home/HomePage')
+      navigate(`/w/${slug}/agent`)
     } catch (err) {
       setError(errorMessage(err))
     }
@@ -202,7 +203,7 @@ export function Demo({ notice }: { notice?: string | null }) {
         )}
       </div>
 
-      <AnimatePresence mode="wait">
+      <AnimatePresence>
         {busy && (
           <SetupScreen
             name={busy.name}

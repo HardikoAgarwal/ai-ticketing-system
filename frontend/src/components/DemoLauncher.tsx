@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/auth/AuthContext'
 import { Chip, SegmentedControl, Skeleton, type ChipTone } from '@/components/ds'
 import { Button } from '@/components/ui/button'
+import { beginSetupHandoff } from '@/features/auth/SetupHandoff'
 import { SetupScreen } from '@/features/auth/SetupScreen'
 import { useColdStartRetry, useSetupProgress } from '@/features/auth/useSandboxSetup'
 import { friendlyError } from '@/features/auth/errors'
@@ -52,12 +53,11 @@ export function DemoLauncher({ className }: { className?: string }) {
       const slug = await withRetry(() => startDemo(t.key))
       if (role === 'customer') await switchView('customer')
       setDone(true)
-      await new Promise((r) => setTimeout(r, 750))
-      setBusy(null)
-      await new Promise((r) => setTimeout(r, 560))
-      navigate(`/w/${slug}/${role === 'customer' ? 'help' : 'agent'}`, {
-        state: { enteringWorkspace: true, workspaceName: t.name },
-      })
+      await new Promise((r) => setTimeout(r, 420))
+      beginSetupHandoff(t.name)
+      if (role === 'customer') await import('@/pages/customer/TicketsPage')
+      else await import('@/features/home/HomePage')
+      navigate(`/w/${slug}/${role === 'customer' ? 'help' : 'agent'}`)
     } catch (err) {
       setError(friendlyError(err))
     }
@@ -147,7 +147,7 @@ export function DemoLauncher({ className }: { className?: string }) {
       )}
       <p className="mt-3 text-[13px] text-ink-3">No signup needed. You get a private workspace with sample data that resets after 24 hours.</p>
 
-      <AnimatePresence mode="wait">
+      <AnimatePresence>
         {busy && (
           <SetupScreen
             name={busy.name}

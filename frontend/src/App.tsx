@@ -4,6 +4,7 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 import { homeFor, useAuth } from '@/auth/AuthContext'
 import { RequireArea } from '@/auth/workspace'
 import { FullPageLoader } from '@/components/states'
+import { SetupHandoffOverlay } from '@/features/auth/SetupHandoff'
 import { AgentLayout } from '@/layouts/AgentLayout'
 import { CustomerLayout } from '@/layouts/CustomerLayout'
 import { InvitePage, LoginPage, SignupPage } from '@/pages/AuthPages'
@@ -35,45 +36,49 @@ function WorkspaceRedirect() {
 
 export default function App() {
   return (
-    <Suspense fallback={<FullPageLoader />}>
-      <Routes>
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/signup" element={<SignupPage />} />
-        <Route path="/invite/:token" element={<InvitePage />} />
-        {/* hidden dev previews; not linked in product nav */}
-        <Route path="/_design" element={<DesignSystemPage />} />
-        <Route path="/_setup-preview" element={<SetupPreviewPage />} />
+    <>
+      {/* Outside Suspense so setup stays painted while the dashboard chunk loads underneath. */}
+      <SetupHandoffOverlay />
+      <Suspense fallback={<FullPageLoader />}>
+        <Routes>
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/signup" element={<SignupPage />} />
+          <Route path="/invite/:token" element={<InvitePage />} />
+          {/* hidden dev previews; not linked in product nav */}
+          <Route path="/_design" element={<DesignSystemPage />} />
+          <Route path="/_setup-preview" element={<SetupPreviewPage />} />
 
-        <Route path="/w/:slug" element={<WorkspaceRedirect />} />
+          <Route path="/w/:slug" element={<WorkspaceRedirect />} />
 
-        <Route element={<RequireArea area="help" />}>
-          <Route path="/w/:slug/help" element={<CustomerLayout />}>
-            <Route index element={<TicketsPage />} />
-            <Route path="tickets/new" element={<NewTicketPage />} />
-            <Route path="tickets/:id" element={<TicketDetailPage />} />
+          <Route element={<RequireArea area="help" />}>
+            <Route path="/w/:slug/help" element={<CustomerLayout />}>
+              <Route index element={<TicketsPage />} />
+              <Route path="tickets/new" element={<NewTicketPage />} />
+              <Route path="tickets/:id" element={<TicketDetailPage />} />
+            </Route>
           </Route>
-        </Route>
 
-        <Route element={<RequireArea area="agent" />}>
-          <Route path="/w/:slug/agent" element={<AgentLayout />}>
-            <Route index element={<HomePage />} />
-            <Route path="tickets" element={<AgentTicketsPage />} />
-            <Route path="tickets/history" element={<AgentHistoryPage />} />
-            <Route path="tickets/:id" element={<TicketPage />} />
-            {/* analytics now lives on the home dashboard; keep old links and bookmarks working */}
-            <Route path="analytics" element={<Navigate to=".." replace />} />
-            <Route path="knowledge" element={<KnowledgePage />} />
-            <Route path="knowledge/new" element={<ArticleEditorPage />} />
-            <Route path="knowledge/:id" element={<ArticleEditorPage />} />
-            <Route path="settings" element={<SettingsPage />} />
-            <Route path="settings/:section" element={<SettingsPage />} />
-            <Route path="users" element={<UsersPage />} />
+          <Route element={<RequireArea area="agent" />}>
+            <Route path="/w/:slug/agent" element={<AgentLayout />}>
+              <Route index element={<HomePage />} />
+              <Route path="tickets" element={<AgentTicketsPage />} />
+              <Route path="tickets/history" element={<AgentHistoryPage />} />
+              <Route path="tickets/:id" element={<TicketPage />} />
+              {/* analytics now lives on the home dashboard; keep old links and bookmarks working */}
+              <Route path="analytics" element={<Navigate to=".." replace />} />
+              <Route path="knowledge" element={<KnowledgePage />} />
+              <Route path="knowledge/new" element={<ArticleEditorPage />} />
+              <Route path="knowledge/:id" element={<ArticleEditorPage />} />
+              <Route path="settings" element={<SettingsPage />} />
+              <Route path="settings/:section" element={<SettingsPage />} />
+              <Route path="users" element={<UsersPage />} />
+            </Route>
           </Route>
-        </Route>
 
-        <Route path="*" element={<NotFoundPage />} />
-      </Routes>
-    </Suspense>
+          <Route path="*" element={<NotFoundPage />} />
+        </Routes>
+      </Suspense>
+    </>
   )
 }

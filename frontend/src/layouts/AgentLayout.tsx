@@ -15,7 +15,7 @@ import { ShellProvider } from '@/components/shell/ShellContext'
 import { useShell } from '@/components/shell/shell-context'
 import { ShortcutsHelp } from '@/components/shell/ShortcutsHelp'
 import { useShortcut } from '@/components/shell/shortcuts'
-import { useWorkspaceEnter, WorkspaceEnterLoader } from '@/components/shell/WorkspaceEnterLoader'
+import { ReleaseSetupWhenReady } from '@/features/auth/SetupHandoff'
 import { SETTINGS_SECTIONS } from '@/features/settings/sections'
 import { cn } from '@/lib/utils'
 import { useFallbackInterval } from '@/realtime/RealtimeProvider'
@@ -55,7 +55,6 @@ function Frame() {
   const { bleed } = useShell()
   const navigate = useNavigate()
   const { setChoice } = useTheme()
-  const enter = useWorkspaceEnter()
   const refetchInterval = useFallbackInterval()
   const { data: stats } = useQuery({ queryKey: ['stats', slug], queryFn: api.tickets.stats, refetchInterval })
   const base = `/w/${slug}/agent`
@@ -110,7 +109,9 @@ function Frame() {
           {/* one stable tree: toggling bleed only changes classes, so the routed page is never remounted */}
           <div className={cn(bleed ? 'flex min-h-0 flex-1 flex-col' : 'mx-auto w-full max-w-[1400px] px-4 py-6 md:px-8 md:py-8', !bleed && isDemo && 'pb-24')}>
             <Suspense fallback={<SkeletonRows rows={6} className={bleed ? 'p-6' : undefined} />}>
-              <Outlet />
+              <ReleaseSetupWhenReady>
+                <Outlet />
+              </ReleaseSetupWhenReady>
             </Suspense>
           </div>
         </main>
@@ -120,7 +121,6 @@ function Frame() {
       <ShortcutsHelp />
       <LiveRegion />
       <DemoDock />
-      <WorkspaceEnterLoader show={enter.show} name={enter.name} />
     </div>
   )
 }
