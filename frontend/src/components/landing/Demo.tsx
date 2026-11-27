@@ -164,8 +164,11 @@ export function Demo({ notice }: { notice?: string | null }) {
       }
       if (!slug) return
       setDone(true)
-      await new Promise((r) => setTimeout(r, 450))
-      navigate(`/w/${slug}/agent`)
+      // Hold on the ready state, then let SetupScreen exit before the dashboard enter loader takes over.
+      await new Promise((r) => setTimeout(r, 750))
+      setBusy(null)
+      await new Promise((r) => setTimeout(r, 560))
+      navigate(`/w/${slug}/agent`, { state: { enteringWorkspace: true, workspaceName: t.name } })
     } catch (err) {
       setError(errorMessage(err))
     }
@@ -199,8 +202,24 @@ export function Demo({ notice }: { notice?: string | null }) {
         )}
       </div>
 
-      <AnimatePresence>
-        {busy && <SetupScreen name={busy.name} step={step} progress={progress} waking={elapsed > 7} error={error} onRetry={() => launch(busy)} onBack={() => { setBusy(null); setError(null); setDone(false); window.setTimeout(() => trigger.current?.focus(), 0) }} />}
+      <AnimatePresence mode="wait">
+        {busy && (
+          <SetupScreen
+            name={busy.name}
+            step={step}
+            progress={progress}
+            ready={done && !error}
+            waking={elapsed > 7}
+            error={error}
+            onRetry={() => launch(busy)}
+            onBack={() => {
+              setBusy(null)
+              setError(null)
+              setDone(false)
+              window.setTimeout(() => trigger.current?.focus(), 0)
+            }}
+          />
+        )}
       </AnimatePresence>
     </section>
   )

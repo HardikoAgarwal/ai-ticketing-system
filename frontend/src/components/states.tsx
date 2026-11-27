@@ -8,11 +8,15 @@ import { cn } from '@/lib/utils'
 
 export function FullPageLoader() {
   return (
-    <div role="status" aria-label="Loading" className="flex min-h-dvh flex-col items-center justify-center gap-3 bg-canvas text-ink-3">
-      <span className="flex size-11 items-center justify-center rounded-panel bg-linear-to-br from-aurora-1 to-aurora-3 text-white shadow-aurora motion-safe:animate-pulse">
+    <div role="status" aria-label="Loading" className="relative flex min-h-dvh flex-col items-center justify-center gap-4 overflow-hidden bg-canvas text-ink">
+      <div className="pointer-events-none absolute inset-0" aria-hidden>
+        <div className="absolute -top-20 left-1/3 size-64 rounded-full bg-lav/70 blur-3xl" />
+        <div className="absolute right-1/4 bottom-16 size-52 rounded-full bg-mint/60 blur-3xl" />
+      </div>
+      <span className="relative flex size-12 items-center justify-center rounded-2xl bg-lav text-lav-ink ring-1 ring-lav-line">
         <Loader2 className="size-5 animate-spin motion-reduce:animate-none" aria-hidden />
       </span>
-      <span className="text-sm font-medium">Loading…</span>
+      <span className="relative text-sm font-medium text-ink-2">Loading workspace…</span>
     </div>
   )
 }

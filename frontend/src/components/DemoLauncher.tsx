@@ -52,8 +52,12 @@ export function DemoLauncher({ className }: { className?: string }) {
       const slug = await withRetry(() => startDemo(t.key))
       if (role === 'customer') await switchView('customer')
       setDone(true)
-      await new Promise((r) => setTimeout(r, 450))
-      navigate(`/w/${slug}/${role === 'customer' ? 'help' : 'agent'}`)
+      await new Promise((r) => setTimeout(r, 750))
+      setBusy(null)
+      await new Promise((r) => setTimeout(r, 560))
+      navigate(`/w/${slug}/${role === 'customer' ? 'help' : 'agent'}`, {
+        state: { enteringWorkspace: true, workspaceName: t.name },
+      })
     } catch (err) {
       setError(friendlyError(err))
     }
@@ -143,8 +147,19 @@ export function DemoLauncher({ className }: { className?: string }) {
       )}
       <p className="mt-3 text-[13px] text-ink-3">No signup needed. You get a private workspace with sample data that resets after 24 hours.</p>
 
-      <AnimatePresence>
-        {busy && <SetupScreen name={busy.name} step={progress.step} progress={progress.progress} waking={progress.waking} error={error} onRetry={() => launch(busy)} onBack={close} />}
+      <AnimatePresence mode="wait">
+        {busy && (
+          <SetupScreen
+            name={busy.name}
+            step={progress.step}
+            progress={progress.progress}
+            ready={done && !error}
+            waking={progress.waking}
+            error={error}
+            onRetry={() => launch(busy)}
+            onBack={close}
+          />
+        )}
       </AnimatePresence>
     </div>
   )

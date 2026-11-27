@@ -20,6 +20,7 @@ const TicketPage = lazy(() => import('@/features/ticket/TicketPage').then((m) =>
 const ArticleEditorPage = lazy(() => import('@/features/kb/ArticleEditorPage').then((m) => ({ default: m.ArticleEditorPage })))
 const KnowledgePage = lazy(() => import('@/pages/agent/KnowledgePage').then((m) => ({ default: m.KnowledgePage })))
 const DesignSystemPage = lazy(() => import('@/pages/DesignSystemPage').then((m) => ({ default: m.DesignSystemPage })))
+const SetupPreviewPage = lazy(() => import('@/pages/SetupPreviewPage').then((m) => ({ default: m.SetupPreviewPage })))
 const UsersPage = lazy(() => import('@/features/users/UsersPage').then((m) => ({ default: m.UsersPage })))
 const SettingsPage = lazy(() => import('@/pages/agent/SettingsPage').then((m) => ({ default: m.SettingsPage })))
 
@@ -40,8 +41,9 @@ export default function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/invite/:token" element={<InvitePage />} />
-        {/* hidden dev preview of the design system; not linked anywhere */}
+        {/* hidden dev previews; not linked in product nav */}
         <Route path="/_design" element={<DesignSystemPage />} />
+        <Route path="/_setup-preview" element={<SetupPreviewPage />} />
 
         <Route path="/w/:slug" element={<WorkspaceRedirect />} />
 

@@ -15,6 +15,7 @@ import { ShellProvider } from '@/components/shell/ShellContext'
 import { useShell } from '@/components/shell/shell-context'
 import { ShortcutsHelp } from '@/components/shell/ShortcutsHelp'
 import { useShortcut } from '@/components/shell/shortcuts'
+import { useWorkspaceEnter, WorkspaceEnterLoader } from '@/components/shell/WorkspaceEnterLoader'
 import { SETTINGS_SECTIONS } from '@/features/settings/sections'
 import { cn } from '@/lib/utils'
 import { useFallbackInterval } from '@/realtime/RealtimeProvider'
@@ -54,6 +55,7 @@ function Frame() {
   const { bleed } = useShell()
   const navigate = useNavigate()
   const { setChoice } = useTheme()
+  const enter = useWorkspaceEnter()
   const refetchInterval = useFallbackInterval()
   const { data: stats } = useQuery({ queryKey: ['stats', slug], queryFn: api.tickets.stats, refetchInterval })
   const base = `/w/${slug}/agent`
@@ -118,6 +120,7 @@ function Frame() {
       <ShortcutsHelp />
       <LiveRegion />
       <DemoDock />
+      <WorkspaceEnterLoader show={enter.show} name={enter.name} />
     </div>
   )
 }

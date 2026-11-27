@@ -7,6 +7,7 @@ import { WorkspaceMark } from '@/components/common'
 import { DemoDock } from '@/components/dashboard/DemoDock'
 import { NotificationBell } from '@/components/NotificationBell'
 import { LiveRegion } from '@/components/shell/live'
+import { useWorkspaceEnter, WorkspaceEnterLoader } from '@/components/shell/WorkspaceEnterLoader'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
@@ -15,6 +16,7 @@ import { UserMenu } from './UserMenu'
 /** Customer shell: a light top bar on the paper canvas (no dock), one centred column, skip link and live region. */
 export function CustomerLayout() {
   const { slug, api, brief, isDemo } = useWorkspace()
+  const enter = useWorkspaceEnter()
   const base = `/w/${slug}/help`
   const { data } = useQuery({ queryKey: ['tickets', slug, 'requester', 'unread'], queryFn: () => api.tickets.listRequester() })
   const unread = data?.results.filter((t) => t.has_unread).length ?? 0
@@ -72,6 +74,7 @@ export function CustomerLayout() {
       </main>
       <LiveRegion />
       <DemoDock />
+      <WorkspaceEnterLoader show={enter.show} name={enter.name} />
     </div>
   )
 }
