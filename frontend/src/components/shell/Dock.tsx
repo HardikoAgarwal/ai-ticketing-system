@@ -61,6 +61,7 @@ function usePinned() {
 
 /* Labels live in the DOM always (screen readers); they are only hidden visually while the dock is collapsed. */
 const SHOW = 'group-hover/dock:opacity-100 group-has-[:focus-visible,[data-state=open]]/dock:opacity-100 group-data-[pinned=true]/dock:opacity-100'
+const SHOW_FLEX = 'hidden group-hover/dock:inline-flex group-has-[:focus-visible,[data-state=open]]/dock:inline-flex group-data-[pinned=true]/dock:inline-flex'
 const LABEL = 'min-w-0 truncate whitespace-nowrap opacity-0 transition-opacity duration-150 ' + SHOW
 const ROW = 'flex h-10 w-full items-center gap-3 rounded-control px-[13.5px] text-sm font-medium transition-colors'
 
@@ -70,7 +71,7 @@ function WorkspaceBlock() {
   const navigate = useNavigate()
   const memberships = user?.memberships ?? []
   const trigger = (
-    <button className={cn(ROW, 'h-[45px] px-[2.5px] text-ink hover:bg-sunken')} aria-label={memberships.length > 1 ? `Workspace: ${brief?.name}. Switch workspace` : `Workspace: ${brief?.name}`}>
+    <button className={cn(ROW, 'h-[45px] rounded-[12px] px-[2.5px] text-ink hover:bg-sunken')} aria-label={memberships.length > 1 ? `Workspace: ${brief?.name}. Switch workspace` : `Workspace: ${brief?.name}`}>
       <Avatar name={brief?.name} size="lg" className="bg-ink text-canvas border-ink" />
       <span className={cn(LABEL, 'flex-1 pl-0.5 text-left text-[15px] font-semibold tracking-tight')}>{brief?.name ?? 'Workspace'}</span>
       {memberships.length > 1 && <ChevronsUpDown className={cn('size-4 shrink-0 text-ink-3 opacity-0 group-hover/dock:opacity-100 group-has-[:focus-visible,[data-state=open]]/dock:opacity-100 group-data-[pinned=true]/dock:opacity-100')} aria-hidden />}
@@ -192,7 +193,7 @@ export function Dock({ items }: { items: DockItem[] }) {
         data-pinned={pinned}
         className="group/dock fixed inset-y-0 left-0 z-40 w-16 border-r border-line bg-surface transition-[width,box-shadow] duration-200 hover:w-[232px] hover:shadow-dock has-[:focus-visible,[data-state=open]]:w-[232px] has-[:focus-visible,[data-state=open]]:shadow-dock data-[pinned=true]:w-[232px]"
       >
-        <div className="flex h-full w-full flex-col overflow-hidden px-[9px] py-3">
+        <div className="flex h-full w-full flex-col overflow-hidden px-[9px] pt-3 pb-5">
           <WorkspaceBlock />
           <button type="button" onClick={openPalette} className={cn(ROW, 'mt-3 border border-line-strong px-[12.5px] text-ink-3 hover:border-violet/60 hover:text-ink')} aria-label="Search tickets and run commands">
             <Search className="size-[18px] shrink-0" aria-hidden />
@@ -205,8 +206,8 @@ export function Dock({ items }: { items: DockItem[] }) {
             ))}
           </ul>
           <div className="mt-3 flex flex-col gap-1 border-t border-line pt-3">
-            <NotificationBell variant="dock" labelClassName={LABEL} rowClassName={cn(ROW, 'text-ink-2 hover:bg-sunken hover:text-ink')} />
-            <UserMenu variant="dock" labelClassName={LABEL} trailingClassName={cn('opacity-0 transition-opacity duration-150', SHOW)} status={status} rowClassName={cn(ROW, 'h-[45px] border border-line bg-surface-2 px-[3.5px] text-ink hover:bg-sunken')} />
+            <NotificationBell variant="dock" labelClassName={LABEL} badgeClassName={SHOW_FLEX} rowClassName={cn(ROW, 'h-[45px] rounded-[14px] border border-line bg-surface-2 px-[12.5px] text-ink-2 hover:bg-sunken hover:text-ink')} />
+            <UserMenu variant="dock" labelClassName={LABEL} trailingClassName={cn('opacity-0 transition-opacity duration-150', SHOW)} status={status} rowClassName={cn(ROW, 'h-[45px] rounded-[14px] border border-line bg-surface-2 px-[3.5px] text-ink hover:bg-sunken')} />
           </div>
         </div>
       </nav>

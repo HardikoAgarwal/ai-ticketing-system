@@ -56,7 +56,7 @@ export function UserMenu({ variant = 'avatar', rowClassName, labelClassName, tra
         {variant === 'dock' ? (
           <button type="button" aria-label={`Account menu, ${user.full_name}`} className={cn('text-left', rowClassName)}>
             <span className="relative shrink-0">
-              <Avatar name={user.full_name} size="md" className="size-9 text-[13px]" />
+              <Avatar name={user.full_name} size="md" className="size-9 rounded-[10px] text-[13px]" />
               {status && <span className={cn('absolute -right-0.5 -bottom-0.5 size-2.5 rounded-full ring-2 ring-surface-2', status.dot)} aria-hidden />}
             </span>
             <span className={cn('flex-1 leading-tight', labelClassName)}>

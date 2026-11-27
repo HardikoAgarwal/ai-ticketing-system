@@ -101,7 +101,7 @@ function DesktopAlertsRow() {
   )
 }
 
-export function NotificationBell({ variant = 'icon', rowClassName, labelClassName }: { variant?: 'icon' | 'dock'; rowClassName?: string; labelClassName?: string }) {
+export function NotificationBell({ variant = 'icon', rowClassName, labelClassName, badgeClassName }: { variant?: 'icon' | 'dock'; rowClassName?: string; labelClassName?: string; /** Dock only: where the unread count shows (a badge on the right), so the caller can hide it while the sidebar is narrow. */ badgeClassName?: string }) {
   const { slug, api, staff } = useWorkspace()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
@@ -143,7 +143,8 @@ export function NotificationBell({ variant = 'icon', rowClassName, labelClassNam
               <Bell className="size-[18px]" aria-hidden />
               {count > 0 && <span className="absolute -top-1 -right-1.5 size-2 rounded-full bg-rose-ink ring-2 ring-surface" aria-hidden />}
             </span>
-            <span className={labelClassName}>Notifications{count > 0 ? ` (${count})` : ''}</span>
+            <span className={cn('flex-1 text-left', labelClassName)}>Notifications</span>
+            {count > 0 && <span className={cn('h-6 min-w-6 items-center justify-center rounded-md bg-rose-ink px-2 text-[13px] font-bold text-canvas tabular-nums', badgeClassName)}>{count > 99 ? '99+' : count}</span>}
           </button>
         ) : (
           <Button variant="ghost" size="icon-sm" className="relative" aria-label={count ? `Notifications, ${count} new` : 'Notifications'}>

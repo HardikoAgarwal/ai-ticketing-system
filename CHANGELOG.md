@@ -2,6 +2,7 @@
 
 ## Unreleased: Helpdesk AI rewrite (from the BookLeaf author portal)
 ### Changed
+- Sidebar bottom: more space under the profile button; the profile and workspace buttons now have concentric rounded corners (outer corner a little rounder than the avatar inside it); Notifications is a full-width bordered row in the same style as the profile button, with the unread count as a badge on the right.
 - Sidebar: the open/collapse tab has the sidebar's own background and sits beside the sidebar (not inside it), so pointing at it no longer opens the collapsed sidebar. Notifications is back at the bottom, directly above the profile button. The profile avatar is a little bigger (36px) with a larger name, and in the collapsed rail the profile and workspace buttons are square so the padding is equal on every side.
 - Sidebar round: **Notifications** moved from the bottom to just under Search, so the bottom holds only the profile button. The open/collapse control is a pill tab fixed to the sidebar's right edge (flat against the sidebar, rounded outside) using the sidebar open/close icon. The open-ticket count next to "Active tickets" is bigger, bold and highlighted (solid accent, white text). **Search modal:** the first and last items now have breathing room from the top and bottom borders.
 - Search modal: the keyboard hints are back (Esc tag, each command's shortcut, the navigate and run footer, and ⌘K on the sidebar's Search row); only the "Keyboard shortcuts" item was removed from it. The modal stays roomy.
