@@ -3,6 +3,8 @@ import { Globe, Lock, PencilLine, type LucideIcon } from 'lucide-react'
 import type { Hue } from '@/components/ds'
 import type { Article } from '@/lib/types'
 
+export const ALL_CATEGORIES = '__all__'
+
 const TARGET = 700
 
 /** Mirrors the server's paragraph-aware chunking so the preview shows what the AI really gets. */
@@ -19,13 +21,6 @@ export function splitPassages(body: string): string[] {
   if (cur) out.push(cur)
   return out
 }
-
-export const TIPS = [
-  'One topic per article. Short, focused articles are found more accurately.',
-  'State exact numbers and timelines ("refunds take 5-10 business days"). The AI repeats what you write.',
-  'Say what happens next, so replies can end with a clear next step.',
-  'Separate ideas with a blank line. Each block becomes a passage the AI can cite.',
-]
 
 /**
  * One visibility choice in place of two switches. It maps onto the two stored flags:

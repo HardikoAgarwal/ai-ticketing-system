@@ -7,10 +7,10 @@ import { useWorkspace } from '@/auth/workspace'
  * The heading of every agent page: an ink icon tile (the same tile the active dock item uses), the workspace name as a small
  * label, the page title, a one-line description, and the page's actions on the right. A hairline under it separates it from the content.
  */
-export function PageHeader({ icon: Icon, title, description, actions }: { icon: LucideIcon; title: string; description?: ReactNode; actions?: ReactNode }) {
+export function PageHeader({ icon: Icon, title, description, actions, crowded = false }: { icon: LucideIcon; title: string; description?: ReactNode; actions?: ReactNode; /** Many actions: they sit on their own row under the title until the screen is very wide. */ crowded?: boolean }) {
   const { brief } = useWorkspace()
   return (
-    <header className="flex flex-col gap-4 border-b border-line pb-6 lg:flex-row lg:items-center lg:justify-between">
+    <header className={`flex flex-col gap-4 border-b border-line pb-6 ${crowded ? "2xl:flex-row 2xl:items-center 2xl:justify-between" : "lg:flex-row lg:items-center lg:justify-between"}`}>
       <div className="flex min-w-0 items-center gap-4">
         <span className="hidden size-14 shrink-0 items-center justify-center rounded-panel bg-ink text-canvas shadow-panel sm:flex" aria-hidden>
           <Icon className="size-6" />

@@ -1,12 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, Bot, ChevronDown, FileText, FlaskConical, Lightbulb, MoreHorizontal, Trash2 } from 'lucide-react'
+import { ArrowLeft, Bot, FileText, Lightbulb, MoreHorizontal, Trash2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
+import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 
 import { useWorkspace } from '@/auth/workspace'
 import { ConfirmDialog, type ConfirmOptions } from '@/components/ConfirmDialog'
-import { ErrorState, Panel, Skeleton } from '@/components/ds'
+import { ErrorState, Panel, SegmentedControl, Skeleton } from '@/components/ds'
 import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -16,37 +16,17 @@ import { SaveBar } from '@/features/settings/rows'
 import { errorMessage } from '@/lib/api'
 import type { Article } from '@/lib/types'
 
-import { flagsFor, splitPassages, TIPS, visibilityOf, type Visibility } from './kb-utils'
-import { VisibilityPicker } from './VisibilityPicker'
+import { AiButton } from './AiButton'
+import { AiPreviewDialog } from './AiPreviewDialog'
+import { AiSearchDialog } from './AiSearchDialog'
+import { flagsFor, splitPassages, visibilityOf, VISIBILITY, type Visibility } from './kb-utils'
+import { TipsDialog } from './TipsDialog'
 
 const NONE = '__none__'
 
-function RailSection({ title, children, className }: { title: string; children: React.ReactNode; className?: string }) {
-  return (
-    <section className={className}>
-      <h2 className="mb-3 text-[11px] font-semibold tracking-[0.1em] text-ink-3 uppercase">{title}</h2>
-      {children}
-    </section>
-  )
-}
-
-function Fold({ icon: Icon, title, meta, children }: { icon: typeof Bot; title: string; meta?: string; children: React.ReactNode }) {
-  return (
-    <details className="group">
-      <summary className="flex cursor-pointer list-none items-center gap-2 rounded-control text-sm font-semibold text-ink select-none focus-visible:ring-2 focus-visible:ring-violet focus-visible:outline-none [&::-webkit-details-marker]:hidden">
-        <Icon className="size-4 text-ink-2" aria-hidden />
-        <span className="flex-1">{title}</span>
-        {meta && <span className="text-xs font-medium text-ink-2">{meta}</span>}
-        <ChevronDown className="size-4 text-ink-3 transition-transform group-open:rotate-180" aria-hidden />
-      </summary>
-      <div className="mt-3">{children}</div>
-    </details>
-  )
-}
-
 /**
- * One full page for writing a new article and editing an existing one: a big title and writing area on the left,
- * category, visibility, the AI preview and writing tips on the right, and a save bar that appears when something changed.
+ * One full page for writing a new article and editing an existing one: category and visibility in a slim bar, then a big title and
+ * writing area. The AI preview, writing tips and Test AI search are buttons in the header that open modals; a save bar appears when something changed.
  */
 export function ArticleEditorPage() {
   const { id } = useParams()
@@ -56,6 +36,7 @@ export function ArticleEditorPage() {
   const queryClient = useQueryClient()
   const base = `/w/${slug}/agent/knowledge`
   const [confirm, setConfirm] = useState<ConfirmOptions | null>(null)
+  const [modal, setModal] = useState<'preview' | 'tips' | 'test' | null>(null)
   const [saved, setSaved] = useState(false)
   const [draft, setDraft] = useState<Partial<Article>>({})
 
@@ -128,7 +109,7 @@ export function ArticleEditorPage() {
 
   if (!isNew && existing.isLoading) {
     return (
-      <div className="mx-auto w-full max-w-[1200px]">
+      <div className="mx-auto w-full max-w-[1000px]">
         {back}
         <Skeleton className="h-[560px] rounded-panel" />
       </div>
@@ -136,7 +117,7 @@ export function ArticleEditorPage() {
   }
   if (!isNew && existing.isError) {
     return (
-      <div className="mx-auto w-full max-w-[1200px]">
+      <div className="mx-auto w-full max-w-[1000px]">
         {back}
         <ErrorState error={existing.error} onRetry={() => existing.refetch()} title="We couldn't open this article" />
       </div>
@@ -144,7 +125,7 @@ export function ArticleEditorPage() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-[1200px] pb-8">
+    <div className="mx-auto w-full max-w-[1000px] pb-8">
       {back}
       <PageHeader
         icon={FileText}
@@ -152,11 +133,15 @@ export function ArticleEditorPage() {
         description={readOnly ? 'Only owners and admins can edit. You can read exactly what the AI reads.' : 'Write it the way you would explain it to a customer. The AI quotes this and cites it.'}
         actions={
           <>
-            <Button variant="outline" asChild className="h-10">
-              <Link to={`${base}?tab=test`}>
-                <FlaskConical /> Test AI search
-              </Link>
+            <Button variant="outline" className="h-10" onClick={() => setModal('preview')}>
+              <Bot /> AI preview
             </Button>
+            {!readOnly && (
+              <Button variant="outline" className="h-10" onClick={() => setModal('tips')}>
+                <Lightbulb /> Writing tips
+              </Button>
+            )}
+            <AiButton onClick={() => setModal('test')}>Test AI search</AiButton>
             {!isNew && manager && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -175,43 +160,12 @@ export function ArticleEditorPage() {
         }
       />
 
-      <div className="mt-8 grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_21rem]">
-        <Panel className="p-6 sm:p-8">
-          <input
-            aria-label="Article title"
-            value={title}
-            disabled={readOnly}
-            maxLength={200}
-            placeholder="Article title, e.g. Refunds and credits"
-            onChange={(e) => set({ title: e.target.value })}
-            className="w-full border-0 bg-transparent text-3xl leading-10 font-semibold tracking-tight text-ink outline-none placeholder:text-ink-3 disabled:opacity-100"
-          />
-          <p className="mt-1 text-[13px] text-ink-2">Customers see this when we suggest the article. Name the topic plainly.</p>
-          <hr className="my-6 border-line" />
-          <textarea
-            aria-label="Article content"
-            value={body}
-            disabled={readOnly}
-            placeholder={'Annual plans can be refunded within 14 days of purchase.\n\nAfter that we convert the unused term into account credit.'}
-            onChange={(e) => set({ body: e.target.value })}
-            className="block min-h-[26rem] w-full resize-y rounded-control border-0 bg-transparent p-0 text-base leading-7 text-ink outline-none placeholder:text-ink-3 disabled:opacity-100"
-          />
-          <div className="mt-5 flex flex-wrap items-center gap-3 border-t border-line pt-4 text-[13px] text-ink-2">
-            <span className="tabular-nums">
-              {words} {words === 1 ? 'word' : 'words'} · {passages.length} {passages.length === 1 ? 'passage' : 'passages'}
-            </span>
-            {!isNew && listItem.data && listItem.data.is_published && (
-              <span className="ml-auto">
-                <StatusPill hue={listItem.data.indexed ? 'mint' : 'butter'}>{listItem.data.indexed ? 'AI search ready' : 'Indexing for AI search'}</StatusPill>
-              </span>
-            )}
-          </div>
-        </Panel>
-
-        <Panel className="divide-y divide-line lg:sticky lg:top-4 [&>*]:p-5">
-          <RailSection title="Category">
+      <Panel className="mt-8">
+        <div className="flex flex-wrap items-center gap-x-8 gap-y-4 border-b border-line px-6 py-4 sm:px-8">
+          <div className="flex items-center gap-3">
+            <span className="text-[11px] font-semibold tracking-[0.1em] text-ink-3 uppercase">Category</span>
             <Select value={value.category ? String(value.category) : NONE} disabled={readOnly} onValueChange={(v) => set({ category: v === NONE ? null : Number(v) })}>
-              <SelectTrigger aria-label="Category" className="h-10 w-full">
+              <SelectTrigger aria-label="Category" className="h-10 w-52">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -223,51 +177,58 @@ export function ArticleEditorPage() {
                 ))}
               </SelectContent>
             </Select>
-            <p className="mt-2 text-[13px] leading-5 text-ink-2">Articles in a ticket&apos;s category get a small boost when the AI picks what to read.</p>
-          </RailSection>
-
-          <RailSection title="Visibility">
-            <VisibilityPicker value={visibility} disabled={readOnly} onChange={(v: Visibility) => set(flagsFor(v))} />
-          </RailSection>
-
-          <div>
-            <Fold icon={Bot} title="How the AI will read this" meta={`${passages.length} ${passages.length === 1 ? 'passage' : 'passages'}`}>
-              <p className="mb-3 text-[13px] leading-5 text-ink-2">Your article is cut into passages. For each ticket the AI is given the most relevant ones and cites the article.</p>
-              {passages.length === 0 ? (
-                <p className="rounded-control border border-dashed border-line-strong p-4 text-center text-xs text-ink-3">Start writing to see the passages appear here.</p>
-              ) : (
-                <ol className="scroll-quiet max-h-80 space-y-2 overflow-y-auto">
-                  {passages.map((p, i) => (
-                    <li key={i} className="rounded-control bg-surface-2 p-3">
-                      <p className="mb-1 text-[11px] font-semibold text-ink-3">
-                        Passage {i + 1} of {passages.length}
-                      </p>
-                      <p className="line-clamp-5 text-xs leading-relaxed whitespace-pre-line text-ink-2">{p}</p>
-                    </li>
-                  ))}
-                </ol>
-              )}
-            </Fold>
           </div>
-
-          {!readOnly && (
-            <div>
-              <Fold icon={Lightbulb} title="Writing tips">
-                <ul className="space-y-2">
-                  {TIPS.map((t) => (
-                    <li key={t} className="text-[13px] leading-5 text-ink-2">
-                      {t}
-                    </li>
-                  ))}
-                </ul>
-              </Fold>
-            </div>
-          )}
-        </Panel>
-      </div>
+          <div className="flex items-center gap-3">
+            <span className="text-[11px] font-semibold tracking-[0.1em] text-ink-3 uppercase">Visibility</span>
+            <SegmentedControl<Visibility>
+              ariaLabel="Visibility"
+              className="h-10"
+              value={visibility}
+              onChange={(v) => !readOnly && set(flagsFor(v))}
+              options={(Object.keys(VISIBILITY) as Visibility[]).map((k) => ({ value: k, label: VISIBILITY[k].label, icon: VISIBILITY[k].icon, disabled: readOnly }))}
+            />
+          </div>
+          <p className="min-w-56 flex-1 text-[13px] leading-5 text-ink-2" aria-live="polite">
+            {VISIBILITY[visibility].hint}
+          </p>
+        </div>
+        <div className="p-6 sm:p-8">
+          <input
+            aria-label="Article title"
+            value={title}
+            disabled={readOnly}
+            maxLength={200}
+            placeholder="Article title, e.g. Refunds and credits"
+            onChange={(e) => set({ title: e.target.value })}
+            className="w-full border-0 bg-transparent text-3xl leading-10 font-semibold tracking-tight text-ink outline-none placeholder:text-ink-3 disabled:opacity-100"
+          />
+          <hr className="my-6 border-line" />
+          <textarea
+            aria-label="Article content"
+            value={body}
+            disabled={readOnly}
+            placeholder={'Annual plans can be refunded within 14 days of purchase.\n\nAfter that we convert the unused term into account credit.'}
+            onChange={(e) => set({ body: e.target.value })}
+            className="block min-h-[28rem] w-full resize-y rounded-control border-0 bg-transparent p-0 text-base leading-7 text-ink outline-none placeholder:text-ink-3 disabled:opacity-100"
+          />
+          <div className="mt-5 flex flex-wrap items-center gap-3 border-t border-line pt-4 text-[13px] text-ink-2">
+            <span className="tabular-nums">
+              {words} {words === 1 ? 'word' : 'words'} · {passages.length} {passages.length === 1 ? 'passage' : 'passages'}
+            </span>
+            {!isNew && listItem.data && listItem.data.is_published && (
+              <span className="ml-auto">
+                <StatusPill hue={listItem.data.indexed ? 'mint' : 'butter'}>{listItem.data.indexed ? 'AI search ready' : 'Indexing for AI search'}</StatusPill>
+              </span>
+            )}
+          </div>
+        </div>
+      </Panel>
 
       {!readOnly && <SaveBar dirty={dirty} saving={save.isPending} saved={saved} error={save.error} disabled={!valid} onSave={() => save.mutate()} onDiscard={() => setDraft({})} />}
       <ConfirmDialog options={confirm} onClose={() => setConfirm(null)} />
+      <AiPreviewDialog open={modal === 'preview'} onOpenChange={(o) => !o && setModal(null)} passages={passages} title={title} />
+      <TipsDialog open={modal === 'tips'} onOpenChange={(o) => !o && setModal(null)} />
+      <AiSearchDialog open={modal === 'test'} onOpenChange={(o) => !o && setModal(null)} />
     </div>
   )
 }

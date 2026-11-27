@@ -11,7 +11,7 @@ import { errorMessage } from '@/lib/api'
 const EXAMPLES = ['I was charged twice', 'How do I reset my password?', 'Where is my order?']
 
 /** "Test retrieval": shows exactly what the AI would read for a given customer question. */
-export function KbPlayground() {
+export function KbPlayground({ animated = false }: { animated?: boolean }) {
   const { slug, api } = useWorkspace()
   const [q, setQ] = useState('')
   const [submitted, setSubmitted] = useState('')
@@ -23,13 +23,13 @@ export function KbPlayground() {
   const top = Math.max(0.0001, ...(search.data?.map((h) => h.score) ?? [0]))
 
   return (
-    <AiSurface working={search.isFetching} className="p-5">
+    <AiSurface working={search.isFetching} animated={animated} className="p-5 sm:p-6">
       <div className="flex items-start gap-3">
         <span className="flex size-9 shrink-0 items-center justify-center rounded-control bg-lav text-violet">
           <FlaskConical className="size-[18px]" aria-hidden />
         </span>
         <div>
-          <h2 className="text-[15px] font-semibold tracking-tight text-ink">Test what the AI would read</h2>
+          <h2 className="text-base font-semibold tracking-tight text-ink">Test what the AI would read</h2>
           <p className="text-[13px] text-ink-2">This is exactly what it reads when drafting a reply. Ask a real customer question and check your articles cover it.</p>
         </div>
       </div>
