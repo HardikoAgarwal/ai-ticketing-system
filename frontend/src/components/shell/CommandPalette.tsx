@@ -142,13 +142,13 @@ export function CommandPalette() {
           />
           <Kbd>Esc</Kbd>
         </div>
-        <div ref={listRef} id="palette-list" role="listbox" aria-label="Results" className="scroll-quiet max-h-[min(480px,60vh)] overflow-y-auto p-3">
+        <div ref={listRef} id="palette-list" role="listbox" aria-label="Results" className="scroll-quiet max-h-[min(480px,60vh)] overflow-y-auto px-3 py-5">
           {items.length === 0 && (
             <p className="px-3 py-14 text-center text-sm text-ink-3">{tickets.isFetching || (staff && query.trim().length >= 2 && query.trim() !== debounced) ? 'Searching…' : `Nothing matches "${query}".`}</p>
           )}
           {rows.map((r, i) =>
             r.kind === 'header' ? (
-              <div key={`h-${i}`} role="presentation" className="px-4 pt-4 pb-2 text-[11px] font-semibold tracking-[0.08em] text-ink-3 uppercase first:pt-1">
+              <div key={`h-${i}`} role="presentation" className="px-4 pt-4 pb-2 text-[11px] font-semibold tracking-[0.08em] text-ink-3 uppercase first:pt-0">
                 {r.label}
               </div>
             ) : (

@@ -111,7 +111,7 @@ function NavRow({ item, sub = false }: { item: DockItem; sub?: boolean }) {
       </span>
       <span className={cn(LABEL, 'flex-1')}>{item.label}</span>
       {!!item.count && (
-        <span className={cn('hidden rounded-md px-1.5 text-xs font-semibold tabular-nums group-hover/dock:inline group-has-[:focus-visible,[data-state=open]]/dock:inline group-data-[pinned=true]/dock:inline', active ? 'bg-canvas/20 text-canvas' : 'bg-violet-soft text-lav-ink')}>{item.count}</span>
+        <span className={cn('hidden h-6 min-w-6 items-center justify-center rounded-md bg-violet px-2 text-[13px] font-bold text-white tabular-nums shadow-sm group-hover/dock:inline-flex group-has-[:focus-visible,[data-state=open]]/dock:inline-flex group-data-[pinned=true]/dock:inline-flex')}>{item.count}</span>
       )}
     </Link>
   )
@@ -199,6 +199,9 @@ export function Dock({ items }: { items: DockItem[] }) {
             <span className={cn(LABEL, 'flex-1 text-left')}>Search</span>
             <Kbd keys="mod+k" className="hidden group-hover/dock:inline-flex group-has-[:focus-visible,[data-state=open]]/dock:inline-flex group-data-[pinned=true]/dock:inline-flex" />
           </button>
+          <div className="mt-1">
+            <NotificationBell variant="dock" labelClassName={LABEL} rowClassName={cn(ROW, 'text-ink-2 hover:bg-sunken hover:text-ink')} />
+          </div>
           <ul className="scroll-quiet mt-3 flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto overflow-x-hidden">
             {items.map((it) => (
               <li key={it.to}>{it.children ? <NavGroup item={it} /> : <NavRow item={it} />}</li>
@@ -206,18 +209,18 @@ export function Dock({ items }: { items: DockItem[] }) {
           </ul>
           <div className="mt-3 flex flex-col gap-1 border-t border-line pt-3">
             <UserMenu variant="dock" labelClassName={LABEL} trailingClassName={cn('opacity-0 transition-opacity duration-150', SHOW)} status={status} rowClassName={cn(ROW, 'h-14 border border-line bg-surface-2 px-[5.5px] text-ink hover:bg-sunken')} />
-            <NotificationBell variant="dock" labelClassName={LABEL} rowClassName={cn(ROW, 'text-ink-2 hover:bg-sunken hover:text-ink')} />
           </div>
         </div>
+        {/* a tab fixed to the sidebar's right edge: flat where it meets the sidebar, rounded on the outside, with the sidebar open/close icon */}
         <button
           type="button"
           onClick={togglePinned}
           aria-pressed={pinned}
           aria-label={pinned ? 'Collapse the sidebar' : 'Keep the sidebar open'}
           title={pinned ? 'Collapse the sidebar' : 'Keep the sidebar open'}
-          className="absolute -right-3.5 bottom-24 z-10 flex size-7 items-center justify-center rounded-lg border border-line-strong bg-surface text-ink-2 shadow-card transition-colors hover:bg-surface-2 hover:text-ink focus-visible:ring-2 focus-visible:ring-violet focus-visible:outline-none"
+          className="absolute bottom-6 left-full z-10 flex h-11 w-10 items-center justify-center rounded-r-full border border-l-0 border-line-strong bg-surface-2 pr-1 text-ink-2 shadow-card transition-colors hover:bg-sunken hover:text-ink focus-visible:ring-2 focus-visible:ring-violet focus-visible:outline-none"
         >
-          {pinned ? <PanelLeftClose className="size-4" aria-hidden /> : <PanelLeftOpen className="size-4" aria-hidden />}
+          {pinned ? <PanelLeftClose className="size-5" aria-hidden /> : <PanelLeftOpen className="size-5" aria-hidden />}
         </button>
       </nav>
     </div>
