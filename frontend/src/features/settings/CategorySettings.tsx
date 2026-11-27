@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Check, Loader2, Pencil, Plus, Trash2, X } from 'lucide-react'
+import { Pencil, Plus, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 
@@ -7,85 +7,26 @@ import { useWorkspace } from '@/auth/workspace'
 import { ConfirmDialog, type ConfirmOptions } from '@/components/ConfirmDialog'
 import { Chip, ErrorState, IconButton, SkeletonRows } from '@/components/ds'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { errorMessage } from '@/lib/api'
 import { categoryTone } from '@/lib/constants'
 import type { Category } from '@/lib/types'
 
+import { CategoryDialog, type CategoryValues } from './CategoryDialog'
 import { SettingsCard } from './rows'
-
-type CategoryValues = { name: string; description: string; keywords: Record<string, number> }
-
-const toKeywords = (text: string, previous: Record<string, number> = {}) =>
-  Object.fromEntries(
-    text
-      .split(',')
-      .map((k) => k.trim().toLowerCase())
-      .filter(Boolean)
-      .map((k) => [k, previous[k] ?? 2]),
-  )
-
-function CategoryForm({ initial, busy, submitLabel, onSubmit, onCancel }: { initial?: Category; busy: boolean; submitLabel: string; onSubmit: (v: CategoryValues) => void; onCancel: () => void }) {
-  const [name, setName] = useState(initial?.name ?? '')
-  const [description, setDescription] = useState(initial?.description ?? '')
-  const [keywords, setKeywords] = useState(Object.keys(initial?.keywords ?? {}).join(', '))
-  const id = initial ? `c${initial.id}` : 'new'
-  const field = 'grid gap-x-8 gap-y-2 md:grid-cols-[minmax(0,13rem)_minmax(0,1fr)]'
-  return (
-    <form
-      className="space-y-5"
-      onSubmit={(e) => {
-        e.preventDefault()
-        if (name.trim() && !busy) onSubmit({ name: name.trim(), description, keywords: toKeywords(keywords, initial?.keywords) })
-      }}
-    >
-      <div className={field}>
-        <div>
-          <Label htmlFor={`${id}-name`}>Name</Label>
-          <p className="mt-1 text-[13px] leading-5 text-ink-2">Shown on tickets and in analytics.</p>
-        </div>
-        <Input id={`${id}-name`} value={name} maxLength={80} placeholder="e.g. Shipping & Delivery" autoFocus className="h-11 max-w-md" onChange={(e) => setName(e.target.value)} />
-      </div>
-      <div className={field}>
-        <div>
-          <Label htmlFor={`${id}-desc`}>Description</Label>
-          <p className="mt-1 text-[13px] leading-5 text-ink-2">Plain words. The AI reads this to decide which tickets belong here.</p>
-        </div>
-        <Input id={`${id}-desc`} value={description} maxLength={300} placeholder="Late, lost or damaged deliveries and tracking questions." className="h-11" onChange={(e) => setDescription(e.target.value)} />
-      </div>
-      <div className={field}>
-        <div>
-          <Label htmlFor={`${id}-kw`}>Keywords</Label>
-          <p className="mt-1 text-[13px] leading-5 text-ink-2">Comma separated. They sort tickets instantly when AI is off or unavailable.</p>
-        </div>
-        <Input id={`${id}-kw`} value={keywords} placeholder="shipping, delivery, tracking" className="h-11" onChange={(e) => setKeywords(e.target.value)} />
-      </div>
-      <div className="flex gap-2 md:pl-[calc(13rem+2rem)]">
-        <Button type="submit" size="sm" disabled={!name.trim() || busy}>
-          {busy ? <Loader2 className="animate-spin" /> : initial ? <Check /> : <Plus />} {submitLabel}
-        </Button>
-        <Button type="button" size="sm" variant="ghost" onClick={onCancel}>
-          <X /> Cancel
-        </Button>
-      </div>
-    </form>
-  )
-}
 
 export function CategorySettings({ readOnly }: { readOnly: boolean }) {
   const { slug, api } = useWorkspace()
   const queryClient = useQueryClient()
   const [confirm, setConfirm] = useState<ConfirmOptions | null>(null)
-  const [editing, setEditing] = useState<number | null>(null)
-  const [adding, setAdding] = useState(false)
+  // null = closed, 'new' = adding, a category = editing it
+  const [dialog, setDialog] = useState<'new' | Category | null>(null)
   const { data, isLoading, isError, error, refetch } = useQuery({ queryKey: ['categories', slug], queryFn: api.categories })
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ['categories', slug] })
 
   const create = useMutation({
     mutationFn: (v: CategoryValues) => api.createCategory({ key: v.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''), ...v }),
     onSuccess: () => {
-      setAdding(false)
+      setDialog(null)
       invalidate()
       toast.success('Category added')
     },
@@ -94,7 +35,7 @@ export function CategorySettings({ readOnly }: { readOnly: boolean }) {
   const update = useMutation({
     mutationFn: ({ id, ...v }: CategoryValues & { id: number }) => api.updateCategory(id, v),
     onSuccess: () => {
-      setEditing(null)
+      setDialog(null)
       invalidate()
       toast.success('Category updated')
     },
@@ -114,19 +55,13 @@ export function CategorySettings({ readOnly }: { readOnly: boolean }) {
       title="Ticket categories"
       description="Give each category a plain-words description for the AI, and keywords for the instant backup."
       actions={
-        !readOnly && !adding ? (
-          <Button onClick={() => setAdding(true)}>
+        !readOnly ? (
+          <Button onClick={() => setDialog('new')}>
             <Plus /> Add category
           </Button>
         ) : null
       }
     >
-      {adding && (
-        <div>
-          <p className="mb-3 text-sm font-semibold text-ink">New category</p>
-          <CategoryForm busy={create.isPending} submitLabel="Add category" onSubmit={(v) => create.mutate(v)} onCancel={() => setAdding(false)} />
-        </div>
-      )}
       {isLoading ? (
         <SkeletonRows rows={4} />
       ) : isError ? (
@@ -137,11 +72,7 @@ export function CategorySettings({ readOnly }: { readOnly: boolean }) {
         data.map((c) => {
           const tone = categoryTone(c.key, c.name)
           const kws = Object.keys(c.keywords)
-          return editing === c.id ? (
-            <div key={c.id}>
-              <CategoryForm initial={c} busy={update.isPending} submitLabel="Save" onSubmit={(v) => update.mutate({ id: c.id, ...v })} onCancel={() => setEditing(null)} />
-            </div>
-          ) : (
+          return (
             <div key={c.id} className="flex items-start gap-3.5">
               <span className={`mt-1.5 size-3 shrink-0 rounded-full ${tone.dot}`} aria-hidden />
               <div className="min-w-0 flex-1">
@@ -169,7 +100,7 @@ export function CategorySettings({ readOnly }: { readOnly: boolean }) {
               </div>
               {!readOnly && (
                 <div className="flex shrink-0 gap-0.5">
-                  <IconButton label={`Edit ${c.name}`} icon={Pencil} onClick={() => setEditing(c.id)} />
+                  <IconButton label={`Edit ${c.name}`} icon={Pencil} onClick={() => setDialog(c)} />
                   {!c.is_default && (
                     <IconButton
                       label={`Delete ${c.name}`}
@@ -182,6 +113,15 @@ export function CategorySettings({ readOnly }: { readOnly: boolean }) {
             </div>
           )
         })
+      )}
+      {dialog && (
+        <CategoryDialog
+          key={dialog === 'new' ? 'new' : dialog.id}
+          category={dialog === 'new' ? null : dialog}
+          busy={create.isPending || update.isPending}
+          onSubmit={(v: CategoryValues) => (dialog === 'new' ? create.mutate(v) : update.mutate({ id: dialog.id, ...v }))}
+          onClose={() => setDialog(null)}
+        />
       )}
       <ConfirmDialog options={confirm} onClose={() => setConfirm(null)} />
     </SettingsCard>

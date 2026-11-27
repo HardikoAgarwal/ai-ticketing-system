@@ -2,6 +2,8 @@
 
 ## Unreleased: Helpdesk AI rewrite (from the BookLeaf author portal)
 ### Changed
+- Response targets: a three-colour legend (On track, At risk, Overdue) at the top, and each priority is a bar on one shared scale: green while there is time, amber for the last quarter, and a pale red tail for overdue, with the hours for each stage underneath and a larger hours box beside it.
+- Categories: adding and editing happen in a modal (name, description for the AI, keywords shown as chips as you type) instead of an inline form.
 - Settings polish: every setting is label on the left, field on the right (the tone of voice textarea and the category form joined the rest); each card header is tinted with a stronger divider so it reads apart from the body; on the AI tab the "When the AI is off or out of budget" note is a blue banner under the live usage bar.
 - Manage users in demo workspaces: the "Team changes are switched off" banner is gone. The disabled Invite user button and the disabled row actions show a tooltip on hover or focus explaining they are off in demo workspaces.
 - Sidebar: **Settings** is one row with a chevron that opens a dropdown submenu of its tabs (closed by default, opens by itself on a settings page, shown only while the sidebar is expanded). The "Tickets" heading and the divider lines between groups are gone; the two ticket items are now "Active tickets" and "Ticket history".
