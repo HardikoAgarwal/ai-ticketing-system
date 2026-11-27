@@ -23,6 +23,21 @@ import { flagsFor, splitPassages, visibilityOf, VISIBILITY, type Visibility } fr
 import { TipsDialog } from './TipsDialog'
 
 const NONE = '__none__'
+const FIELD_LABEL = 'block text-[11px] font-semibold tracking-[0.1em] text-ink-3 uppercase'
+
+/** A small action chip above the article card (AI preview, Writing tips). */
+function ToolChip({ icon: Icon, onClick, children }: { icon: typeof Bot; onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="inline-flex h-9 items-center gap-2 rounded-control border border-line-strong bg-surface px-3.5 text-sm font-semibold text-ink shadow-card transition-colors hover:bg-surface-2 focus-visible:ring-2 focus-visible:ring-violet focus-visible:ring-offset-2 focus-visible:outline-none"
+    >
+      <Icon className="size-4 text-ink-2" aria-hidden />
+      {children}
+    </button>
+  )
+}
 
 /**
  * One full page for writing a new article and editing an existing one: category and visibility in a slim bar, then a big title and
@@ -102,7 +117,11 @@ export function ArticleEditorPage() {
   const readOnly = !manager
 
   const back = (
-    <button type="button" onClick={leave} className="mb-5 inline-flex items-center gap-1.5 rounded-md text-sm font-semibold text-ink-2 hover:text-ink focus-visible:ring-2 focus-visible:ring-violet focus-visible:outline-none">
+    <button
+      type="button"
+      onClick={leave}
+      className="mb-6 inline-flex h-10 items-center gap-2 rounded-control border border-line-strong bg-surface px-4 text-sm font-semibold text-ink shadow-card transition-colors hover:bg-surface-2 focus-visible:ring-2 focus-visible:ring-violet focus-visible:ring-offset-2 focus-visible:outline-none"
+    >
       <ArrowLeft className="size-4" aria-hidden /> Knowledge base
     </button>
   )
@@ -133,27 +152,64 @@ export function ArticleEditorPage() {
         description={readOnly ? 'Only owners and admins can edit. You can read exactly what the AI reads.' : 'Write it the way you would explain it to a customer. The AI quotes this and cites it.'}
       />
 
-      <div className="mt-8 space-y-3">
-        <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-4">
-          <div className="flex flex-wrap items-center gap-x-8 gap-y-4">
-<div className="flex items-center gap-3">
-              <span className="text-[11px] font-semibold tracking-[0.1em] text-ink-3 uppercase">Category</span>
-              <Select value={value.category ? String(value.category) : NONE} disabled={readOnly} onValueChange={(v) => set({ category: v === NONE ? null : Number(v) })}>
-                <SelectTrigger aria-label="Category" className="h-10 w-52">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={NONE}>No category</SelectItem>
-                  {categories.data?.map((c) => (
-                    <SelectItem key={c.id} value={String(c.id)}>
-                      {c.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex items-center gap-3">
-              <span className="text-[11px] font-semibold tracking-[0.1em] text-ink-3 uppercase">Visibility</span>
+      <div className="mt-8 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <ToolChip icon={Bot} onClick={() => setModal('preview')}>
+            AI preview
+          </ToolChip>
+          {!readOnly && (
+            <ToolChip icon={Lightbulb} onClick={() => setModal('tips')}>
+              Writing tips
+            </ToolChip>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          <AiButton className="h-9" onClick={() => setModal('test')}>
+            Test AI search
+          </AiButton>
+          {!isNew && manager && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="icon" className="size-9 border-line-strong bg-surface shadow-card" aria-label="More actions">
+                  <MoreHorizontal />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem variant="destructive" onClick={askDelete}>
+                  <Trash2 /> Delete article
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+        </div>
+      </div>
+
+      <Panel className="mt-4">
+        <div className="grid gap-x-10 gap-y-5 border-b border-line px-6 py-6 sm:px-8 md:grid-cols-[16rem_minmax(0,1fr)]">
+          <div>
+            <label htmlFor="article-category" className={FIELD_LABEL}>
+              Category
+            </label>
+            <Select value={value.category ? String(value.category) : NONE} disabled={readOnly} onValueChange={(v) => set({ category: v === NONE ? null : Number(v) })}>
+              <SelectTrigger id="article-category" className="mt-2 h-10 w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={NONE}>No category</SelectItem>
+                {categories.data?.map((c) => (
+                  <SelectItem key={c.id} value={String(c.id)}>
+                    {c.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="mt-2 text-[13px] leading-5 text-ink-2">Articles in a ticket&apos;s category are favoured by the AI.</p>
+          </div>
+          <div>
+            <span id="article-visibility" className={FIELD_LABEL}>
+              Visibility
+            </span>
+            <div className="mt-2">
               <SegmentedControl<Visibility>
                 ariaLabel="Visibility"
                 className="h-10"
@@ -162,40 +218,11 @@ export function ArticleEditorPage() {
                 options={(Object.keys(VISIBILITY) as Visibility[]).map((k) => ({ value: k, label: VISIBILITY[k].label, icon: VISIBILITY[k].icon, disabled: readOnly }))}
               />
             </div>
-  
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Button variant="outline" className="h-10" onClick={() => setModal('preview')}>
-              <Bot /> AI preview
-            </Button>
-            {!readOnly && (
-              <Button variant="outline" className="h-10" onClick={() => setModal('tips')}>
-                <Lightbulb /> Writing tips
-              </Button>
-            )}
-            <AiButton onClick={() => setModal('test')}>Test AI search</AiButton>
-            {!isNew && manager && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="icon" className="size-10" aria-label="More actions">
-                    <MoreHorizontal />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem variant="destructive" onClick={askDelete}>
-                    <Trash2 /> Delete article
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
+            <p className="mt-2 text-[13px] leading-5 text-ink-2" aria-live="polite">
+              {VISIBILITY[visibility].hint}
+            </p>
           </div>
         </div>
-        <p className="text-[13px] leading-5 text-ink-2" aria-live="polite">
-          {VISIBILITY[visibility].hint}
-        </p>
-      </div>
-
-      <Panel className="mt-6">
         <div className="p-6 sm:p-8">
           <input
             aria-label="Article title"
