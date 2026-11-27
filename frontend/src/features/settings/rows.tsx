@@ -14,7 +14,7 @@ import { cn } from '@/lib/utils'
 export function SettingsCard({ title, description, actions, flush, children, className }: { title: string; description?: ReactNode; actions?: ReactNode; /** No row dividers or row padding: the content lays itself out. */ flush?: boolean; children: ReactNode; className?: string }) {
   return (
     <Panel as="section" className={className}>
-      <header className="flex flex-wrap items-start justify-between gap-x-6 gap-y-3 rounded-t-panel border-b border-line-strong bg-surface-2 px-6 py-5">
+      <header className="flex flex-wrap items-start justify-between gap-x-6 gap-y-3 rounded-t-panel border-b border-line-strong bg-sunken px-6 py-5">
         <div className="min-w-0">
           <h2 className="text-lg leading-6 font-semibold tracking-tight text-ink">{title}</h2>
           {description && <p className="mt-1 max-w-2xl text-sm leading-6 text-ink-2">{description}</p>}
@@ -26,15 +26,15 @@ export function SettingsCard({ title, description, actions, flush, children, cla
   )
 }
 
-/** One setting: label and explanation on the left, control on the right. `stack` puts a wide control underneath. */
-export function Row({ label, htmlFor, hint, children, stack, className }: { label: ReactNode; htmlFor?: string; hint?: ReactNode; children: ReactNode; stack?: boolean; className?: string }) {
+/** One setting: the label and its explanation on top, the control underneath. */
+export function Row({ label, htmlFor, hint, children, className }: { label: ReactNode; htmlFor?: string; hint?: ReactNode; children: ReactNode; className?: string }) {
   return (
-    <div className={cn('grid gap-x-10 gap-y-3', stack ? 'grid-cols-1' : 'md:grid-cols-[minmax(0,17rem)_minmax(0,1fr)]', className)}>
+    <div className={cn('space-y-3', className)}>
       <div>
         <Label htmlFor={htmlFor} className="text-sm font-semibold text-ink">
           {label}
         </Label>
-        {hint && <p className="mt-1 text-[13px] leading-5 text-ink-2">{hint}</p>}
+        {hint && <p className="mt-1 max-w-2xl text-[13px] leading-5 text-ink-2">{hint}</p>}
       </div>
       <div className="min-w-0 space-y-2">{children}</div>
     </div>
