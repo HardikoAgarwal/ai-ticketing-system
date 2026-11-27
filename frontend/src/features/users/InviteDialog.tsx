@@ -27,7 +27,12 @@ export async function copyInviteLink(token: string) {
   }
 }
 
-const CHOICES = ['AGENT', 'ADMIN'] as const
+const CHOICES = ['AGENT', 'ADMIN', 'REQUESTER'] as const
+const BLURB: Record<(typeof CHOICES)[number], string> = {
+  AGENT: 'Works tickets and replies to customers.',
+  ADMIN: 'Also manages settings, the knowledge base and the team.',
+  REQUESTER: 'Raises tickets and follows them in the customer portal.',
+}
 
 /** Create an invite: email and role. Then the private link is shown to copy and share; the person picks their own password. */
 export function InviteDialog({ open, onOpenChange, demo = false, onDemoInvite }: { open: boolean; onOpenChange: (open: boolean) => void; /** Demo workspace: the invite is only made on this page (nothing is sent), so the whole flow can be seen. */ demo?: boolean; onDemoInvite?: (invite: Invite) => void }) {
@@ -65,9 +70,9 @@ export function InviteDialog({ open, onOpenChange, demo = false, onDemoInvite }:
 
   return (
     <Dialog open={open} onOpenChange={close}>
-      <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-lg">
+      <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-xl">
         <div className="border-b border-line px-6 py-6 pr-14">
-          <DialogTitle className="text-2xl leading-8 font-semibold tracking-tight text-ink">{created ? 'Invite ready' : 'Invite a teammate'}</DialogTitle>
+          <DialogTitle className="text-2xl leading-8 font-semibold tracking-tight text-ink">{created ? 'Invite ready' : 'Invite a person'}</DialogTitle>
           <DialogDescription className="mt-1.5 text-[15px] leading-6 text-ink-2">
             {created ? `Send this private link to ${created.email}. They choose their own password.` : 'We create a private link. Share it with them and they choose their own password.'}{demo && ' This is a demo preview: nothing is saved.'}
           </DialogDescription>
@@ -95,11 +100,11 @@ export function InviteDialog({ open, onOpenChange, demo = false, onDemoInvite }:
                 <label htmlFor="inv-email" className="block text-sm font-semibold text-ink">
                   Email
                 </label>
-                <Input id="inv-email" type="email" autoFocus value={email} placeholder="teammate@company.com" className="mt-2 h-12 text-base" onChange={(e) => setEmail(e.target.value)} />
+                <Input id="inv-email" type="email" autoFocus value={email} placeholder="name@company.com" className="mt-2 h-12 text-base" onChange={(e) => setEmail(e.target.value)} />
               </div>
               <fieldset>
                 <legend className="text-sm font-semibold text-ink">Role</legend>
-                <div role="radiogroup" aria-label="Role" className="mt-2 grid gap-3 sm:grid-cols-2">
+                <div role="radiogroup" aria-label="Role" className="mt-2 grid gap-3 sm:grid-cols-3">
                   {CHOICES.map((c) => {
                     const m = ROLE_META[c]
                     const on = role === c
@@ -108,7 +113,7 @@ export function InviteDialog({ open, onOpenChange, demo = false, onDemoInvite }:
                         <span className="flex items-center gap-2 text-sm font-semibold text-ink">
                           <m.icon className={cn('size-4', on && 'text-violet')} aria-hidden /> {m.label}
                         </span>
-                        <span className="text-[13px] leading-5 text-ink-2">{c === 'AGENT' ? 'Works tickets and replies to customers.' : 'Also manages settings, the knowledge base and the team.'}</span>
+                        <span className="text-[13px] leading-5 text-ink-2">{BLURB[c]}</span>
                       </button>
                     )
                   })}

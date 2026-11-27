@@ -70,10 +70,19 @@ class AcceptInviteView(APIView):
         invite = Invite.objects.select_related("workspace").filter(token=data["token"], accepted_at__isnull=True).first()
         if invite is None:
             raise DomainError("This invite is invalid or was already used.", code="invalid_invite", status_code=400)
-        if User.objects.filter(email=invite.email.lower()).exists():
+        existing = User.objects.filter(email__iexact=invite.email).first()
+        if existing and existing.has_usable_password():
             raise DomainError("An account with this email already exists. Log in, then ask an admin to add you.", code="conflict")
-        user = User.objects.create_user(email=invite.email.lower(), password=data["password"], full_name=data["full_name"])
-        Membership.objects.create(workspace=invite.workspace, user=user, role=invite.role)
+        if existing:
+            # a customer who only ever wrote in by email has an account but no password: the invite link is how they get one
+            user = existing
+            user.full_name = data["full_name"]
+            user.set_password(data["password"])
+            user.save(update_fields=["full_name", "password"])
+            Membership.objects.update_or_create(workspace=invite.workspace, user=user, defaults={"role": invite.role})
+        else:
+            user = User.objects.create_user(email=invite.email.lower(), password=data["password"], full_name=data["full_name"])
+            Membership.objects.create(workspace=invite.workspace, user=user, role=invite.role)
         invite.accepted_at = timezone.now()
         invite.save(update_fields=["accepted_at"])
         return Response({**tokens_for(user), "user": UserSerializer(user).data, "workspace_slug": invite.workspace.slug}, status=201)

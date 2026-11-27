@@ -83,3 +83,32 @@ def test_revoke_invite(client_for, ws, owner, agent):
     assert client_for(owner).delete(url(ws, f"invites/{invite.id}/")).status_code == 204
     assert not Invite.objects.filter(pk=invite.pk).exists()
     assert client_for(owner).get(url(ws, "invites/")).data == []
+
+
+def test_a_customer_can_be_invited_and_accepts_with_the_customer_role(client_for, ws, owner):
+    resp = client_for(owner).post(url(ws, "invites/"), {"email": "newcust@acme.test", "role": "REQUESTER"}, format="json")
+    assert resp.status_code == 201 and resp.data["role"] == "REQUESTER"
+    accepted = client_for().post("/api/v1/auth/accept-invite/", {"token": resp.data["token"], "full_name": "New Customer", "password": "Sup3rSecret!"}, format="json")
+    assert accepted.status_code == 201
+    assert Membership.objects.get(workspace=ws, user__email="newcust@acme.test").role == Role.REQUESTER
+
+
+def test_a_customer_created_by_email_can_take_up_an_invite_to_get_a_password(client_for, ws, owner):
+    from apps.accounts.models import User
+
+    ghost = User(email="emailer@acme.test", full_name="emailer")
+    ghost.set_unusable_password()
+    ghost.save()
+    Membership.objects.create(workspace=ws, user=ghost, role=Role.REQUESTER)
+    resp = client_for(owner).post(url(ws, "invites/"), {"email": "emailer@acme.test", "role": "REQUESTER"}, format="json")
+    accepted = client_for().post("/api/v1/auth/accept-invite/", {"token": resp.data["token"], "full_name": "Emma Emailer", "password": "Sup3rSecret!"}, format="json")
+    assert accepted.status_code == 201
+    ghost.refresh_from_db()
+    assert ghost.has_usable_password() and ghost.full_name == "Emma Emailer"
+    assert Membership.objects.filter(workspace=ws, user=ghost).count() == 1
+
+
+def test_an_existing_account_with_a_password_still_cannot_use_an_invite(client_for, ws, owner, customer):
+    resp = client_for(owner).post(url(ws, "invites/"), {"email": customer.email, "role": "AGENT"}, format="json")
+    accepted = client_for().post("/api/v1/auth/accept-invite/", {"token": resp.data["token"], "full_name": "Cat", "password": "Sup3rSecret!"}, format="json")
+    assert accepted.status_code == 409
