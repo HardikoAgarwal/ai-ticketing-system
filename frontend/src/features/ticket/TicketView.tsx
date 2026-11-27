@@ -1,4 +1,4 @@
-import { ArrowLeft, CheckCheck, ChevronDown, ChevronUp, CircleUserRound, CopyIcon, Lock, MessagesSquare, NotebookPen, PanelRight, RefreshCw, RotateCcw, SearchX, ShieldAlert, UserPlus, WifiOff } from 'lucide-react'
+import { CheckCheck, ChevronDown, ChevronRight, ChevronUp, CircleUserRound, CopyIcon, Lock, MessagesSquare, NotebookPen, PanelRight, RefreshCw, RotateCcw, SearchX, ShieldAlert, UserPlus, WifiOff } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 
@@ -186,7 +186,7 @@ export function TicketView({ id }: { id: string }) {
   if (t.isLoading) {
     return (
       <div className={cn('flex min-h-0 flex-1 flex-col pt-6 pb-6 md:pt-8 md:pb-8', PAGE)} aria-busy="true" aria-label="Loading ticket">
-        <Skeleton className="mb-4 h-9 w-36 sm:mb-5" />
+        <Skeleton className="mb-8 h-10 w-44 md:mb-10" />
         <div className="space-y-4 rounded-panel border border-line bg-surface p-6 shadow-panel">
           <Skeleton className="h-5 w-48" />
           <Skeleton className="h-8 w-2/3" />
@@ -249,14 +249,28 @@ export function TicketView({ id }: { id: string }) {
     // The page scrolls as a whole; the conversation and side panel below get a fixed, comfortable height and scroll inside.
     <div className="scroll-quiet flex min-h-0 flex-1 flex-col overflow-y-auto">
       <div className={cn('shrink-0 pt-6 md:pt-8', PAGE)}>
-        <div className="mb-4 flex items-center gap-1.5 sm:mb-5">
-          <Button asChild variant="ghost" size="sm" className="-ml-2 h-9 px-3 text-[13px] text-ink-2">
-            <Link to={nav.backTo} aria-label={`Back to ${nav.backLabel.toLowerCase()}`}><ArrowLeft /> {nav.backLabel}</Link>
-          </Button>
+        <div className="mb-8 flex min-h-10 items-center gap-3 md:mb-10">
+          <nav aria-label="Breadcrumb" className="min-w-0">
+            <ol className="flex min-w-0 items-center gap-2 text-[15px]">
+              <li>
+                <Link to={nav.backTo} className="rounded-sm font-medium whitespace-nowrap text-ink-2 hover:text-ink focus-visible:ring-2 focus-visible:ring-violet focus-visible:outline-none">
+                  {nav.backLabel === 'History' ? 'Ticket history' : 'Tickets'}
+                </Link>
+              </li>
+              <li aria-hidden className="text-ink-3">
+                <ChevronRight className="size-4" />
+              </li>
+              <li className="min-w-0 truncate font-mono font-semibold text-ink" aria-current="page">
+                {ticket.reference}
+              </li>
+            </ol>
+          </nav>
           {nav.position && nav.total ? (
-            <div className="ml-auto flex items-center gap-1" role="group" aria-label="Move between tickets">
+            <div className="ml-auto flex shrink-0 items-center rounded-control border border-line bg-surface p-1 shadow-panel" role="group" aria-label="Move between tickets">
               <IconButton label="Previous ticket" shortcut="[" icon={ChevronUp} onClick={onPrev} disabled={!onPrev} className="size-9" />
-              <span className="px-1.5 text-[13px] font-medium whitespace-nowrap text-ink-3 tabular-nums" aria-live="polite">{nav.position} of {nav.total}</span>
+              <span className="px-3 text-sm whitespace-nowrap text-ink-3 tabular-nums" aria-live="polite">
+                <span className="font-semibold text-ink">{nav.position}</span> of {nav.total}
+              </span>
               <IconButton label="Next ticket" shortcut="]" icon={ChevronDown} onClick={onNext} disabled={!onNext} className="size-9" />
             </div>
           ) : null}

@@ -245,13 +245,13 @@ export function Thread({ ticket, meName, filter, onFilterChange }: { ticket: Sta
             <MessagesSquare className="size-4 text-ink-3" aria-hidden /> Conversation
           </h2>
           {awaiting && (
-            <span className="inline-flex h-7 items-center gap-2 rounded-chip border border-sky-line bg-sky pr-2.5 pl-2 text-[12.5px] font-semibold whitespace-nowrap text-sky-ink">
+            <span className="inline-flex h-7 min-w-0 items-center gap-2 rounded-chip border border-sky-line bg-sky pr-2.5 pl-2 text-[12.5px] font-semibold whitespace-nowrap text-sky-ink">
               <span aria-hidden className="relative flex size-2">
                 <span className="absolute inset-0 animate-ping rounded-full bg-sky-ink/60 motion-reduce:hidden" />
                 <span className="relative size-2 rounded-full bg-sky-ink" />
               </span>
-              New message from {name.split(' ')[0]}
-              <span className="font-medium opacity-75">· <RelativeTime value={awaiting.at} /></span>
+              <span className="min-w-0 truncate">New message from {name.split(' ')[0]}</span>
+              <span className="font-medium opacity-75 max-sm:hidden">· <RelativeTime value={awaiting.at} /></span>
             </span>
           )}
         </div>

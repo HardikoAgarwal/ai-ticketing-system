@@ -213,7 +213,7 @@ export function Dock({ items }: { items: DockItem[] }) {
           </ul>
           <div className="mt-3 flex flex-col gap-3 border-t border-line pt-3">
             <NotificationBell variant="dock" labelClassName={LABEL} badgeClassName={SHOW_FLEX} rowClassName={cn(ROW, 'text-ink-2 hover:bg-sunken hover:text-ink')} />
-            <UserMenu variant="dock" labelClassName={LABEL} trailingClassName={cn('opacity-0 transition-opacity duration-150', SHOW)} status={status} rowClassName={cn(ROW, 'h-[45px] rounded-[14px] border border-line bg-surface-2 px-[3.5px] text-ink hover:bg-sunken')} />
+            <UserMenu variant="dock" labelClassName={LABEL} trailingClassName={cn('opacity-0 transition-opacity duration-150', SHOW)} status={status} rowClassName={cn(ROW, 'h-[45px] rounded-[12px] px-[4.5px] text-ink hover:bg-sunken')} />
           </div>
         </div>
       </nav>

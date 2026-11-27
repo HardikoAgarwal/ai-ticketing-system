@@ -69,14 +69,13 @@ export function CustomerDialog({ ticket, open, onOpenChange }: { ticket: StaffTi
             <Figure icon={CalendarDays} label="Customer since" className="max-sm:col-span-2">{rp.joined ? formatDate(rp.joined) : '—'}</Figure>
           </div>
 
-          <section aria-labelledby="customer-account">
-            <h3 id="customer-account" className={FACT_LABEL}>Account</h3>
+          <section aria-label="Account">
             {profile.length ? (
-              <KeyValueList columns={3} className="mt-3">
+              <KeyValueList columns={3}>
                 {profile.map(([k, v]) => <KeyValue key={k} label={labelize(k)}>{formatValue(v)}</KeyValue>)}
               </KeyValueList>
             ) : (
-              <p className="mt-2 text-sm text-ink-3">No account facts are stored for this customer.</p>
+              <p className="text-sm text-ink-3">No account facts are stored for this customer.</p>
             )}
           </section>
 
