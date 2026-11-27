@@ -20,6 +20,7 @@ const TicketPage = lazy(() => import('@/features/ticket/TicketPage').then((m) =>
 const ArticleEditorPage = lazy(() => import('@/features/kb/ArticleEditorPage').then((m) => ({ default: m.ArticleEditorPage })))
 const KnowledgePage = lazy(() => import('@/pages/agent/KnowledgePage').then((m) => ({ default: m.KnowledgePage })))
 const DesignSystemPage = lazy(() => import('@/pages/DesignSystemPage').then((m) => ({ default: m.DesignSystemPage })))
+const UsersPage = lazy(() => import('@/features/users/UsersPage').then((m) => ({ default: m.UsersPage })))
 const SettingsPage = lazy(() => import('@/pages/agent/SettingsPage').then((m) => ({ default: m.SettingsPage })))
 
 /** /w/:slug -> the right area for the caller's role. */
@@ -64,6 +65,8 @@ export default function App() {
             <Route path="knowledge/new" element={<ArticleEditorPage />} />
             <Route path="knowledge/:id" element={<ArticleEditorPage />} />
             <Route path="settings" element={<SettingsPage />} />
+            <Route path="settings/:section" element={<SettingsPage />} />
+            <Route path="users" element={<UsersPage />} />
           </Route>
         </Route>
 

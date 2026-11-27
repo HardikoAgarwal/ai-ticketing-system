@@ -79,6 +79,9 @@ export const wsApi = (slug: string) => {
       api.get<Member[]>(`${base}/members/`, { params: staffOnly ? { role: 'staff' } : {} }).then((r) => r.data),
     invites: () => api.get<Invite[]>(`${base}/invites/`).then((r) => r.data),
     createInvite: (data: { email: string; role: string }) => api.post<Invite>(`${base}/invites/`, data).then((r) => r.data),
+    revokeInvite: (id: number) => api.delete(`${base}/invites/${id}/`),
+    updateMemberRole: (id: number, role: 'ADMIN' | 'AGENT') => api.patch<Member>(`${base}/members/${id}/`, { role }).then((r) => r.data),
+    removeMember: (id: number) => api.delete(`${base}/members/${id}/`),
 
     records: () => api.get<WorkspaceRecord[]>(`${base}/records/`).then((r) => r.data),
 

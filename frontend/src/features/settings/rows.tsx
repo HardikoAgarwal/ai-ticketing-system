@@ -1,29 +1,28 @@
-import { AlertTriangle, Check, Loader2, Lock, RotateCcw, type LucideIcon } from 'lucide-react'
+import { AlertTriangle, Check, Loader2, Lock, RotateCcw } from 'lucide-react'
 import type { ReactNode } from 'react'
 
+import { Panel } from '@/components/ds'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { errorMessage } from '@/lib/api'
 import { cn } from '@/lib/utils'
 
-/** One settings section: a title block, then rows separated by hairlines. No card chrome. */
-export function SettingsSection({ id, icon: Icon, title, description, actions, children }: { id: string; icon: LucideIcon; title: string; description: ReactNode; actions?: ReactNode; children: ReactNode }) {
+/**
+ * One card of related settings: a title and a line of explanation on top, then the settings as rows separated by hairlines. A settings page is a
+ * short stack of these, so each tab reads as a few clearly named groups instead of one long list.
+ */
+export function SettingsCard({ title, description, actions, flush, children, className }: { title: string; description?: ReactNode; actions?: ReactNode; /** No row dividers or row padding: the content lays itself out. */ flush?: boolean; children: ReactNode; className?: string }) {
   return (
-    <section id={id} aria-labelledby={`${id}-h`}>
-      <header className="flex items-start gap-4 pb-6">
-        <span className="flex size-10 shrink-0 items-center justify-center rounded-control bg-sunken text-ink-2">
-          <Icon className="size-5" aria-hidden />
-        </span>
-        <div className="min-w-0 flex-1">
-          <h2 id={`${id}-h`} className="text-xl leading-7 font-semibold tracking-tight text-ink">
-            {title}
-          </h2>
-          <p className="mt-1 max-w-2xl text-sm leading-6 text-ink-2">{description}</p>
+    <Panel as="section" className={className}>
+      <header className="flex flex-wrap items-start justify-between gap-x-6 gap-y-3 border-b border-line px-6 py-5">
+        <div className="min-w-0">
+          <h2 className="text-lg leading-6 font-semibold tracking-tight text-ink">{title}</h2>
+          {description && <p className="mt-1 max-w-2xl text-sm leading-6 text-ink-2">{description}</p>}
         </div>
         {actions}
       </header>
-      <div className="divide-y divide-line border-y border-line [&>*]:py-6">{children}</div>
-    </section>
+      <div className={flush ? 'p-6' : 'divide-y divide-line [&>*]:px-6 [&>*]:py-5'}>{children}</div>
+    </Panel>
   )
 }
 

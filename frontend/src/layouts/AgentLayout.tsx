@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { BookOpen, History, Inbox, Keyboard, LayoutDashboard, Monitor, Moon, Settings, Sun } from 'lucide-react'
+import { BookOpen, History, Inbox, Keyboard, LayoutDashboard, Monitor, Moon, Settings, Sun, Users } from 'lucide-react'
 import { Suspense, useMemo } from 'react'
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 
@@ -15,6 +15,7 @@ import { ShellProvider } from '@/components/shell/ShellContext'
 import { useShell } from '@/components/shell/shell-context'
 import { ShortcutsHelp } from '@/components/shell/ShortcutsHelp'
 import { openShortcutsHelp, useShortcut } from '@/components/shell/shortcuts'
+import { SETTINGS_SECTIONS } from '@/features/settings/sections'
 import { cn } from '@/lib/utils'
 import { useFallbackInterval } from '@/realtime/RealtimeProvider'
 import { useTheme } from '@/theme/ThemeProvider'
@@ -22,9 +23,11 @@ import { useTheme } from '@/theme/ThemeProvider'
 /** Bottom tab bar for phones (the dock is hidden below md). */
 function TabBar({ items }: { items: DockItem[] }) {
   const { pathname } = useLocation()
+  // a phone tab bar is short: items marked `mobile: false` are left out, and one can stand in for a whole group (Settings)
+  const tabs = items.flatMap((it) => (it.mobile === false ? [] : [it.mobile ? { ...it, to: it.mobile.to, icon: it.mobile.icon, end: false } : it]))
   return (
     <nav aria-label="Primary" className="flex shrink-0 items-stretch justify-around border-t border-line bg-surface px-2 pb-[max(0.25rem,env(safe-area-inset-bottom))] md:hidden">
-      {items.map((it) => {
+      {tabs.map((it) => {
         const active = isItemActive(it, pathname)
         return (
           <Link
@@ -32,7 +35,7 @@ function TabBar({ items }: { items: DockItem[] }) {
             to={it.to}
             aria-current={active ? 'page' : undefined}
             aria-label={it.count ? `${it.label}, ${it.count}` : it.label}
-            className={cn('relative flex h-14 min-w-16 flex-1 flex-col items-center justify-center gap-1 rounded-control text-[11px] font-medium', active ? 'text-ink' : 'text-ink-3')}
+            className={cn('relative flex h-14 min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-control text-[11px] font-medium', active ? 'text-ink' : 'text-ink-3')}
           >
             <span className={cn('relative flex h-7 w-12 items-center justify-center rounded-control', active && 'bg-ink text-canvas')}>
               <it.icon className="size-[18px]" aria-hidden />
@@ -62,7 +65,9 @@ function Frame() {
       { to: `${base}/tickets`, label: 'Active', mobileLabel: 'Tickets', group: 'Tickets', icon: Inbox, exclude: `${base}/tickets/history`, count: stats ? stats.open + stats.in_progress : undefined },
       { to: `${base}/tickets/history`, label: 'History', group: 'Tickets', icon: History },
       { to: `${base}/knowledge`, label: 'Knowledge', icon: BookOpen },
-      { to: `${base}/settings`, label: manager ? 'Settings' : 'Team', icon: Settings },
+      ...(manager ? [{ to: `${base}/users`, label: 'Manage users', mobileLabel: 'Users', icon: Users }] : []),
+      // Each Settings tab is its own page, listed under a "Settings" heading. On a phone they collapse into one "Settings" tab.
+      ...SETTINGS_SECTIONS.map((s, i): DockItem => ({ to: `${base}/settings/${s.key}`, label: s.label, mobileLabel: 'Settings', group: 'Settings', icon: s.icon, mobile: i === 0 ? { to: `${base}/settings`, icon: Settings } : false })),
     ],
     [base, stats, manager],
   )
@@ -74,7 +79,9 @@ function Frame() {
       { id: 'go.tickets', title: 'Go to Tickets', group: 'Navigate', icon: Inbox, shortcut: 'g t', keywords: ['inbox', 'queue', 'list'], perform: () => navigate(`${base}/tickets`) },
       { id: 'go.mine', title: 'Show tickets assigned to me', group: 'Navigate', icon: Inbox, keywords: ['mine', 'assigned'], perform: () => navigate(`${base}/tickets?view=mine`) },
       { id: 'go.kb', title: 'Go to Knowledge base', group: 'Navigate', icon: BookOpen, shortcut: 'g k', keywords: ['articles', 'kb'], perform: () => navigate(`${base}/knowledge`) },
-      { id: 'go.settings', title: manager ? 'Go to Settings' : 'Go to Team', group: 'Navigate', icon: Settings, shortcut: 'g s', keywords: ['team', 'sla', 'categories'], perform: () => navigate(`${base}/settings`) },
+      { id: 'go.settings', title: 'Go to Settings', group: 'Navigate', icon: Settings, shortcut: 'g s', keywords: ['sla', 'categories', 'preferences'], perform: () => navigate(`${base}/settings`) },
+      ...(manager ? [{ id: 'go.users', title: 'Go to Manage users', group: 'Navigate', icon: Users, shortcut: 'g u', keywords: ['team', 'invite', 'roles', 'people', 'members'], perform: () => navigate(`${base}/users`) }] : []),
+      ...SETTINGS_SECTIONS.map((sec) => ({ id: `settings.${sec.key}`, title: `Settings: ${sec.label}`, group: 'Settings', icon: sec.icon, keywords: [sec.description, 'preferences', 'configure'], perform: () => navigate(`${base}/settings/${sec.key}`) })),
       { id: 'theme.light', title: 'Theme: Light', group: 'Appearance', icon: Sun, keywords: ['appearance'], perform: () => setChoice('light') },
       { id: 'theme.dark', title: 'Theme: Dark', group: 'Appearance', icon: Moon, keywords: ['appearance'], perform: () => setChoice('dark') },
       { id: 'theme.system', title: 'Theme: Match system', group: 'Appearance', icon: Monitor, keywords: ['appearance', 'auto'], perform: () => setChoice('system') },
@@ -88,6 +95,7 @@ function Frame() {
   useShortcut('g y', () => navigate(`${base}/tickets/history`), { description: 'Go to Ticket history', group: 'Navigate' })
   useShortcut('g k', () => navigate(`${base}/knowledge`), { description: 'Go to Knowledge base', group: 'Navigate' })
   useShortcut('g s', () => navigate(`${base}/settings`), { description: 'Go to Settings', group: 'Navigate' })
+  useShortcut('g u', () => navigate(`${base}/users`), { description: 'Go to Manage users', group: 'Navigate', enabled: manager })
 
   return (
     <div className="flex h-dvh w-full bg-canvas text-ink">

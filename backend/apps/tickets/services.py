@@ -343,6 +343,20 @@ AUTO_CLOSE_BATCH = 200
 AUTO_CLOSE_EVERY = 3600  # seconds between sweeps for one workspace
 
 
+@transaction.atomic
+def release_assigned(workspace: Workspace, user) -> int:
+    """Hand a leaving teammate's unfinished tickets back to the queue (unassigned). Returns how many were released."""
+    tickets = Ticket.objects.select_for_update(of=("self",)).filter(workspace=workspace, assigned_to=user, status__in=Ticket.ACTIVE_STATUSES)
+    count = 0
+    for ticket in tickets:
+        _log(ticket, ActivityAction.ASSIGNED, None, user.full_name, "Unassigned")
+        ticket.assigned_to = None
+        ticket.save(update_fields=["assigned_to"])
+        ticket_event(ticket, "ticket.updated", actor_id=None)
+        count += 1
+    return count
+
+
 def auto_close_resolved(workspace: Workspace | None = None, *, now=None) -> int:
     """Close Resolved tickets that have waited out their workspace's auto-close period.
 

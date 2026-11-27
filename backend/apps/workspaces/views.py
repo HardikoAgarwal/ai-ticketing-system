@@ -82,14 +82,31 @@ class CategoryViewSet(WorkspaceViewMixin, viewsets.ModelViewSet):
         instance.delete()
 
 
+class MemberRoleSerializer(serializers.Serializer):
+    role = serializers.ChoiceField(choices=[Role.ADMIN, Role.AGENT])
+
+
 @extend_schema(tags=["Workspace"])
-class MemberViewSet(WorkspaceViewMixin, mixins.ListModelMixin, viewsets.GenericViewSet):
-    """Team directory. Staff see everyone; `?role=staff` limits it to assignable team members."""
+class MemberViewSet(WorkspaceViewMixin, mixins.ListModelMixin, mixins.UpdateModelMixin, mixins.DestroyModelMixin, viewsets.GenericViewSet):
+    """
+    Team directory. Staff see everyone; `?role=staff` limits it to assignable team members.
+
+    Owners and admins can also manage the team: only an owner changes roles (Admin or Agent) and removes admins; an admin can remove agents.
+    The owner and yourself are never changed or removed. Removing someone only ends their membership here: their open tickets go back to
+    unassigned and their history stays.
+    """
 
     pagination_class = None
-    permission_classes = (IsAuthenticated, IsStaff)
+    http_method_names = ("get", "patch", "delete")
+    lookup_field = "user_id"
+    lookup_value_regex = "[0-9]+"
+
+    def get_permissions(self):
+        return [IsAuthenticated(), IsManager() if self.request.method in ("PATCH", "DELETE") else IsStaff()]
 
     def get_serializer_class(self):
+        if self.action == "partial_update":
+            return MemberRoleSerializer
         return MembershipSerializer if getattr(self.request, "membership", None) and self.request.membership.is_manager else MemberBriefSerializer
 
     def get_queryset(self):
@@ -100,12 +117,44 @@ class MemberViewSet(WorkspaceViewMixin, mixins.ListModelMixin, viewsets.GenericV
             qs = qs.filter(role__in=[Role.OWNER, Role.ADMIN, Role.AGENT])
         return qs
 
+    def _guard(self, target, *, removing):
+        actor = self.request.membership
+        if self.request.workspace.is_demo:
+            raise DomainError("Team changes are disabled in demo workspaces.", code="demo_restricted", status_code=403)
+        if target.user_id == self.request.user.id:
+            raise DomainError("You can't change your own access.", code="forbidden", status_code=403)
+        if target.role == Role.OWNER:
+            raise DomainError("The owner's access can't be changed or removed.", code="forbidden", status_code=403)
+        if target.role == Role.REQUESTER:
+            raise DomainError("Customers are managed from their tickets, not here.", code="forbidden", status_code=403)
+        if actor.role != Role.OWNER and (not removing or target.role == Role.ADMIN):
+            raise DomainError("Only the owner can do that.", code="forbidden", status_code=403)
+
+    @extend_schema(summary="Change a team member's role to Admin or Agent (owner only)", request=MemberRoleSerializer, responses=MembershipSerializer)
+    def partial_update(self, request, *args, **kwargs):
+        target = self.get_object()
+        self._guard(target, removing=False)
+        serializer = MemberRoleSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        target.role = serializer.validated_data["role"]
+        target.save(update_fields=["role"])
+        return Response(MembershipSerializer(target).data)
+
+    @extend_schema(summary="Remove a team member from the workspace")
+    def destroy(self, request, *args, **kwargs):
+        target = self.get_object()
+        self._guard(target, removing=True)
+        ticket_services.release_assigned(request.workspace, target.user)
+        target.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
 
 @extend_schema(tags=["Workspace"])
-class InviteViewSet(WorkspaceViewMixin, mixins.ListModelMixin, mixins.CreateModelMixin, viewsets.GenericViewSet):
+class InviteViewSet(WorkspaceViewMixin, mixins.ListModelMixin, mixins.CreateModelMixin, mixins.DestroyModelMixin, viewsets.GenericViewSet):
     serializer_class = InviteSerializer
     pagination_class = None
     permission_classes = (IsAuthenticated, IsManager)
+    http_method_names = ("get", "post", "delete")
 
     def get_queryset(self):
         if getattr(self, "swagger_fake_view", False):

@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Check, Loader2, Pencil, Plus, Tags, Trash2, X } from 'lucide-react'
+import { Check, Loader2, Pencil, Plus, Trash2, X } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 
@@ -13,7 +13,7 @@ import { errorMessage } from '@/lib/api'
 import { categoryTone } from '@/lib/constants'
 import type { Category } from '@/lib/types'
 
-import { SettingsSection } from './rows'
+import { SettingsCard } from './rows'
 
 type CategoryValues = { name: string; description: string; keywords: Record<string, number> }
 
@@ -105,14 +105,12 @@ export function CategorySettings({ readOnly }: { readOnly: boolean }) {
   })
 
   return (
-    <SettingsSection
-      id="categories"
-      icon={Tags}
-      title="Categories"
-      description="The topics your tickets are sorted into. The AI picks one for every new ticket; keywords are the instant backup when it can’t."
+    <SettingsCard
+      title="Ticket categories"
+      description="Give each category a plain-words description for the AI, and keywords for the instant backup."
       actions={
         !readOnly && !adding ? (
-          <Button size="sm" onClick={() => setAdding(true)}>
+          <Button onClick={() => setAdding(true)}>
             <Plus /> Add category
           </Button>
         ) : null
@@ -181,6 +179,6 @@ export function CategorySettings({ readOnly }: { readOnly: boolean }) {
         })
       )}
       <ConfirmDialog options={confirm} onClose={() => setConfirm(null)} />
-    </SettingsSection>
+    </SettingsCard>
   )
 }

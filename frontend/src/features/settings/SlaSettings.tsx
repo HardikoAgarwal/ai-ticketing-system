@@ -1,11 +1,9 @@
-import { Clock } from 'lucide-react'
-
 import { ProgressBar } from '@/components/ds'
 import { Input } from '@/components/ui/input'
 import { PRIORITIES, PRIORITY_META } from '@/lib/constants'
 import { cn } from '@/lib/utils'
 
-import { SettingsSection } from './rows'
+import { SettingsCard } from './rows'
 import type { WorkspaceFormApi } from './use-workspace-form'
 
 const BAR_TONE = { CRITICAL: 'red', HIGH: 'amber', MEDIUM: 'violet', LOW: 'ink' } as const
@@ -15,7 +13,8 @@ export function SlaSettings({ f, readOnly }: { f: WorkspaceFormApi; readOnly: bo
   const max = Math.max(...PRIORITIES.map((p) => form.sla_hours[p]), 1)
   const orderWarning = PRIORITIES.some((p, i) => i > 0 && form.sla_hours[p] < form.sla_hours[PRIORITIES[i - 1]])
   return (
-    <SettingsSection id="sla" icon={Clock} title="Response targets (SLA)" description="How quickly your team aims to send a first reply, by priority. These drive the countdowns and overdue flags in the inbox.">
+    <div className="space-y-6">
+    <SettingsCard title="First-response targets" description="Hours from a ticket arriving to the first reply from your team, for each priority.">
       {PRIORITIES.map((p) => {
         const hours = form.sla_hours[p]
         const atRisk = Math.round(hours * 0.75 * 10) / 10
@@ -51,9 +50,12 @@ export function SlaSettings({ f, readOnly }: { f: WorkspaceFormApi; readOnly: bo
           Heads up: a lower priority has a shorter target than a higher one. That is allowed, but usually critical issues should have the tightest target.
         </p>
       )}
-      <p className="text-[13px] leading-5 text-ink-2">
-        <span className="font-semibold text-ink">First-response target</span> is the time from a ticket arriving to the first reply from your team. A ticket is flagged <span className="font-medium text-ink">at risk</span> once 75% of that time has passed. Changing a target updates deadlines for new tickets and when a ticket’s priority changes.
+    </SettingsCard>
+    <SettingsCard title="How targets work" flush>
+      <p className="text-sm leading-6 text-ink-2">
+        A ticket is flagged <span className="font-medium text-ink">at risk</span> once 75% of its target time has passed, and <span className="font-medium text-ink">overdue</span> when the time is up. Changing a target updates deadlines for new tickets and for a ticket whenever its priority changes.
       </p>
-    </SettingsSection>
+    </SettingsCard>
+    </div>
   )
 }

@@ -27,6 +27,8 @@ export interface DockItem {
   exclude?: string
   /** Label for the phone tab bar, where there is no group heading to explain "Active". */
   mobileLabel?: string
+  /** Phone tab bar: `false` leaves the item out; an object makes it stand in for its whole group (its own link and icon). */
+  mobile?: false | { to: string; icon: LucideIcon }
 }
 
 /** Active-state for a nav item; tolerant of trailing slashes. */
@@ -154,9 +156,9 @@ export function Dock({ items }: { items: DockItem[] }) {
           <span className={cn(LABEL, 'flex-1 text-left')}>Search</span>
           <Kbd keys="mod+k" className="hidden group-hover/dock:inline-flex group-focus-within/dock:inline-flex group-data-[pinned=true]/dock:inline-flex" />
         </button>
-        <ul className="mt-3 flex flex-1 flex-col gap-1">
+        <ul className="scroll-quiet mt-3 flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto overflow-x-hidden">
           {items.map((it, i) => (
-            <li key={it.to} className={it.group && items[i - 1]?.group !== it.group ? 'mt-3 border-t border-line pt-2' : undefined}>
+            <li key={it.to} className={it.group ? (items[i - 1]?.group !== it.group ? 'mt-3 border-t border-line pt-2' : undefined) : items[i - 1]?.group ? 'mt-3 border-t border-line pt-3' : undefined}>
               {it.group && items[i - 1]?.group !== it.group && <p className={cn(LABEL, 'px-[11px] pb-1 text-[11px] font-semibold tracking-[0.1em] text-ink-3 uppercase')}>{it.group}</p>}
               <NavRow item={it} />
             </li>
