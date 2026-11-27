@@ -72,7 +72,7 @@ export function KnowledgePage() {
                   </button>
                 )}
               </div>
-              <AiButton className="h-10" onClick={() => setTest(true)}>Test AI search</AiButton>
+              <AiButton glow className="h-10" onClick={() => setTest(true)}>Test AI search</AiButton>
               {manager && (
                 <Button asChild className="h-10">
                   <Link to={`${base}/new`}>

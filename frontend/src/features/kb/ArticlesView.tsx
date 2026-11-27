@@ -56,7 +56,7 @@ export function ArticlesView({ onHow }: { onHow: () => void }) {
   if (list.isLoading) {
     return (
       <div className="space-y-8">
-        <div className="grid grid-cols-3 gap-3 sm:grid-cols-[repeat(3,minmax(0,1fr))_minmax(0,0.75fr)]">
+        <div className="grid grid-cols-3 gap-3 sm:grid-cols-[repeat(3,minmax(0,1fr))_minmax(0,0.4fr)]">
           {[1, 2, 3, 4].map((i) => (
             <Skeleton key={i} className={i === 4 ? 'h-16 rounded-panel max-sm:col-span-3 sm:h-[158px]' : 'h-24 rounded-panel sm:h-[158px]'} />
           ))}
@@ -97,7 +97,7 @@ export function ArticlesView({ onHow }: { onHow: () => void }) {
 
   return (
     <div className="space-y-8">
-      <div className="grid grid-cols-3 gap-3 sm:grid-cols-[repeat(3,minmax(0,1fr))_minmax(0,0.75fr)]" role="group" aria-label="Articles by visibility. Select one to filter the list">
+      <div className="grid grid-cols-3 gap-3 sm:grid-cols-[repeat(3,minmax(0,1fr))_minmax(0,0.4fr)]" role="group" aria-label="Articles by visibility. Select one to filter the list">
         <StatTile icon={Globe} hue="mint" label="Public" value={counts.public} foot="Customers and the AI" active={vis === 'public'} onPick={() => patch({ show: vis === 'public' ? null : 'public' })} />
         <StatTile icon={Lock} hue="butter" label="Staff only" value={counts.staff} foot="The AI follows, never quotes" active={vis === 'staff'} onPick={() => patch({ show: vis === 'staff' ? null : 'staff' })} />
         <StatTile icon={PencilLine} hue="slate" label="Drafts" value={counts.draft} foot="Not used yet" active={vis === 'draft'} onPick={() => patch({ show: vis === 'draft' ? null : 'draft' })} />
