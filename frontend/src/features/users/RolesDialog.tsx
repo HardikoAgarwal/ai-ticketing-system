@@ -21,7 +21,6 @@ export function RolesDialog({ open, onOpenChange }: { open: boolean; onOpenChang
             </div>
           ))}
         </dl>
-        <p className="border-t border-line bg-surface-2 px-6 py-5 text-[13px] leading-5 text-ink-2">The owner and you can never be removed or demoted from this page. Removing someone hands their open tickets back to the queue.</p>
       </DialogContent>
     </Dialog>
   )
