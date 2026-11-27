@@ -12,16 +12,16 @@ import { ARTICLE_COLUMNS } from '@/features/inbox/table-columns'
 import { TableSkeleton } from '@/features/inbox/TableSkeleton'
 
 import { ArticleTable } from './ArticleTable'
-import { ALL_CATEGORIES, visibilityOf, type Visibility } from './kb-utils'
+import { HowTile } from './HowTile'
+import { visibilityOf, type Visibility } from './kb-utils'
 
-/** The Articles tab: three visibility tiles that filter, a search box and category filter, the article table, and a collapsed "how it works". */
+/** The article list: three visibility tiles that filter plus a small How it works tile, then the article table. Search (in the header) matches title, text and category. */
 export function ArticlesView({ onHow }: { onHow: () => void }) {
   const { slug, api, manager } = useWorkspace()
   const [params, setParams] = useSearchParams()
   const base = `/w/${slug}/agent/knowledge`
   const vis = (['public', 'staff', 'draft'] as const).find((v) => v === params.get('show')) ?? null
   const q = params.get('q') ?? ''
-  const cat = params.get('cat') ?? ALL_CATEGORIES
   const patch = (changes: Record<string, string | null>) =>
     setParams(
       (prev) => {
@@ -35,7 +35,7 @@ export function ArticlesView({ onHow }: { onHow: () => void }) {
       { replace: true },
     )
 
-  const clearFilters = () => patch({ show: null, q: null, cat: null })
+  const clearFilters = () => patch({ show: null, q: null })
 
   // While anything is still being embedded, poll so "Indexing" flips to "AI ready" on its own.
   const list = useQuery({ queryKey: ['articles', slug], queryFn: api.articles, refetchInterval: (query) => (query.state.data?.some((a) => a.is_published && !a.indexed) ? 4000 : false) })
@@ -49,16 +49,16 @@ export function ArticlesView({ onHow }: { onHow: () => void }) {
 
   const shown = useMemo(() => {
     const needle = q.trim().toLowerCase()
-    return articles.filter((a) => (!vis || visibilityOf(a) === vis) && (cat === ALL_CATEGORIES || String(a.category) === cat) && (!needle || `${a.title} ${a.excerpt}`.toLowerCase().includes(needle)))
-  }, [articles, vis, cat, q])
-  const filtered = !!vis || cat !== ALL_CATEGORIES || !!q.trim()
+    return articles.filter((a) => (!vis || visibilityOf(a) === vis) && (!needle || `${a.title} ${a.category_name ?? ''} ${a.excerpt}`.toLowerCase().includes(needle)))
+  }, [articles, vis, q])
+  const filtered = !!vis || !!q.trim()
 
   if (list.isLoading) {
     return (
       <div className="space-y-8">
-        <div className="grid grid-cols-3 gap-3">
-          {[1, 2, 3].map((i) => (
-            <Skeleton key={i} className="h-24 rounded-panel sm:h-[158px]" />
+        <div className="grid grid-cols-3 gap-3 sm:grid-cols-[repeat(3,minmax(0,1fr))_minmax(0,0.75fr)]">
+          {[1, 2, 3, 4].map((i) => (
+            <Skeleton key={i} className={i === 4 ? 'h-16 rounded-panel max-sm:col-span-3 sm:h-[158px]' : 'h-24 rounded-panel sm:h-[158px]'} />
           ))}
         </div>
         <TableSkeleton columns={ARTICLE_COLUMNS} caption="Loading articles" />
@@ -97,10 +97,11 @@ export function ArticlesView({ onHow }: { onHow: () => void }) {
 
   return (
     <div className="space-y-8">
-      <div className="grid grid-cols-3 gap-3" role="group" aria-label="Articles by visibility. Select one to filter the list">
+      <div className="grid grid-cols-3 gap-3 sm:grid-cols-[repeat(3,minmax(0,1fr))_minmax(0,0.75fr)]" role="group" aria-label="Articles by visibility. Select one to filter the list">
         <StatTile icon={Globe} hue="mint" label="Public" value={counts.public} foot="Customers and the AI" active={vis === 'public'} onPick={() => patch({ show: vis === 'public' ? null : 'public' })} />
         <StatTile icon={Lock} hue="butter" label="Staff only" value={counts.staff} foot="The AI follows, never quotes" active={vis === 'staff'} onPick={() => patch({ show: vis === 'staff' ? null : 'staff' })} />
         <StatTile icon={PencilLine} hue="slate" label="Drafts" value={counts.draft} foot="Not used yet" active={vis === 'draft'} onPick={() => patch({ show: vis === 'draft' ? null : 'draft' })} />
+        <HowTile onClick={onHow} />
       </div>
 
       <div className="space-y-4">

@@ -3,7 +3,6 @@ import { Globe, Lock, PencilLine, type LucideIcon } from 'lucide-react'
 import type { Hue } from '@/components/ds'
 import type { Article } from '@/lib/types'
 
-export const ALL_CATEGORIES = '__all__'
 
 const TARGET = 700
 
