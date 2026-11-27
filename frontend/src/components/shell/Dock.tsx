@@ -5,6 +5,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { homeFor, useAuth } from '@/auth/AuthContext'
 import { useWorkspace } from '@/auth/workspace'
 import { Avatar } from '@/components/ds/Avatar'
+import { Kbd } from '@/components/ds/Kbd'
 import { useConnectionState } from '@/realtime/RealtimeProvider'
 import { NotificationBell } from '@/components/NotificationBell'
 import { openPalette } from './commands'
@@ -196,6 +197,7 @@ export function Dock({ items }: { items: DockItem[] }) {
           <button type="button" onClick={openPalette} className={cn(ROW, 'mt-3 border border-line-strong px-[12.5px] text-ink-3 hover:border-violet/60 hover:text-ink')} aria-label="Search tickets and run commands">
             <Search className="size-[18px] shrink-0" aria-hidden />
             <span className={cn(LABEL, 'flex-1 text-left')}>Search</span>
+            <Kbd keys="mod+k" className="hidden group-hover/dock:inline-flex group-has-[:focus-visible,[data-state=open]]/dock:inline-flex group-data-[pinned=true]/dock:inline-flex" />
           </button>
           <ul className="scroll-quiet mt-3 flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto overflow-x-hidden">
             {items.map((it) => (

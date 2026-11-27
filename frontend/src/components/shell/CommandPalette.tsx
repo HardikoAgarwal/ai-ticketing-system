@@ -1,9 +1,10 @@
 import { useQuery } from '@tanstack/react-query'
-import { Search, Ticket } from 'lucide-react'
+import { CornerDownLeft, Search, Ticket } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import { useWorkspace } from '@/auth/workspace'
+import { Kbd } from '@/components/ds/Kbd'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
 import { cn } from '@/lib/utils'
 
@@ -23,7 +24,7 @@ function score(c: Command, q: string): number {
   return total
 }
 
-type Row = { kind: 'header'; label: string } | { kind: 'item'; id: string; title: string; hint?: string; icon?: Command['icon']; run: () => void }
+type Row = { kind: 'header'; label: string } | { kind: 'item'; id: string; title: string; hint?: string; icon?: Command['icon']; shortcut?: string; run: () => void }
 
 /**
  * Cmd/Ctrl-K palette: jump to a ticket (by reference or subject), go to a page, run commands registered with
@@ -72,7 +73,7 @@ export function CommandPalette() {
     }
     for (const [g, list] of byGroup) {
       out.push({ kind: 'header', label: g })
-      for (const c of list) out.push({ kind: 'item', id: `c-${c.id}`, title: c.title, icon: c.icon, run: c.perform })
+      for (const c of list) out.push({ kind: 'item', id: `c-${c.id}`, title: c.title, icon: c.icon, shortcut: c.shortcut, run: c.perform })
     }
     return out
   }, [tickets.data, commands, query, navigate, slug])
@@ -139,6 +140,7 @@ export function CommandPalette() {
             }}
             className="h-16 flex-1 bg-transparent text-base text-ink outline-none placeholder:text-ink-3"
           />
+          <Kbd>Esc</Kbd>
         </div>
         <div ref={listRef} id="palette-list" role="listbox" aria-label="Results" className="scroll-quiet max-h-[min(480px,60vh)] overflow-y-auto p-3">
           {items.length === 0 && (
@@ -163,9 +165,15 @@ export function CommandPalette() {
                 {r.icon && <r.icon className={cn('size-[18px] shrink-0', r.id === activeId ? 'text-violet' : 'text-ink-3')} aria-hidden />}
                 <span className="min-w-0 flex-1 truncate font-medium">{r.title}</span>
                 {r.hint && <span className="shrink-0 font-mono text-xs text-ink-3">{r.hint}</span>}
+                {r.shortcut && <Kbd keys={r.shortcut} />}
+                {r.id === activeId && !r.shortcut && <CornerDownLeft className="size-3.5 shrink-0 text-ink-3" aria-hidden />}
               </div>
             ),
           )}
+        </div>
+        <div className="flex items-center gap-4 border-t border-line bg-surface-2 px-6 py-3 text-xs text-ink-3">
+          <span className="inline-flex items-center gap-1.5"><Kbd>↑</Kbd><Kbd>↓</Kbd> navigate</span>
+          <span className="inline-flex items-center gap-1.5"><Kbd>↵</Kbd> run</span>
         </div>
       </DialogContent>
     </Dialog>

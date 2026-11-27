@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { BookOpen, History, Inbox, Keyboard, LayoutDashboard, Monitor, Moon, Settings, Sun, Users } from 'lucide-react'
+import { BookOpen, History, Inbox, LayoutDashboard, Monitor, Moon, Settings, Sun, Users } from 'lucide-react'
 import { Suspense, useMemo } from 'react'
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 
@@ -14,7 +14,7 @@ import { LiveRegion } from '@/components/shell/live'
 import { ShellProvider } from '@/components/shell/ShellContext'
 import { useShell } from '@/components/shell/shell-context'
 import { ShortcutsHelp } from '@/components/shell/ShortcutsHelp'
-import { openShortcutsHelp, useShortcut } from '@/components/shell/shortcuts'
+import { useShortcut } from '@/components/shell/shortcuts'
 import { SETTINGS_SECTIONS } from '@/features/settings/sections'
 import { cn } from '@/lib/utils'
 import { useFallbackInterval } from '@/realtime/RealtimeProvider'
@@ -85,7 +85,6 @@ function Frame() {
       { id: 'theme.light', title: 'Theme: Light', group: 'Appearance', icon: Sun, keywords: ['appearance'], perform: () => setChoice('light') },
       { id: 'theme.dark', title: 'Theme: Dark', group: 'Appearance', icon: Moon, keywords: ['appearance'], perform: () => setChoice('dark') },
       { id: 'theme.system', title: 'Theme: Match system', group: 'Appearance', icon: Monitor, keywords: ['appearance', 'auto'], perform: () => setChoice('system') },
-      { id: 'help.shortcuts', title: 'Keyboard shortcuts', group: 'Help', icon: Keyboard, shortcut: '?', perform: openShortcutsHelp },
     ],
     [base, manager, navigate, setChoice],
   )

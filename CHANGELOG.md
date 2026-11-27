@@ -2,6 +2,7 @@
 
 ## Unreleased: Helpdesk AI rewrite (from the BookLeaf author portal)
 ### Changed
+- Search modal: the keyboard hints are back (Esc tag, each command's shortcut, the navigate and run footer, and ⌘K on the sidebar's Search row); only the "Keyboard shortcuts" item was removed from it. The modal stays roomy.
 - Sidebar cleanup. **Fixed:** the collapsed sidebar no longer stays open after you move the pointer away (a mouse click left it "focused"; now only keyboard focus or an open menu keeps it open). **Collapsed rail:** the search icon is centred, the workspace avatar at the top is bigger. **Bottom:** a profile button first (avatar with a live-status dot, name, role and an arrow) that opens a roomy menu with who you are, a **Dark mode** switch (sun and moon), the live-update status and Sign out; the Keyboard shortcuts item, the separate theme row, the "Live updates" row and the pin row are gone from the sidebar. Notifications sits below the profile. The **open / collapse toggle** is a small chip on the sidebar's edge near the bottom. **Search modal:** wider and roomier, with no keyboard hints anywhere in it (and none on the sidebar's Search row).
 - Automation: "Close automatically" is a real switch (a rounded track with a sliding knob and ON / OFF written inside, green when on) with a sentence beside it saying what it does now ("Resolved tickets close after 7 days with no reply"), replacing the segmented Off/On control.
 - Sidebar Settings thread: only the current tab's tick is dark, with the line down to it; ticks above it stay grey.
