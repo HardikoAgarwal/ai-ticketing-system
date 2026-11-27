@@ -1,9 +1,10 @@
-import { AlertTriangle, Check, Loader2, Lock, RotateCcw, type LucideIcon } from 'lucide-react'
+import { AlertTriangle, Check, Info, Loader2, Lock, RotateCcw, type LucideIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 
 import { Panel } from '@/components/ds'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { errorMessage } from '@/lib/api'
 import { cn } from '@/lib/utils'
 
@@ -14,9 +15,9 @@ import { cn } from '@/lib/utils'
 export function SettingsCard({ icon: Icon, title, description, actions, children, className }: { icon: LucideIcon; title: string; description?: ReactNode; actions?: ReactNode; children: ReactNode; className?: string }) {
   return (
     <Panel as="section" className={className}>
-      <header className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3 rounded-t-panel border-b border-mint-line/70 bg-mint/35 px-6 py-5">
-        <div className="flex min-w-0 items-center gap-4">
-          <span className="flex size-11 shrink-0 items-center justify-center rounded-control bg-surface text-ink shadow-card ring-1 ring-mint-line" aria-hidden>
+      <header className="flex flex-wrap items-start justify-between gap-x-6 gap-y-3 rounded-t-panel border-b border-line-strong bg-sunken px-6 py-5">
+        <div className="flex min-w-0 items-start gap-4">
+          <span className="flex size-11 shrink-0 items-center justify-center rounded-control bg-surface text-ink shadow-card ring-1 ring-line" aria-hidden>
             <Icon className="size-5" />
           </span>
           <div className="min-w-0">
@@ -31,15 +32,31 @@ export function SettingsCard({ icon: Icon, title, description, actions, children
   )
 }
 
-/** One setting: the label and its explanation on top, the control underneath. */
+/** A small (i) next to a label. The explanation shows on hover or keyboard focus, so the page itself stays quiet. */
+export function InfoTip({ children }: { children: ReactNode }) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button type="button" aria-label="More information" className="inline-flex size-5 items-center justify-center rounded-full text-ink-3 transition-colors hover:text-ink focus-visible:ring-2 focus-visible:ring-violet focus-visible:outline-none">
+          <Info className="size-4" aria-hidden />
+        </button>
+      </TooltipTrigger>
+      <TooltipContent side="top" className="max-w-xs px-3 py-2 text-[13px] leading-5">
+        {children}
+      </TooltipContent>
+    </Tooltip>
+  )
+}
+
+/** One setting: only the label sits outside the field; its explanation is an (i) beside the label that shows on hover. */
 export function Row({ label, htmlFor, hint, children, className }: { label: ReactNode; htmlFor?: string; hint?: ReactNode; children: ReactNode; className?: string }) {
   return (
-    <div className={cn('space-y-3', className)}>
-      <div>
+    <div className={cn('space-y-2.5', className)}>
+      <div className="flex items-center gap-1.5">
         <Label htmlFor={htmlFor} className="text-sm font-semibold text-ink">
           {label}
         </Label>
-        {hint && <p className="mt-1 max-w-2xl text-[13px] leading-5 text-ink-2">{hint}</p>}
+        {hint && <InfoTip>{hint}</InfoTip>}
       </div>
       <div className="min-w-0 space-y-2">{children}</div>
     </div>

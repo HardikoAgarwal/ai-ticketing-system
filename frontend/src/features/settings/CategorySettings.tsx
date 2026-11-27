@@ -70,14 +70,14 @@ export function CategorySettings({ readOnly }: { readOnly: boolean }) {
       ) : !data?.length ? (
         <p className="text-sm text-ink-2">No categories yet. Add one so tickets can be sorted.</p>
       ) : (
-        <ul className="space-y-4">
+        <ul className="-my-1 divide-y divide-line">
           {data.map((c) => {
             const tone = categoryTone(c.key, c.name)
             const kws = Object.keys(c.keywords)
             return (
-              <li key={c.id} className="flex items-start gap-4 rounded-control border border-line bg-surface p-5 shadow-card">
-                <span className={`flex size-11 shrink-0 items-center justify-center rounded-control text-white ${tone.dot}`} aria-hidden>
-                  <Tag className="size-5" />
+              <li key={c.id} className="flex items-start gap-4 py-5 first:pt-1 last:pb-1">
+                <span className={`flex size-10 shrink-0 items-center justify-center rounded-control text-white ${tone.dot}`} aria-hidden>
+                  <Tag className="size-[18px]" />
                 </span>
                 <div className="min-w-0 flex-1">
                   <p className="flex flex-wrap items-center gap-2 text-[15px] font-semibold text-ink">

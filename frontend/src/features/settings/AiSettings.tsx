@@ -59,21 +59,29 @@ export function AiSettings({ f, readOnly }: { f: WorkspaceFormApi; readOnly: boo
 
       <SettingsCard icon={Gauge} title="Budget and fallback" description="A daily limit keeps costs predictable, and nothing breaks if it runs out.">
         <div>
-          <div className="mb-2.5 flex items-end justify-between gap-3">
+          <div className="flex items-start justify-between gap-6">
             <div>
-              <h3 className="flex items-center gap-2 text-sm font-semibold text-ink">
+              <h3 className="flex items-center gap-2 text-[15px] font-semibold text-ink">
                 <Gauge className="size-4 text-ink-3" aria-hidden /> Live AI today
                 <AiSpark />
               </h3>
-              <p className="text-[13px] text-ink-2">{isDemo ? 'Demo workspaces share a small free daily allowance so everyone can try it.' : 'A daily safety limit on live AI calls keeps costs predictable.'} Resets every day.</p>
+              <p className="mt-1 max-w-md text-[13px] leading-5 text-ink-2">{isDemo ? 'Demo workspaces share a small free daily allowance so everyone can try it.' : 'A daily safety limit on live AI calls keeps costs predictable.'}</p>
             </div>
-            <p className="shrink-0 text-sm font-semibold text-ink tabular-nums">
-              {u ? `${u.workspace_used} / ${u.workspace_cap}` : '…'} <span className="text-xs font-normal text-ink-3">calls</span>
+            <p className="shrink-0 text-right">
+              <span className="text-3xl leading-9 font-semibold tracking-tight text-ink tabular-nums">{u ? u.workspace_used : '…'}</span>
+              <span className="text-lg text-ink-3 tabular-nums"> / {u ? u.workspace_cap : '…'}</span>
+              <span className="block text-xs text-ink-3">calls today</span>
             </p>
           </div>
-          <ProgressBar value={Math.max(pct, u ? 2 : 0)} tone={pct >= 90 ? 'red' : pct >= 70 ? 'amber' : 'ai'} label="Live AI calls used today" />
-          {u && <p className="mt-1.5 text-xs text-ink-3">Across all workspaces on this server: {u.global_used} of {u.global_cap} today.</p>}
-          <div role="note" className="mt-5 flex items-start gap-3.5 rounded-control border border-sky-line bg-sky p-4 text-sky-ink">
+          <ProgressBar value={Math.max(pct, u ? 3 : 0)} tone={pct >= 90 ? 'red' : pct >= 70 ? 'amber' : 'ai'} label="Live AI calls used today" className="mt-5 h-4" />
+          <div className="mt-3 flex flex-wrap justify-between gap-x-6 gap-y-1 text-[13px] text-ink-2">
+            <span>
+              <span className="font-semibold text-ink">{pct}%</span> of today&apos;s allowance used
+            </span>
+            <span>Resets every day</span>
+          </div>
+          {u && <p className="mt-1 text-xs text-ink-3">Across all workspaces on this server: {u.global_used} of {u.global_cap} today.</p>}
+          <div role="note" className="mt-7 flex items-start gap-3.5 rounded-control border border-sky-line bg-sky p-4 text-sky-ink">
             <Info className="mt-0.5 size-5 shrink-0" aria-hidden />
             <div className="min-w-0">
               <p className="text-sm font-semibold">When the AI is off or out of budget</p>

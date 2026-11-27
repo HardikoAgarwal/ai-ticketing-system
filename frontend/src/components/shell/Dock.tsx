@@ -62,7 +62,7 @@ function usePinned() {
 
 /* Labels live in the DOM always (screen readers); they are only hidden visually while the dock is collapsed. */
 const LABEL = 'min-w-0 truncate whitespace-nowrap opacity-0 transition-opacity duration-150 group-hover/dock:opacity-100 group-focus-within/dock:opacity-100 group-data-[pinned=true]/dock:opacity-100'
-const ROW = 'flex h-10 w-full items-center gap-3 rounded-control px-[11px] text-sm font-medium transition-colors'
+const ROW = 'flex h-10 w-full items-center gap-3 rounded-control px-[13.5px] text-sm font-medium transition-colors'
 
 function WorkspaceBlock() {
   const { user } = useAuth()
@@ -70,7 +70,7 @@ function WorkspaceBlock() {
   const navigate = useNavigate()
   const memberships = user?.memberships ?? []
   const trigger = (
-    <button className={cn(ROW, 'h-12 text-ink hover:bg-sunken')} aria-label={memberships.length > 1 ? `Workspace: ${brief?.name}. Switch workspace` : `Workspace: ${brief?.name}`}>
+    <button className={cn(ROW, 'h-12 px-[6.5px] text-ink hover:bg-sunken')} aria-label={memberships.length > 1 ? `Workspace: ${brief?.name}. Switch workspace` : `Workspace: ${brief?.name}`}>
       <Avatar name={brief?.name} size="md" className="bg-ink text-canvas border-ink" />
       <span className={cn(LABEL, 'flex-1 text-left font-semibold tracking-tight')}>{brief?.name ?? 'Workspace'}</span>
       {memberships.length > 1 && <ChevronsUpDown className={cn('size-4 shrink-0 text-ink-3 opacity-0 group-hover/dock:opacity-100 group-focus-within/dock:opacity-100 group-data-[pinned=true]/dock:opacity-100')} aria-hidden />}
@@ -104,7 +104,7 @@ function LiveRow() {
     offline: { label: 'Reconnecting…', dot: 'bg-ink-3' },
   }[state]
   return (
-    <div role="status" className="flex h-8 items-center gap-3 px-[11px] text-xs font-medium text-ink-3">
+    <div role="status" className="flex h-8 items-center gap-3 px-[13.5px] text-xs font-medium text-ink-3">
       <span className="flex size-[18px] shrink-0 items-center justify-center">
         <span className={cn('size-2 rounded-full', meta.dot)} aria-hidden />
       </span>
@@ -142,7 +142,8 @@ function NavRow({ item, sub = false }: { item: DockItem; sub?: boolean }) {
 function NavGroup({ item }: { item: DockItem }) {
   const { pathname } = useLocation()
   const [manual, setManual] = useState<boolean | null>(null)
-  const childActive = !!item.children?.some((c) => isItemActive(c, pathname))
+  const activeIndex = item.children?.findIndex((c) => isItemActive(c, pathname)) ?? -1
+  const childActive = activeIndex >= 0
   const open = manual ?? childActive
   const listId = `dock-sub-${item.label.replace(/\s+/g, '-').toLowerCase()}`
   return (
@@ -160,20 +161,23 @@ function NavGroup({ item }: { item: DockItem }) {
         <span className={cn(LABEL, 'flex-1 text-left')}>{item.label}</span>
         <ChevronDown className={cn('size-4 shrink-0 text-ink-3 opacity-0 transition-[transform,opacity] duration-200 group-hover/dock:opacity-100 group-focus-within/dock:opacity-100 group-data-[pinned=true]/dock:opacity-100', open && 'rotate-180')} aria-hidden />
       </button>
-      <ul id={listId} hidden={!open} className="mt-1 ml-[19px] hidden flex-col gap-1 group-hover/dock:[&:not([hidden])]:flex group-focus-within/dock:[&:not([hidden])]:flex group-data-[pinned=true]/dock:[&:not([hidden])]:flex">
+      <ul id={listId} hidden={!open} className="mt-1 ml-[22px] hidden flex-col gap-1 group-hover/dock:[&:not([hidden])]:flex group-focus-within/dock:[&:not([hidden])]:flex group-data-[pinned=true]/dock:[&:not([hidden])]:flex">
         {item.children?.map((c, i) => {
-          const last = i === (item.children?.length ?? 0) - 1
-          const active = isItemActive(c, pathname)
+          const count = item.children?.length ?? 0
+          const last = i === count - 1
+          const reached = activeIndex >= 0 && i <= activeIndex // this item is at or above the current one: its part of the thread is dark
+          const passed = activeIndex >= 0 && i < activeIndex // the current item is further down: the thread carries on below this tick
           return (
-            // a thread: one vertical line runs the full height of every item (the line is 2px wide, centred on the parent icon), each item gets a short
-            // tick off it at the middle of its row, and the last item's line turns into a rounded corner instead of carrying on
+            // a thread: a thin line runs down the left, dark from the top to the current tab and grey below it; every tab hangs off it with a short tick
+            // (the last one with a rounded corner)
             <li key={c.to} className="relative pl-6">
               {last ? (
-                <span aria-hidden className={cn('absolute top-0 left-0 h-[18px] w-4 rounded-bl-[10px] border-b-2 border-l-2 transition-colors', active ? 'border-ink' : 'border-line-strong')} />
+                <span aria-hidden className={cn('absolute top-0 left-0 h-[18px] w-4 rounded-bl-[10px] border-b border-l transition-colors', reached ? 'border-ink' : 'border-line-strong')} />
               ) : (
                 <>
-                  <span aria-hidden className="absolute top-0 -bottom-1 left-0 w-0.5 bg-line-strong" />
-                  <span aria-hidden className={cn('absolute top-[17px] left-0 h-0.5 w-4 transition-colors', active ? 'bg-ink' : 'bg-line-strong')} />
+                  <span aria-hidden className={cn('absolute top-0 left-0 h-[18px] w-px transition-colors', reached ? 'bg-ink' : 'bg-line-strong')} />
+                  <span aria-hidden className={cn('absolute top-[18px] -bottom-1 left-0 w-px transition-colors', passed ? 'bg-ink' : 'bg-line-strong')} />
+                  <span aria-hidden className={cn('absolute top-[18px] left-0 h-px w-4 transition-colors', reached ? 'bg-ink' : 'bg-line-strong')} />
                 </>
               )}
               <NavRow item={c} sub />
@@ -222,7 +226,7 @@ export function Dock({ items }: { items: DockItem[] }) {
             {pinned ? <PanelLeftClose className="size-[18px] shrink-0" aria-hidden /> : <PanelLeftOpen className="size-[18px] shrink-0" aria-hidden />}
             <span className={LABEL}>{pinned ? 'Unpin sidebar' : 'Pin sidebar open'}</span>
           </button>
-          <UserMenu variant="dock" labelClassName={LABEL} rowClassName={cn(ROW, 'h-12 text-ink hover:bg-sunken')} />
+          <UserMenu variant="dock" labelClassName={LABEL} rowClassName={cn(ROW, 'h-12 px-[6.5px] text-ink hover:bg-sunken')} />
         </div>
       </nav>
     </div>

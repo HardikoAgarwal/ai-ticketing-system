@@ -1,10 +1,9 @@
 import { ArrowRight, Archive, CheckCheck, Route, Timer } from 'lucide-react'
 
-import { Chip, fill, on, SolidChip } from '@/components/ds'
+import { fill, on, SegmentedControl, SolidChip } from '@/components/ds'
 import { Input } from '@/components/ui/input'
-import { Switch } from '@/components/ui/switch'
 
-import { Row, SettingsCard } from './rows'
+import { InfoTip, Row, SettingsCard } from './rows'
 import type { WorkspaceFormApi } from './use-workspace-form'
 
 const DEFAULT_DAYS = 7
@@ -48,42 +47,43 @@ export function AutomationSettings({ f, readOnly }: { f: WorkspaceFormApi; readO
   return (
     <div className="space-y-6">
       <SettingsCard icon={Timer} title="Close resolved tickets" description="Moves a Resolved ticket to Closed once the customer has had time to reply.">
-        <div className="flex items-center justify-between gap-6">
-          <label htmlFor="auto-close-on" className={readOnly ? 'block' : 'block cursor-pointer'}>
-            <span className="block text-[15px] font-semibold text-ink">Close automatically</span>
-            <span className="mt-1 block max-w-xl text-[13px] leading-5 text-ink-2">Off keeps Resolved tickets Resolved until the customer confirms or someone closes them.</span>
-          </label>
-          <div className="flex shrink-0 items-center gap-3">
-            <Chip size="md" tone={on_ ? 'green' : 'slate'}>
-              {on_ ? 'On' : 'Off'}
-            </Chip>
-            <Switch id="auto-close-on" checked={on_} disabled={readOnly} onCheckedChange={(v) => set('auto_close_days', v ? DEFAULT_DAYS : 0)} />
+        <div className="space-y-2.5">
+          <div className="flex items-center gap-1.5">
+            <span id="auto-close-label" className="text-sm font-semibold text-ink">
+              Close automatically
+            </span>
+            <InfoTip>Off keeps Resolved tickets Resolved until the customer confirms or someone closes them.</InfoTip>
           </div>
+          <SegmentedControl
+            ariaLabel="Close automatically"
+            value={on_ ? 'on' : 'off'}
+            onChange={(v) => set('auto_close_days', v === 'on' ? DEFAULT_DAYS : 0)}
+            options={[
+              { value: 'off', label: 'Off', disabled: readOnly },
+              { value: 'on', label: 'On', disabled: readOnly },
+            ]}
+          />
         </div>
-        {on_ && (
-          <Row label="Close after" htmlFor="auto-close-days" hint="Between 1 and 90 days. The countdown starts when the ticket is marked Resolved.">
-            <div className="flex items-center gap-2">
-              <Input
-                id="auto-close-days"
-                type="number"
-                min={1}
-                max={90}
-                disabled={readOnly}
-                value={form.auto_close_days}
-                className="h-11 w-24 text-right tabular-nums"
-                onChange={(e) => set('auto_close_days', Math.min(90, Math.max(1, Math.round(Number(e.target.value)) || 1)))}
-              />
-              <span className="text-sm text-ink-3">{form.auto_close_days === 1 ? 'day' : 'days'} with no reply</span>
-            </div>
-          </Row>
-        )}
+        <Row label="Close after" htmlFor="auto-close-days" hint="Between 1 and 90 days. The countdown starts when the ticket is marked Resolved.">
+          <div className={on_ ? 'flex items-center gap-2' : 'flex items-center gap-2 opacity-50'}>
+            <Input
+              id="auto-close-days"
+              type="number"
+              min={1}
+              max={90}
+              disabled={readOnly || !on_}
+              value={on_ ? form.auto_close_days : DEFAULT_DAYS}
+              className="h-11 w-24 text-right tabular-nums"
+              onChange={(e) => set('auto_close_days', Math.min(90, Math.max(1, Math.round(Number(e.target.value)) || 1)))}
+            />
+            <span className="text-sm text-ink-3">{(on_ ? form.auto_close_days : DEFAULT_DAYS) === 1 ? 'day' : 'days'} with no reply</span>
+          </div>
+        </Row>
       </SettingsCard>
 
       <SettingsCard icon={Route} title="How it works" description="The life of one ticket.">
         <Lifecycle days={on_ ? form.auto_close_days : DEFAULT_DAYS} />
-        <p className="text-[13px] leading-5 text-ink-2">
-          {!on_ && 'Shown with the suggested 7 days. Turn the switch on to use it. '}Closing runs shortly after you save, and then about once an hour while your team is using the app. Closed tickets are listed under Tickets, History.
-        </p>
+        {!on_ && <p className="text-[13px] leading-5 text-ink-2">Shown with the suggested 7 days. Turn automatic closing on to use it.</p>}
       </SettingsCard>
     </div>
   )
