@@ -151,7 +151,7 @@ export function KbPlayground({ animated = false }: { animated?: boolean }) {
         <div className="mt-3 flex flex-wrap items-center gap-2 text-[13px] text-ink-3">
           Try
           {EXAMPLES.map((e) => (
-            <button key={e} type="button" onClick={() => run(e)} className="inline-flex h-8 items-center rounded-chip border border-line-strong bg-surface px-3 font-medium text-ink-2 transition-colors hover:bg-surface-2 hover:text-ink focus-visible:ring-2 focus-visible:ring-violet focus-visible:outline-none">
+            <button key={e} type="button" onClick={() => run(e)} className="inline-flex h-8 items-center rounded-chip border border-line-strong bg-surface px-3 font-medium text-ink-2 transition-[transform,background-color,color,box-shadow] duration-150 hover:-translate-y-0.5 hover:bg-surface-2 hover:text-ink hover:shadow-card motion-reduce:transition-none motion-reduce:hover:translate-y-0 focus-visible:ring-2 focus-visible:ring-violet focus-visible:outline-none">
               {e}
             </button>
           ))}

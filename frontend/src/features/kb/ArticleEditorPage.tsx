@@ -26,21 +26,26 @@ const NONE = '__none__'
 const ITEM = 'rounded-lg py-3 pr-10 pl-3.5 text-base font-medium text-ink-2 focus:bg-surface-2 focus:text-ink data-[state=checked]:bg-surface-2 data-[state=checked]:font-semibold data-[state=checked]:text-ink'
 const FIELD_LABEL = 'block text-base font-semibold text-ink'
 
-/** A tab on the top edge of the article card (same shape as the New message / Overdue tabs on a ticket card): theme-coloured, or AI-styled. */
+/**
+ * A tab on the top edge of the article card (same shape as the New message / Overdue tabs on a ticket card): theme-coloured, or AI-styled
+ * (white with an aurora ring and glow, open at the bottom so it flows into the card). On hover a tab stretches up a little.
+ */
 function TabChip({ icon: Icon, ai, onClick, children }: { icon: typeof Bot; ai?: boolean; onClick: () => void; children: React.ReactNode }) {
-  return (
+  const button = (
     <button
       type="button"
       onClick={onClick}
       className={cn(
-        'inline-flex h-11 items-center gap-2.5 rounded-t-xl px-5 text-[15px] font-semibold whitespace-nowrap focus-visible:ring-2 focus-visible:ring-violet focus-visible:outline-none',
-        ai ? 'ai-border bg-surface text-ink transition-colors hover:bg-surface-2' : cn('border border-b-0 transition-[filter] hover:brightness-95 dark:hover:brightness-125', CHIP_TONES.green),
+        'inline-flex h-11 items-center gap-2.5 rounded-t-xl px-5 text-[15px] font-semibold whitespace-nowrap transition-[height,filter,background-color] duration-200 ease-out hover:h-12 focus-visible:ring-2 focus-visible:ring-violet focus-visible:outline-none motion-reduce:transition-none',
+        ai ? 'ai-border bg-surface text-ink after:absolute after:inset-x-px after:bottom-0 after:z-[3] after:h-0.5 after:bg-surface hover:bg-surface-2 hover:after:bg-surface-2' : cn('border border-b-0 hover:brightness-95 dark:hover:brightness-125', CHIP_TONES.green),
       )}
     >
       <Icon className={cn('size-[18px]', ai && 'text-ai')} aria-hidden />
       {children}
     </button>
   )
+  if (!ai) return button
+  return <span className="ai-halo relative top-px rounded-t-xl [clip-path:inset(-18px_-18px_0_-18px)]">{button}</span>
 }
 
 /** One labelled fact in the card footer. */
@@ -176,7 +181,7 @@ export function ArticleEditorPage() {
       />
       {crumbs}
 
-      <div className="mt-8 flex flex-wrap items-end justify-between gap-x-3 gap-y-2 px-6 sm:px-8">
+      <div className="mt-8 flex min-h-12 flex-wrap items-end justify-between gap-x-3 gap-y-2 px-6 sm:px-8">
         <div className="flex flex-wrap items-end gap-2">
           <TabChip icon={Bot} onClick={() => setModal('preview')}>
             AI preview
