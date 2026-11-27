@@ -7,6 +7,7 @@ import { homeFor, useAuth } from '@/auth/AuthContext'
 import { cn } from '@/lib/utils'
 
 import { BRAND, GITHUB_URL } from './constants'
+import { lpBtnLimeOnDark, lpBtnPrimary } from './cta'
 
 const LINKS = [
   { href: '#story', label: 'Product' },
@@ -59,7 +60,10 @@ export function Nav() {
   const pill = dark
     ? 'bg-white text-(--lp-ink) ring-black/15 shadow-[0_0_0_4px_rgba(255,255,255,0.18),0_18px_44px_-10px_rgba(0,0,0,0.55),0_4px_10px_rgba(0,0,0,0.2)]'
     : 'bg-(--lp-ink) text-white ring-white/20 shadow-[0_0_0_4px_rgba(11,10,29,0.10),0_18px_44px_-10px_rgba(11,10,29,0.6),0_4px_10px_rgba(11,10,29,0.25)]'
-  const cta = dark ? 'bg-(--lp-violet) text-white shadow-[0_8px_20px_-6px_rgba(91,61,245,0.7)]' : 'bg-(--lp-lime) text-(--lp-ink) shadow-[0_8px_20px_-6px_rgba(200,245,96,0.55)]'
+  // Dark nav pill (over light sections): white border/shadow so the offset reads. White nav pill: ink shadow.
+  const cta = dark
+    ? cn(lpBtnPrimary, 'h-11 gap-1.5 px-5 text-[15px] shadow-[3px_3px_0_0_var(--lp-ink)] hover:shadow-[5px_5px_0_0_var(--lp-ink)]')
+    : cn(lpBtnLimeOnDark, 'h-11 gap-1.5 px-5 text-[15px] shadow-[3px_3px_0_0_#ffffff] hover:shadow-[5px_5px_0_0_#ffffff]')
   const link = dark ? 'text-(--lp-ink)/75 hover:bg-black/[0.06] hover:text-(--lp-ink)' : 'text-white/80 hover:bg-white/10 hover:text-white'
 
   return (
@@ -91,7 +95,7 @@ export function Nav() {
               <GithubMark className="size-5" />
             </a>
             {user ? (
-              <Link to={homeFor(user)} className={cn('lp-focus flex h-11 items-center gap-1.5 rounded-full px-5 text-[15px] font-semibold whitespace-nowrap transition-all duration-500 hover:scale-[1.04]', cta)}>
+              <Link to={homeFor(user)} className={cn(cta, 'whitespace-nowrap')}>
                 Open workspace <ArrowRight className="size-4" />
               </Link>
             ) : (
@@ -99,7 +103,7 @@ export function Nav() {
                 <Link to="/login" className={cn('lp-focus hidden h-11 items-center rounded-full px-4 text-[15px] font-medium whitespace-nowrap transition-colors lg:flex', link)}>
                   Log in
                 </Link>
-                <a href="#demo" className={cn('lp-focus flex h-11 items-center gap-1.5 rounded-full px-5 text-[15px] font-semibold whitespace-nowrap transition-all duration-500 hover:scale-[1.04]', cta)}>
+                <a href="#demo" className={cn(cta, 'whitespace-nowrap')}>
                   Try a demo <ArrowRight className="size-4" />
                 </a>
               </>

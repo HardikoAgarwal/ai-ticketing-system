@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState, type MouseEvent, type ReactNo
 
 import { cn } from '@/lib/utils'
 
+import { lpBtnPrimary, lpBtnSecondary, LpBtnIcon } from './cta'
 import { EASE, useParallax, useTypewriter, WordReveal } from './motion'
 
 /* ------------------------------ scripted playground ------------------------------ */
@@ -463,16 +464,16 @@ export function Hero() {
           </motion.p>
 
           <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1.15, duration: 0.7 }} className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-4">
-            <a href="#demo" className="lp-focus group flex h-16 items-center gap-3 rounded-full border-2 border-(--lp-ink) bg-(--lp-violet) py-2 pr-2 pl-8 text-base font-semibold text-white shadow-[5px_5px_0_0_var(--lp-ink)] transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[7px_7px_0_0_var(--lp-ink)] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[2px_2px_0_0_var(--lp-ink)]">
+            <a href="#demo" className={cn(lpBtnPrimary, 'h-16 gap-3 py-2 pr-2 pl-8 text-base')}>
               Try the live demo
-              <span className="flex size-11 items-center justify-center rounded-full bg-(--lp-lime) text-(--lp-ink)">
+              <LpBtnIcon tone="lime" className="size-11">
                 <ArrowRight className="size-5 transition-transform group-hover:translate-x-0.5" />
-              </span>
+              </LpBtnIcon>
             </a>
-            <a href="#story" className="lp-focus group flex h-16 items-center gap-3 rounded-full border-2 border-(--lp-ink) bg-white py-2 pr-8 pl-2 text-base font-semibold text-(--lp-ink) shadow-[5px_5px_0_0_var(--lp-ink)] transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[7px_7px_0_0_var(--lp-ink)] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[2px_2px_0_0_var(--lp-ink)]">
-              <span className="flex size-11 items-center justify-center rounded-full bg-(--lp-violet)/15 text-(--lp-violet)">
+            <a href="#story" className={cn(lpBtnSecondary, 'h-16 gap-3 py-2 pr-8 pl-2 text-base')}>
+              <LpBtnIcon tone="violetSoft" className="size-11">
                 <Play className="size-4 fill-current" />
-              </span>
+              </LpBtnIcon>
               Watch how it works
             </a>
           </motion.div>

@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { ArrowRight, Headphones, Loader2, UserRound } from 'lucide-react'
+import { ArrowRight, Loader2 } from 'lucide-react'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -12,21 +12,20 @@ import { SETUP_STEPS } from '@/features/auth/setup-steps'
 import { cn } from '@/lib/utils'
 
 import { TEMPLATES, type TemplateMeta } from './constants'
+import { lpBtnPrimary, LpBtnIcon } from './cta'
 import { EASE, WordReveal } from './motion'
-
-type Role = 'agent' | 'customer'
 
 const isColdStart = (err: unknown) => err instanceof ApiError && (err.status === 0 || err.status >= 502)
 
-/** One solid colour per company, taken from the page palette. `bg`/`fg` colour the icon badge and the Try demo button. */
-const THEMES: Record<string, { bg: string; fg: string }> = {
-  saas: { bg: '#6a4df4', fg: '#ffffff' },
-  helpdesk: { bg: '#c8f560', fg: '#0b0a1d' },
-  ecommerce: { bg: '#ffb3cc', fg: '#0b0a1d' },
+/** Solid accent strip + ink for each desk. */
+const THEMES: Record<string, { accent: string; accentInk: string }> = {
+  saas: { accent: '#6a4df4', accentInk: '#ffffff' },
+  helpdesk: { accent: '#c8f560', accentInk: '#0b0a1d' },
+  ecommerce: { accent: '#ffb3cc', accentInk: '#0b0a1d' },
 }
-const themeOf = (t: TemplateMeta) => THEMES[t.key] ?? { bg: t.hue, fg: '#ffffff' }
+const themeOf = (t: TemplateMeta) => THEMES[t.key] ?? { accent: t.hue, accentInk: '#ffffff' }
 
-/** Equal-size company card: coloured icon badge, name, tagline, counts, and one Try demo button pinned to the bottom. */
+/** Neo-brutal desk card: slanted accent top, fixed bands so all three align. */
 function Selector({ t, index, busy, onStart }: { t: TemplateMeta; index: number; busy: TemplateMeta | null; onStart: (t: TemplateMeta) => void }) {
   const reduce = useReducedMotion()
   const th = themeOf(t)
@@ -38,61 +37,79 @@ function Selector({ t, index, busy, onStart }: { t: TemplateMeta; index: number;
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: '-40px' }}
       transition={{ duration: 0.6, delay: index * 0.08, ease: EASE }}
-      whileHover={reduce ? undefined : { y: -6 }}
-      className="relative flex h-full min-h-[19rem] w-full min-w-0 flex-col rounded-[var(--lp-radius)] bg-white p-6 text-left text-(--lp-ink) shadow-(--lp-shadow) ring-1 ring-black/[0.06] transition-shadow duration-300 hover:shadow-[0_30px_60px_-26px_rgba(11,10,29,0.45)]"
+      whileHover={reduce ? undefined : { x: -3, y: -3 }}
+      className="relative flex h-full w-full min-w-0 flex-col overflow-hidden rounded-[1.75rem] border-2 border-(--lp-ink) bg-white text-left text-(--lp-ink) shadow-[6px_6px_0_0_var(--lp-ink)] transition-[transform,box-shadow] duration-300 hover:shadow-[9px_9px_0_0_var(--lp-ink)]"
     >
-      <span className="flex size-16 items-center justify-center rounded-[1.4rem]" style={{ backgroundColor: th.bg, color: th.fg }}>
-        <Icon className="size-8" />
-      </span>
-      <span className="mt-5 block text-[1.55rem] leading-[1.1] font-semibold tracking-[-0.03em]">{t.name}</span>
-      <span className="mt-1.5 line-clamp-2 min-h-[2.5rem] text-sm leading-snug text-(--lp-muted)">{t.tagline}</span>
-      <span className="mt-4 block text-[13px] font-semibold text-(--lp-muted)">
-        {t.stats.tickets} tickets · {t.stats.articles} articles
-      </span>
-      <button
-        type="button"
-        disabled={Boolean(busy)}
-        onClick={() => onStart(t)}
-        style={{ backgroundColor: th.bg, color: th.fg }}
-        className="lp-focus group mt-auto flex h-13 w-full items-center justify-center gap-2 rounded-full px-5 text-base font-semibold whitespace-nowrap shadow-[0_12px_26px_-14px_rgba(11,10,29,0.6)] transition-[transform,opacity] hover:scale-[1.02] active:scale-[0.99] disabled:opacity-60"
-      >
-        {working ? <Loader2 className="size-5 animate-spin" /> : null} Try demo <ArrowRight className="size-5 transition-transform group-hover:translate-x-1" />
-      </button>
+      {/* Slanted colour header — fixed height + 2-line title so every card matches */}
+      <div className="relative h-[11rem] shrink-0 sm:h-[11.75rem]">
+        <div
+          className="absolute inset-0 grid grid-rows-[auto_1fr] gap-3 px-5 pt-5 pb-7 sm:px-6 sm:pt-5 sm:pb-8"
+          style={{
+            backgroundColor: th.accent,
+            color: th.accentInk,
+            clipPath: 'polygon(0 0, 100% 0, 100% 92%, 0 100%)',
+          }}
+        >
+          <div className="flex h-14 items-center justify-between gap-3 sm:h-16">
+            <span className="flex size-14 shrink-0 items-center justify-center rounded-[1.2rem] bg-black/10 sm:size-16 sm:rounded-[1.35rem]">
+              <Icon className="size-8 sm:size-9" strokeWidth={1.75} />
+            </span>
+            <span className="rounded-full border-2 border-(--lp-ink)/15 bg-white px-3 py-1.5 text-[11px] font-bold tracking-[0.05em] text-(--lp-ink) uppercase">
+              {t.industry}
+            </span>
+          </div>
+          <h3 className="line-clamp-2 h-[3.5rem] self-end text-[1.5rem] leading-[1.15] font-semibold tracking-[-0.04em] sm:h-[3.7rem] sm:text-[1.65rem]">
+            {t.name}
+          </h3>
+        </div>
+      </div>
+
+      {/* Fixed-band body: every row has a locked height so columns align */}
+      <div className="grid flex-1 grid-rows-[2.7rem_3.25rem_auto_auto] gap-4 px-5 pt-2 pb-5 sm:px-6 sm:pb-6">
+        <p className="line-clamp-2 text-[0.92rem] leading-relaxed text-(--lp-muted)">{t.tagline}</p>
+
+        <ul className="space-y-2">
+          {t.highlights.slice(0, 2).map((h) => (
+            <li key={h} className="flex h-[1.35rem] items-center gap-2.5 text-[13px] text-(--lp-ink)/80">
+              <span className="size-1.5 shrink-0 rounded-full" style={{ backgroundColor: th.accent }} />
+              <span className="line-clamp-1 font-medium">{h}</span>
+            </li>
+          ))}
+        </ul>
+
+        <div className="grid grid-cols-2 gap-3 border-y-2 border-(--lp-ink)/10 py-4">
+          <div>
+            <p className="text-2xl leading-none font-bold tracking-[-0.04em] tabular-nums">{t.stats.tickets}</p>
+            <p className="mt-1 text-[11px] font-semibold tracking-[0.06em] text-(--lp-muted) uppercase">tickets</p>
+          </div>
+          <div>
+            <p className="text-2xl leading-none font-bold tracking-[-0.04em] tabular-nums">{t.stats.articles}</p>
+            <p className="mt-1 text-[11px] font-semibold tracking-[0.06em] text-(--lp-muted) uppercase">articles</p>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          disabled={Boolean(busy)}
+          onClick={() => onStart(t)}
+          className={cn(lpBtnPrimary, 'mt-auto h-14 w-full justify-between gap-3 py-1.5 pr-1.5 pl-6 text-[0.95rem]')}
+        >
+          <span className="flex items-center gap-2">
+            {working ? <Loader2 className="size-4 animate-spin" /> : null}
+            Try demo
+          </span>
+          <LpBtnIcon tone="lime" className="size-10">
+            <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
+          </LpBtnIcon>
+        </button>
+      </div>
     </motion.div>
   )
 }
 
-/** Small segmented control: which side of the sandbox the Try demo buttons open. */
-function RoleToggle({ role, onChange }: { role: Role; onChange: (r: Role) => void }) {
-  const opts: { key: Role; label: string; Icon: typeof Headphones }[] = [
-    { key: 'agent', label: 'Support agent', Icon: Headphones },
-    { key: 'customer', label: 'Customer', Icon: UserRound },
-  ]
-  return (
-    <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
-      <span className="text-sm font-semibold">Enter as</span>
-      <div role="radiogroup" aria-label="Enter the demo as" className="inline-flex rounded-full bg-white p-1 shadow-(--lp-shadow) ring-1 ring-black/[0.06]">
-        {opts.map(({ key, label, Icon }) => (
-          <button
-            key={key}
-            type="button"
-            role="radio"
-            aria-checked={role === key}
-            onClick={() => onChange(key)}
-            className={cn('lp-focus flex h-10 items-center gap-2 rounded-full px-4 text-sm font-semibold transition-colors', role === key ? 'bg-(--lp-ink) text-white' : 'text-(--lp-ink)/70 hover:text-(--lp-ink)')}
-          >
-            <Icon className="size-4" /> {label}
-          </button>
-        ))}
-      </div>
-    </div>
-  )
-}
-
 export function Demo({ notice }: { notice?: string | null }) {
-  const { startDemo, switchView } = useAuth()
+  const { startDemo } = useAuth()
   const navigate = useNavigate()
-  const [role, setRole] = useState<Role>('agent')
   const [busy, setBusy] = useState<TemplateMeta | null>(null)
   const [elapsed, setElapsed] = useState(0)
   const [error, setError] = useState<string | null>(null)
@@ -129,7 +146,7 @@ export function Demo({ notice }: { notice?: string | null }) {
   const progress = done ? 100 : Math.min(90, 6 + elapsed * 11)
 
   const trigger = useRef<HTMLElement | null>(null)
-  const launch = async (t: TemplateMeta, role: Role) => {
+  const launch = async (t: TemplateMeta) => {
     if (busy && !error) return
     if (document.activeElement instanceof HTMLElement && document.activeElement !== document.body) trigger.current = document.activeElement
     setError(null)
@@ -146,10 +163,9 @@ export function Demo({ notice }: { notice?: string | null }) {
         }
       }
       if (!slug) return
-      if (role === 'customer') await switchView('customer')
       setDone(true)
       await new Promise((r) => setTimeout(r, 450))
-      navigate(`/w/${slug}/${role === 'customer' ? 'help' : 'agent'}`)
+      navigate(`/w/${slug}/agent`)
     } catch (err) {
       setError(errorMessage(err))
     }
@@ -161,7 +177,7 @@ export function Demo({ notice }: { notice?: string | null }) {
         <h2 className="max-w-4xl text-[clamp(2.6rem,7.4vw,6rem)] leading-[0.94] font-semibold tracking-[-0.05em] text-balance">
           <WordReveal text="Pick a desk. Run it yourself." />
         </h2>
-        <p className="mt-5 max-w-xl text-lg font-medium text-(--lp-ink)/80">Three ready-made companies, each with real-looking tickets, a knowledge base and AI already at work. Choose one and step inside as the agent or the customer.</p>
+        <p className="mt-5 max-w-xl text-lg font-medium text-(--lp-ink)/80">Three ready-made companies, each with real-looking tickets, a knowledge base and AI already at work. Choose one and step inside as a support agent.</p>
 
         {notice && (
           <p role="status" className="mt-6 max-w-xl rounded-2xl bg-white px-4 py-3 text-sm font-medium text-[#5a3d00] ring-1 ring-(--lp-butter-2)">
@@ -169,13 +185,11 @@ export function Demo({ notice }: { notice?: string | null }) {
           </p>
         )}
 
-        <RoleToggle role={role} onChange={setRole} />
-
         {/* three equal company cards: snapping row on phones, equal columns from md up */}
-        <div className="-mx-5 mt-8 flex snap-x snap-mandatory gap-4 overflow-x-auto px-5 pt-3 pb-5 md:mx-0 md:grid md:grid-cols-3 md:gap-5 md:overflow-visible md:px-0 md:pb-3 [&::-webkit-scrollbar]:hidden">
+        <div className="-mx-5 mt-10 flex snap-x snap-mandatory items-stretch gap-4 overflow-x-auto px-5 pt-3 pb-5 md:mx-0 md:grid md:grid-cols-3 md:gap-5 md:overflow-visible md:px-0 md:pb-3 [&::-webkit-scrollbar]:hidden">
           {templates.map((t, i) => (
-            <div key={t.key} className="w-[80%] shrink-0 snap-center sm:w-[60%] md:w-auto md:shrink">
-              <Selector t={t} index={i} busy={busy} onStart={(m) => launch(m, role)} />
+            <div key={t.key} className="flex w-[80%] shrink-0 snap-center sm:w-[60%] md:w-auto md:shrink">
+              <Selector t={t} index={i} busy={busy} onStart={launch} />
             </div>
           ))}
         </div>
@@ -186,7 +200,7 @@ export function Demo({ notice }: { notice?: string | null }) {
       </div>
 
       <AnimatePresence>
-        {busy && <SetupScreen name={busy.name} step={step} progress={progress} waking={elapsed > 7} error={error} onRetry={() => launch(busy, role)} onBack={() => { setBusy(null); setError(null); setDone(false); window.setTimeout(() => trigger.current?.focus(), 0) }} />}
+        {busy && <SetupScreen name={busy.name} step={step} progress={progress} waking={elapsed > 7} error={error} onRetry={() => launch(busy)} onBack={() => { setBusy(null); setError(null); setDone(false); window.setTimeout(() => trigger.current?.focus(), 0) }} />}
       </AnimatePresence>
     </section>
   )

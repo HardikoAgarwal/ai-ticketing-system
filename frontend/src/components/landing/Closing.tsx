@@ -6,6 +6,7 @@ import { Link } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 
 import { BRAND, GITHUB_URL } from './constants'
+import { lpBtnInk, lpBtnLimeOnDark, lpBtnSecondaryOnDark, LpBtnIcon } from './cta'
 import { EASE, Reveal, WordReveal } from './motion'
 import { GithubMark } from './Nav'
 
@@ -74,8 +75,11 @@ export function Faq() {
           <div className="mt-8 max-w-sm rounded-3xl bg-(--lp-ink) p-6 text-white">
             <p className="text-lg font-semibold tracking-tight">Still curious?</p>
             <p className="mt-1.5 text-sm text-white/65">The fastest answer is two minutes in a live sandbox: answer a ticket with an AI draft, then see the customer’s side.</p>
-            <a href="#demo" className="lp-focus group mt-5 inline-flex h-11 items-center gap-2 rounded-full bg-(--lp-lime) px-5 text-sm font-semibold text-(--lp-ink) transition-transform hover:scale-[1.03]">
-              Try the demo <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
+            <a href="#demo" className={cn(lpBtnLimeOnDark, 'mt-5 h-12 gap-2 py-1.5 pr-1.5 pl-5 text-sm')}>
+              Try the demo
+              <LpBtnIcon tone="ink" className="size-8">
+                <ArrowRight className="size-3.5 transition-transform group-hover:translate-x-0.5" />
+              </LpBtnIcon>
             </a>
           </div>
         </div>
@@ -106,10 +110,13 @@ export function FinalCta() {
         </h2>
         <p className="mx-auto mt-6 max-w-xl text-lg text-white/70">Open a demo, answer one with an AI draft, and see the customer’s side live. It takes about two minutes.</p>
         <Reveal delay={0.1} className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
-          <a href="#demo" className="lp-focus group flex h-14 items-center gap-2 rounded-full bg-(--lp-lime) px-9 text-base font-semibold text-(--lp-ink) transition-transform hover:scale-[1.05]">
-            Pick a demo <ArrowRight className="size-5 transition-transform group-hover:translate-x-1" />
+          <a href="#demo" className={cn(lpBtnLimeOnDark, 'h-14 gap-3 py-1.5 pr-1.5 pl-7 text-base')}>
+            Pick a demo
+            <LpBtnIcon tone="ink" className="size-10">
+              <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
+            </LpBtnIcon>
           </a>
-          <Link to="/signup" className="lp-focus flex h-14 items-center rounded-full px-7 text-base font-medium ring-1 ring-white/25 transition-colors hover:bg-white/10">
+          <Link to="/signup" className={cn(lpBtnSecondaryOnDark, 'h-14 px-7 text-base')}>
             Create your own workspace
           </Link>
         </Reveal>
@@ -135,7 +142,7 @@ export function Footer() {
         <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1fr]">
           <div>
             <p className="max-w-xs text-2xl leading-tight font-semibold tracking-[-0.03em]">Support that shows its work.</p>
-            <a href={GITHUB_URL} target="_blank" rel="noreferrer" className="lp-focus mt-6 inline-flex h-11 items-center gap-2 rounded-full bg-(--lp-ink) px-5 text-sm font-semibold text-white transition-transform hover:scale-[1.03]">
+            <a href={GITHUB_URL} target="_blank" rel="noreferrer" className={cn(lpBtnInk, 'mt-6 h-12 gap-2 px-5 text-sm')}>
               <GithubMark className="size-4" /> Star on GitHub
             </a>
           </div>
