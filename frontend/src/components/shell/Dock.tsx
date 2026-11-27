@@ -153,7 +153,7 @@ function NavGroup({ item }: { item: DockItem }) {
           return (
             // a thread: a thin line runs down the left, dark from the top to the current tab and grey below it; every tab hangs off it with a short grey tick,
             // and only the current tab's tick is dark (the last tab has a rounded corner)
-            <li key={c.to} className="relative pl-6">
+            <li key={c.to} className="relative pl-4">
               {last ? (
                 <span aria-hidden className={cn('absolute top-0 left-0 h-[18px] w-4 rounded-bl-[10px] border-b border-l transition-colors', current ? 'border-ink' : 'border-line-strong')} />
               ) : (
