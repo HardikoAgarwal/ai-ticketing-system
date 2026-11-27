@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { BookOpen, CircleHelp, Globe, Lock, PencilLine, Plus, X } from 'lucide-react'
+import { BookOpen, CircleHelp, Globe, Lock, PencilLine, Plus } from 'lucide-react'
 import { useMemo } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 
@@ -104,14 +104,6 @@ export function ArticlesView({ onHow }: { onHow: () => void }) {
       </div>
 
       <div className="space-y-4">
-        {!!vis && (
-          <div className="flex flex-wrap items-center gap-2 text-sm text-ink-2">
-            Showing filtered results.
-            <button type="button" onClick={clearFilters} className="inline-flex h-8 items-center gap-1.5 rounded-control px-2.5 font-semibold text-ink hover:bg-sunken focus-visible:ring-2 focus-visible:ring-violet focus-visible:outline-none">
-              <X className="size-3.5" aria-hidden /> Clear filters
-            </button>
-          </div>
-        )}
         {shown.length === 0 ? <NoMatches what="articles" onClear={clearFilters} /> : <ArticleTable articles={shown} basePath={base} />}
       </div>
     </div>
