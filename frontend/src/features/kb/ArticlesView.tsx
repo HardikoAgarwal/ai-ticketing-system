@@ -51,7 +51,6 @@ export function ArticlesView({ onHow }: { onHow: () => void }) {
     const needle = q.trim().toLowerCase()
     return articles.filter((a) => (!vis || visibilityOf(a) === vis) && (!needle || `${a.title} ${a.category_name ?? ''} ${a.excerpt}`.toLowerCase().includes(needle)))
   }, [articles, vis, q])
-  const filtered = !!vis || !!q.trim()
 
   if (list.isLoading) {
     return (
@@ -105,7 +104,7 @@ export function ArticlesView({ onHow }: { onHow: () => void }) {
       </div>
 
       <div className="space-y-4">
-        {filtered && (
+        {!!vis && (
           <div className="flex flex-wrap items-center gap-2 text-sm text-ink-2">
             Showing filtered results.
             <button type="button" onClick={clearFilters} className="inline-flex h-8 items-center gap-1.5 rounded-control px-2.5 font-semibold text-ink hover:bg-sunken focus-visible:ring-2 focus-visible:ring-violet focus-visible:outline-none">
