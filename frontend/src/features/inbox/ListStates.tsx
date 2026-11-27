@@ -17,7 +17,7 @@ function Badge({ icon: Icon, hue }: { icon: LucideIcon; hue: Hue }) {
   )
 }
 
-function Message({ icon, hue, title, children, actions }: { icon: LucideIcon; hue: Hue; title: string; children: ReactNode; actions?: ReactNode }) {
+export function Message({ icon, hue, title, children, actions }: { icon: LucideIcon; hue: Hue; title: string; children: ReactNode; actions?: ReactNode }) {
   return (
     <div className="flex flex-col items-center rounded-panel bg-surface px-6 py-14 text-center shadow-card sm:py-16">
       <Badge icon={icon} hue={hue} />
@@ -29,12 +29,12 @@ function Message({ icon, hue, title, children, actions }: { icon: LucideIcon; hu
 }
 
 /** Filters or a search are applied and nothing matches. */
-export function NoMatches({ onClear }: { onClear: () => void }) {
+export function NoMatches({ onClear, what = 'tickets' }: { onClear: () => void; what?: string }) {
   return (
     <Message
       icon={SearchX}
       hue="butter"
-      title="No tickets match these filters"
+      title={`No ${what} match these filters`}
       actions={
         <button type="button" onClick={onClear} className="inline-flex h-10 items-center gap-2 rounded-control bg-ink px-5 text-sm font-semibold text-canvas transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-violet focus-visible:ring-offset-2 focus-visible:outline-none">
           <RotateCcw className="size-4" aria-hidden /> Clear all filters

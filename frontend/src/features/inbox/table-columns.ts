@@ -23,3 +23,11 @@ export const HISTORY_COLUMNS: SkeletonColumn[] = [
   { label: 'Took', kind: 'short', className: 'hidden w-24 xl:table-cell' },
   { label: 'Rating', kind: 'short', className: 'w-36' },
 ]
+
+export const ARTICLE_COLUMNS: SkeletonColumn[] = [
+  { label: 'Article', kind: 'two-lines' },
+  { label: 'Category', kind: 'chip', className: 'hidden w-44 xl:table-cell' },
+  { label: 'Visibility', kind: 'chip', className: 'w-36' },
+  { label: 'AI search', kind: 'chip', className: 'w-36' },
+  { label: 'Updated', kind: 'short', className: 'w-40' },
+]

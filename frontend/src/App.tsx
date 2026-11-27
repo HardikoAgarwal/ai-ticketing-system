@@ -17,6 +17,7 @@ const HomePage = lazy(() => import('@/features/home/HomePage').then((m) => ({ de
 const AgentHistoryPage = lazy(() => import('@/features/history/HistoryPage').then((m) => ({ default: m.HistoryPage })))
 const AgentTicketsPage = lazy(() => import('@/features/inbox/TicketsPage').then((m) => ({ default: m.TicketsPage })))
 const TicketPage = lazy(() => import('@/features/ticket/TicketPage').then((m) => ({ default: m.TicketPage })))
+const ArticleEditorPage = lazy(() => import('@/features/kb/ArticleEditorPage').then((m) => ({ default: m.ArticleEditorPage })))
 const KnowledgePage = lazy(() => import('@/pages/agent/KnowledgePage').then((m) => ({ default: m.KnowledgePage })))
 const DesignSystemPage = lazy(() => import('@/pages/DesignSystemPage').then((m) => ({ default: m.DesignSystemPage })))
 const SettingsPage = lazy(() => import('@/pages/agent/SettingsPage').then((m) => ({ default: m.SettingsPage })))
@@ -60,6 +61,8 @@ export default function App() {
             {/* analytics now lives on the home dashboard; keep old links and bookmarks working */}
             <Route path="analytics" element={<Navigate to=".." replace />} />
             <Route path="knowledge" element={<KnowledgePage />} />
+            <Route path="knowledge/new" element={<ArticleEditorPage />} />
+            <Route path="knowledge/:id" element={<ArticleEditorPage />} />
             <Route path="settings" element={<SettingsPage />} />
           </Route>
         </Route>
