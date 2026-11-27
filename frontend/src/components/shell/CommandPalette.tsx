@@ -1,10 +1,9 @@
 import { useQuery } from '@tanstack/react-query'
-import { CornerDownLeft, Search, Ticket } from 'lucide-react'
+import { Search, Ticket } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import { useWorkspace } from '@/auth/workspace'
-import { Kbd } from '@/components/ds/Kbd'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
 import { cn } from '@/lib/utils'
 
@@ -24,7 +23,7 @@ function score(c: Command, q: string): number {
   return total
 }
 
-type Row = { kind: 'header'; label: string } | { kind: 'item'; id: string; title: string; hint?: string; icon?: Command['icon']; shortcut?: string; run: () => void }
+type Row = { kind: 'header'; label: string } | { kind: 'item'; id: string; title: string; hint?: string; icon?: Command['icon']; run: () => void }
 
 /**
  * Cmd/Ctrl-K palette: jump to a ticket (by reference or subject), go to a page, run commands registered with
@@ -73,7 +72,7 @@ export function CommandPalette() {
     }
     for (const [g, list] of byGroup) {
       out.push({ kind: 'header', label: g })
-      for (const c of list) out.push({ kind: 'item', id: `c-${c.id}`, title: c.title, icon: c.icon, shortcut: c.shortcut, run: c.perform })
+      for (const c of list) out.push({ kind: 'item', id: `c-${c.id}`, title: c.title, icon: c.icon, run: c.perform })
     }
     return out
   }, [tickets.data, commands, query, navigate, slug])
@@ -108,11 +107,11 @@ export function CommandPalette() {
         }
       }}
     >
-      <DialogContent showCloseButton={false} className="top-[14%] translate-y-0 gap-0 overflow-hidden p-0 sm:max-w-[620px]">
+      <DialogContent showCloseButton={false} className="top-[12%] translate-y-0 gap-0 overflow-hidden p-0 sm:max-w-[720px]">
         <DialogTitle className="sr-only">Command palette</DialogTitle>
         <DialogDescription className="sr-only">Search tickets and run commands. Use the arrow keys to choose and Enter to run.</DialogDescription>
-        <div className="flex items-center gap-3 border-b border-line px-4">
-          <Search className="size-[18px] shrink-0 text-ink-3" aria-hidden />
+        <div className="flex items-center gap-4 border-b border-line px-6">
+          <Search className="size-5 shrink-0 text-ink-3" aria-hidden />
           <input
             autoFocus
             role="combobox"
@@ -138,17 +137,16 @@ export function CommandPalette() {
                 run(items[Math.min(active, items.length - 1)])
               }
             }}
-            className="h-14 flex-1 bg-transparent text-[15px] text-ink outline-none placeholder:text-ink-3"
+            className="h-16 flex-1 bg-transparent text-base text-ink outline-none placeholder:text-ink-3"
           />
-          <Kbd>Esc</Kbd>
         </div>
-        <div ref={listRef} id="palette-list" role="listbox" aria-label="Results" className="scroll-quiet max-h-[min(420px,56vh)] overflow-y-auto p-2">
+        <div ref={listRef} id="palette-list" role="listbox" aria-label="Results" className="scroll-quiet max-h-[min(480px,60vh)] overflow-y-auto p-3">
           {items.length === 0 && (
-            <p className="px-3 py-10 text-center text-sm text-ink-3">{tickets.isFetching || (staff && query.trim().length >= 2 && query.trim() !== debounced) ? 'Searching…' : `Nothing matches "${query}".`}</p>
+            <p className="px-3 py-14 text-center text-sm text-ink-3">{tickets.isFetching || (staff && query.trim().length >= 2 && query.trim() !== debounced) ? 'Searching…' : `Nothing matches "${query}".`}</p>
           )}
           {rows.map((r, i) =>
             r.kind === 'header' ? (
-              <div key={`h-${i}`} role="presentation" className="px-3 pt-3 pb-1.5 text-[11px] font-semibold tracking-[0.08em] text-ink-3 uppercase first:pt-1">
+              <div key={`h-${i}`} role="presentation" className="px-4 pt-4 pb-2 text-[11px] font-semibold tracking-[0.08em] text-ink-3 uppercase first:pt-1">
                 {r.label}
               </div>
             ) : (
@@ -160,21 +158,14 @@ export function CommandPalette() {
                 aria-selected={r.id === activeId}
                 onMouseMove={() => setActive(items.findIndex((x) => x.id === r.id))}
                 onClick={() => run(r)}
-                className={cn('flex cursor-pointer items-center gap-3 rounded-control px-3 py-2.5 text-sm', r.id === activeId ? 'bg-violet-soft text-ink' : 'text-ink-2')}
+                className={cn('flex cursor-pointer items-center gap-3.5 rounded-control px-4 py-3 text-[15px]', r.id === activeId ? 'bg-violet-soft text-ink' : 'text-ink-2')}
               >
-                {r.icon && <r.icon className={cn('size-4 shrink-0', r.id === activeId ? 'text-violet' : 'text-ink-3')} aria-hidden />}
+                {r.icon && <r.icon className={cn('size-[18px] shrink-0', r.id === activeId ? 'text-violet' : 'text-ink-3')} aria-hidden />}
                 <span className="min-w-0 flex-1 truncate font-medium">{r.title}</span>
                 {r.hint && <span className="shrink-0 font-mono text-xs text-ink-3">{r.hint}</span>}
-                {r.shortcut && <Kbd keys={r.shortcut} />}
-                {r.id === activeId && !r.shortcut && <CornerDownLeft className="size-3.5 shrink-0 text-ink-3" aria-hidden />}
               </div>
             ),
           )}
-        </div>
-        <div className="flex items-center gap-4 border-t border-line bg-surface-2 px-4 py-2.5 text-xs text-ink-3">
-          <span className="inline-flex items-center gap-1.5"><Kbd>↑</Kbd><Kbd>↓</Kbd> navigate</span>
-          <span className="inline-flex items-center gap-1.5"><Kbd>↵</Kbd> run</span>
-          <span className="ml-auto hidden sm:inline">Press <Kbd>?</Kbd> for all shortcuts</span>
         </div>
       </DialogContent>
     </Dialog>
