@@ -165,10 +165,17 @@ function NavGroup({ item }: { item: DockItem }) {
           const last = i === (item.children?.length ?? 0) - 1
           const active = isItemActive(c, pathname)
           return (
-            // a thread: one line runs down the left, and each sub item hangs off it with a rounded elbow
-            <li key={c.to} className="relative pl-5">
-              <span aria-hidden className={cn('absolute top-0 left-0 h-[18px] w-4 rounded-bl-[10px] border-b-[1.5px] border-l-[1.5px] transition-colors', active ? 'border-ink' : 'border-line-strong')} />
-              {!last && <span aria-hidden className="absolute top-[18px] -bottom-1 left-0 border-l-[1.5px] border-line-strong" />}
+            // a thread: one vertical line runs the full height of every item (the line is 2px wide, centred on the parent icon), each item gets a short
+            // tick off it at the middle of its row, and the last item's line turns into a rounded corner instead of carrying on
+            <li key={c.to} className="relative pl-6">
+              {last ? (
+                <span aria-hidden className={cn('absolute top-0 left-0 h-[18px] w-4 rounded-bl-[10px] border-b-2 border-l-2 transition-colors', active ? 'border-ink' : 'border-line-strong')} />
+              ) : (
+                <>
+                  <span aria-hidden className="absolute top-0 -bottom-1 left-0 w-0.5 bg-line-strong" />
+                  <span aria-hidden className={cn('absolute top-[17px] left-0 h-0.5 w-4 transition-colors', active ? 'bg-ink' : 'bg-line-strong')} />
+                </>
+              )}
               <NavRow item={c} sub />
             </li>
           )
