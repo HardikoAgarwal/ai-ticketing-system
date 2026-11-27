@@ -22,7 +22,7 @@ function Tile({ className, tone, title, children }: { className?: string; tone: 
 
 function Seg<T extends string>({ value, onChange, options, dark }: { value: T; onChange: (v: T) => void; options: { v: T; label: string }[]; dark?: boolean }) {
   return (
-    <div role="radiogroup" className={cn('relative inline-flex rounded-full p-1 text-xs font-semibold', dark ? 'bg-white/10' : 'bg-black/[0.07]')}>
+    <div role="radiogroup" className={cn('relative inline-flex self-start rounded-full p-1 text-xs font-semibold', dark ? 'bg-white/10' : 'bg-black/[0.07]')}>
       {options.map((o) => (
         <button key={o.v} type="button" role="radio" aria-checked={value === o.v} onClick={() => onChange(o.v)} className={cn('lp-focus relative z-10 rounded-full px-3.5 py-1.5 transition-colors', value === o.v ? (dark ? 'text-(--lp-ink)' : 'text-white') : 'opacity-60 hover:opacity-100')}>
           {value === o.v && <motion.span layoutId={`seg-${options.map((x) => x.v).join('')}`} className={cn('absolute inset-0 -z-10 rounded-full', dark ? 'bg-(--lp-lime)' : 'bg-(--lp-ink)')} transition={{ type: 'spring', stiffness: 420, damping: 32 }} />}
@@ -51,7 +51,7 @@ function TriageTile() {
     ['Reply target', ai ? 'Within 24h' : 'Default 48h', ai ? 'bg-emerald-200 text-emerald-900' : 'bg-neutral-200 text-neutral-700'],
   ]
   return (
-    <Tile className="lg:col-span-7 lg:row-span-2" tone="bg-(--lp-paper) text-(--lp-ink)" title="Rules guess. AI understands.">
+    <Tile className="md:col-span-7 md:row-span-2" tone="bg-(--lp-paper) text-(--lp-ink)" title="Rules guess. AI understands.">
       <p className="max-w-md text-[15px] text-neutral-700">Flip the switch to see what the same ticket looks like with keyword rules versus AI triage. Rules stay on as the safety net.</p>
       <div className="mt-5">
         <Seg value={mode} options={[{ v: 'rules', label: 'Keyword rules' }, { v: 'ai', label: 'AI triage' }]} onChange={(v) => { touched.current = true; setMode(v) }} />
@@ -112,7 +112,7 @@ function DraftsTile() {
     return () => window.clearInterval(id)
   }, [])
   return (
-    <Tile className="lg:col-span-5" tone="bg-(--lp-lime) text-(--lp-ink)" title="Every line points to a source.">
+    <Tile className="md:col-span-5" tone="bg-(--lp-lime) text-(--lp-ink)" title="Every line points to a source.">
       <p className="rounded-2xl bg-white/70 p-4 text-[14px] leading-relaxed">
         Annual plans can be refunded in full within 14 days <Cite i={0} active={active} onActive={(i) => { touched.current = true; setActive(i) }} />, and extra seats are prorated for the days you use <Cite i={1} active={active} onActive={(i) => { touched.current = true; setActive(i) }} />. I’ve raised your refund now.
       </p>
@@ -140,8 +140,8 @@ function SlaTile() {
   const [sorted, setSorted] = useState(false)
   const rows = sorted ? [...QUEUE].sort((a, b) => RANK[a.p] - RANK[b.p]) : QUEUE
   return (
-    <Tile className="lg:col-span-5" tone="bg-white text-(--lp-ink)" title="Urgent first. Always.">
-      <button type="button" onClick={() => setSorted((s) => !s)} className="lp-focus mb-3 inline-flex items-center gap-2 rounded-full bg-(--lp-ink) px-4 py-2 text-xs font-semibold text-white transition-transform hover:scale-[1.03]">
+    <Tile className="md:col-span-5" tone="bg-white text-(--lp-ink)" title="Urgent first. Always.">
+      <button type="button" onClick={() => setSorted((s) => !s)} className="lp-focus mb-3 inline-flex self-start items-center gap-2 rounded-full bg-(--lp-ink) px-4 py-2 text-xs font-semibold text-white transition-transform hover:scale-[1.03]">
         <Zap className="size-3.5 text-(--lp-lime)" /> {sorted ? 'Show arrival order' : 'Sort by urgency'}
       </button>
       <LayoutGroup>
@@ -168,7 +168,7 @@ function DuplicateTile() {
     { t: 'Charged twice for invoice', m: '81%' },
   ]
   return (
-    <Tile className="lg:col-span-4" tone="bg-[#ffd8cc] text-[#3a1208]" title="Spot repeats before you reply.">
+    <Tile className="md:col-span-6 lg:col-span-4" tone="bg-[#ffd8cc] text-[#3a1208]" title="Spot repeats before you reply.">
       <div className="relative mt-2 h-52" onMouseEnter={() => setOpen(true)} onMouseLeave={() => setOpen(false)} onFocus={() => setOpen(true)} onBlur={() => setOpen(false)} tabIndex={0} role="group" aria-label="Similar tickets, hover to fan out">
         {cards.map((c, i) => (
           <motion.div key={c.t} animate={{ y: open ? i * 58 : i * 20, scale: open ? 1 : 1 - i * 0.04, rotate: open ? 0 : (i - 1) * 2 }} transition={{ type: 'spring', stiffness: 300, damping: 26 }} style={{ zIndex: 3 - i }} className="absolute inset-x-0 top-0 flex items-center gap-2 rounded-2xl bg-white px-3.5 py-3 text-[13px] shadow-md ring-1 ring-black/5">
@@ -188,7 +188,7 @@ function DeflectTile() {
   const [yes, setYes] = useState(false)
   const typed = useTypewriter('my SSO keeps redirecting to login', true, 55)
   return (
-    <Tile className="lg:col-span-4" tone="bg-(--lp-ink) text-white" title="Answers before tickets.">
+    <Tile className="md:col-span-6 lg:col-span-4" tone="bg-(--lp-ink) text-white" title="Answers before tickets.">
       <div className="rounded-2xl bg-white/10 px-3.5 py-2.5 text-[13px] text-white/80 ring-1 ring-white/10">
         {typed.shown}
         <span className="lp-caret ml-0.5 inline-block h-3.5 w-[2px] translate-y-0.5 bg-(--lp-lime)" />
@@ -216,16 +216,18 @@ function DeflectTile() {
 /* ------------------------------- Realtime ------------------------------- */
 const TOASTS = ['Priya replied on TKT-0001', 'New ticket from Marcus', 'Elena resolved TKT-0009', 'Aisha rated 5 stars']
 function RealtimeTile() {
-  const [n, setN] = useState(0)
+  // Always exactly three toasts: the newest pushes in at the top and the oldest pops out of the layout, so the stack
+  // (and with it the tile) keeps one height instead of growing to four rows on every tick.
+  const [n, setN] = useState(2)
   const reduce = useReducedMotion()
   useEffect(() => {
     if (reduce) return
     const id = window.setInterval(() => setN((v) => v + 1), 2300)
     return () => window.clearInterval(id)
   }, [reduce])
-  const visible = [0, 1, 2].map((k) => n - k).filter((i) => i >= 0)
+  const visible = [n, n - 1, n - 2]
   return (
-    <Tile className="lg:col-span-4" tone="bg-[#cfe7ff] text-[#071c33]" title="No refresh button.">
+    <Tile className="md:col-span-5 lg:col-span-4" tone="bg-[#cfe7ff] text-[#071c33]" title="No refresh button.">
       <div className="flex items-center gap-2 text-[12px] font-semibold">
         <span className="relative flex size-2.5">
           <span className="lp-pulse-ring absolute inline-flex size-2.5 rounded-full bg-emerald-500" />
@@ -233,11 +235,11 @@ function RealtimeTile() {
         </span>
         Live
       </div>
-      <div className="mt-3 space-y-2">
-        <AnimatePresence initial={false}>
+      <div className="relative mt-3 h-[8.5rem] space-y-2 overflow-hidden">
+        <AnimatePresence initial={false} mode="popLayout">
           {visible.map((i, idx) => (
-            <motion.div key={i} layout initial={{ opacity: 0, y: -18, scale: 0.96 }} animate={{ opacity: 1 - idx * 0.28, y: 0, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} transition={{ duration: 0.4, ease: EASE }} className="rounded-xl bg-white px-3.5 py-2.5 text-[12.5px] font-medium shadow-sm">
-              {TOASTS[i % TOASTS.length]}
+            <motion.div key={i} layout initial={{ opacity: 0, y: -18, scale: 0.96 }} animate={{ opacity: 1 - idx * 0.28, y: 0, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} transition={{ duration: 0.4, ease: EASE }} className="flex h-10 items-center rounded-xl bg-white px-3.5 text-[12.5px] font-medium shadow-sm">
+              <span className="truncate">{TOASTS[i % TOASTS.length]}</span>
             </motion.div>
           ))}
         </AnimatePresence>
@@ -256,7 +258,7 @@ function TeamsTile() {
   const [ws, setWs] = useState('lumen')
   const cur = WORKSPACES.find((w) => w.v === ws) ?? WORKSPACES[0]
   return (
-    <Tile className="lg:col-span-5" tone="bg-[#e3d9ff] text-[#1c0f4d]" title="Every workspace is its own world.">
+    <Tile className="md:col-span-7 lg:col-span-5" tone="bg-[#e3d9ff] text-[#1c0f4d]" title="Every workspace is its own world.">
       <Seg value={ws} onChange={setWs} options={WORKSPACES.map((w) => ({ v: w.v, label: w.label }))} />
       <div className="mt-4 flex items-center gap-2.5" aria-live="polite">
         <AnimatePresence mode="popLayout">
@@ -279,7 +281,7 @@ const BARS = [30, 52, 41, 66, 48, 72, 58, 84, 62, 76, 90, 70, 94, 80]
 function AnalyticsTile() {
   const [stars, setStars] = useState(4)
   return (
-    <Tile className="lg:col-span-7" tone="bg-(--lp-amber) text-[#2a1a00]" title="Know how support is really going.">
+    <Tile className="md:col-span-12 lg:col-span-7" tone="bg-(--lp-amber) text-[#2a1a00]" title="Know how support is really going.">
       <div className="flex items-end gap-1.5 rounded-2xl bg-white/60 p-4" style={{ height: '8.5rem' }} aria-hidden>
         {BARS.map((h, i) => (
           <motion.span key={i} initial={{ height: 0 }} whileInView={{ height: `${h}%` }} viewport={{ once: true }} transition={{ delay: i * 0.04, duration: 0.7, ease: EASE }} className="flex-1 rounded-t-md bg-(--lp-ink)/85" />
@@ -321,7 +323,8 @@ export function Bento() {
         </h2>
         <p className="mt-5 max-w-xl text-lg text-white/75">Poke the cards. They’re live.</p>
         </div>
-        <div className="mt-12 grid gap-4 lg:grid-cols-12">
+        {/* bento from tablet width up: the same 12 columns, with the three small tiles paired two-up until there is room for three */}
+        <div className="mt-12 grid gap-4 md:grid-cols-12">
           <TriageTile />
           <DraftsTile />
           <SlaTile />

@@ -6,6 +6,7 @@ import { Faq, FinalCta, Footer } from '@/components/landing/Closing'
 import { Demo } from '@/components/landing/Demo'
 import { Hero } from '@/components/landing/Hero'
 import { Nav } from '@/components/landing/Nav'
+import { Request } from '@/components/landing/Request'
 import { Story } from '@/components/landing/Story'
 import { API_URL } from '@/lib/api'
 
@@ -59,6 +60,7 @@ export function LandingPage() {
         <Bento />
         <Demo notice={notice} />
         <Faq />
+        <Request />
         <FinalCta />
       </main>
       <Footer />

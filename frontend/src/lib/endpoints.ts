@@ -60,6 +60,19 @@ export const demoApi = {
   start: (template: string) => api.post<DemoStartResponse>('/demo/start/', { template }, { timeout: 60000 }).then((r) => r.data),
 }
 
+export interface WorkspaceRequestInput {
+  full_name: string
+  email: string
+  company: string
+  team_size: string
+  message: string
+}
+
+/** The landing page's "request a workspace" form. Public; the request is stored and read in the Django admin. */
+export const workspaceRequestApi = {
+  send: (data: WorkspaceRequestInput) => api.post('/workspace-requests/', data).then(() => undefined),
+}
+
 export type TicketQuery = Record<string, string | number | undefined>
 
 /** All workspace resources live under /w/<slug>/. */

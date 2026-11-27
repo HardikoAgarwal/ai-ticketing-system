@@ -136,3 +136,21 @@ class Invite(models.Model):
     invited_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
     accepted_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(default=timezone.now)
+
+
+class WorkspaceRequest(models.Model):
+    """An enquiry from the landing page asking for a workspace. Read and ticked off in the Django admin."""
+
+    full_name = models.CharField(max_length=150)
+    email = models.EmailField()
+    company = models.CharField(max_length=150)
+    team_size = models.CharField(max_length=60, blank=True)
+    message = models.TextField(max_length=2000)
+    handled = models.BooleanField(default=False, db_index=True, help_text="Tick once you have replied.")
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ("-created_at",)
+
+    def __str__(self):
+        return f"{self.company} ({self.email})"

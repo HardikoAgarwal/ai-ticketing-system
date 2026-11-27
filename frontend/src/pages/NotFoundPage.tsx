@@ -2,7 +2,7 @@ import { Compass, Home, LogIn } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 import { useAuth, homeFor } from '@/auth/AuthContext'
-import { BrandMark } from '@/features/auth/BrandPanel'
+import { BrandMark } from '@/features/auth/BrandMark'
 import { Button } from '@/components/ui/button'
 
 export function NotFoundPage() {

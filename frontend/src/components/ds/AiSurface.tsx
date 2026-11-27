@@ -4,9 +4,9 @@ import type { ComponentProps, ElementType, ReactNode } from 'react'
 import { cn } from '@/lib/utils'
 
 /**
- * The shared "this is AI" treatment: 1px aurora gradient border (violet, cyan, pink) plus a soft glow.
+ * The shared "this is AI" treatment: aurora gradient border (violet, cyan, pink) plus a soft glow.
  * `working` rotates the gradient and breathes the glow while the AI is generating; at rest it is static.
- * tone="quiet" = border only (lists, small cards); tone="bold" = border + glow (primary AI surfaces such as the draft).
+ * tone="quiet" = 1px border only (lists, small cards); tone="bold" = 2px border + stronger glow (primary AI surfaces).
  */
 export function AiSurface({
   as,

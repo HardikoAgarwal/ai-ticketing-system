@@ -11,7 +11,7 @@ import { SelectBox } from './SelectBox'
 import type { TicketRowProps } from './TicketRow'
 
 /** A decorative barcode derived from the reference, for the ticket-stub look. */
-function Barcode({ code }: { code: string }) {
+export function Barcode({ code }: { code: string }) {
   return (
     <span aria-hidden className="flex h-7 items-stretch opacity-90">
       {Array.from({ length: 26 }, (_, i) => {

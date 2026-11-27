@@ -1,9 +1,9 @@
-import { CheckCheck, ChevronDown, ChevronUp, CopyIcon, Lock, MessagesSquare, NotebookPen, PanelRight, RefreshCw, RotateCcw, SearchX, ShieldAlert, UserPlus, WifiOff } from 'lucide-react'
+import { ArrowLeft, CheckCheck, ChevronDown, ChevronUp, CircleUserRound, CopyIcon, Lock, MessagesSquare, NotebookPen, PanelRight, RefreshCw, RotateCcw, SearchX, ShieldAlert, UserPlus, WifiOff } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 
 import { ConfirmDialog, type ConfirmOptions } from '@/components/ConfirmDialog'
-import { EmptyState, ErrorState, Skeleton, SkeletonRows } from '@/components/ds'
+import { EmptyState, ErrorState, IconButton, Skeleton, SkeletonRows } from '@/components/ds'
 import { announce } from '@/components/shell/announce'
 import { useRegisterCommands, type Command } from '@/components/shell/commands'
 import { useShortcut } from '@/components/shell/shortcuts'
@@ -14,25 +14,29 @@ import { useConnectionState } from '@/realtime/RealtimeProvider'
 import { cn } from '@/lib/utils'
 
 import { Composer, type ComposerMode } from './Composer'
-import { Rail } from './Rail'
+import { CustomerDialog } from './CustomerDialog'
+import { SidePanel, type SideTab } from './SidePanel'
 import { Thread } from './Thread'
+import type { FieldsProps } from './TicketFields'
 import { TicketHeader } from './TicketHeader'
 import { isOpenStatus, type ThreadFilter } from './ticket-ui'
 import { useTicket } from './use-ticket'
 
-const RAIL_KEY = 'helpdesk.ticket.rail'
-/** Wide enough for the conversation to keep a comfortable measure next to a 360px panel. */
+/** Wide enough for the full ticket header with its stub, and for the conversation to keep a comfortable measure next to the 400px side panel. */
 const WIDE = '(min-width: 1180px)'
+/** Same width and side padding as the other agent pages (see AgentLayout). */
+const PAGE = 'mx-auto w-full max-w-[1400px] px-4 md:px-8'
 
-function useWide() {
-  const [wide, setWide] = useState(() => window.matchMedia(WIDE).matches)
+function useMedia(query: string) {
+  const [on, setOn] = useState(() => window.matchMedia(query).matches)
   useEffect(() => {
-    const mq = window.matchMedia(WIDE)
-    const on = () => setWide(mq.matches)
-    mq.addEventListener('change', on)
-    return () => mq.removeEventListener('change', on)
-  }, [])
-  return wide
+    const mq = window.matchMedia(query)
+    const sync = () => setOn(mq.matches)
+    sync()
+    mq.addEventListener('change', sync)
+    return () => mq.removeEventListener('change', sync)
+  }, [query])
+  return on
 }
 
 function Banner({ tone, icon: Icon, children, action }: { tone: 'amber' | 'sky' | 'rose'; icon: typeof WifiOff; children: React.ReactNode; action?: React.ReactNode }) {
@@ -47,8 +51,12 @@ function Banner({ tone, icon: Icon, children, action }: { tone: 'amber' | 'sky' 
 }
 
 /**
- * The agent ticket page. One header, then two columns of the same height that fill the screen: the conversation with its composer on the left
- * (it gets the space), and a side panel on the right that scrolls on its own. Under ~1180px the panel becomes a drawer.
+ * The agent ticket page. A slim bar above everything moves between tickets (back to the list, previous / next); it is not part of the header.
+ * Then: the ticket header (the ticket's card, opened up, with the AI's read folded in as a highlighted line), the conversation with its
+ * composer (Messages and Notes tabs; a fixed height that scrolls inside while the page itself scrolls), and, on wide screens, a side
+ * panel with the timeline and similar tickets.
+ * Under ~1180px the side panel becomes a drawer, opened from the header's "Details" button, that also carries the editable fields. The
+ * customer's details open in a dialog from the header.
  */
 export function TicketView({ id }: { id: string }) {
   const ticketId = Number(id)
@@ -57,37 +65,34 @@ export function TicketView({ id }: { id: string }) {
   const connection = useConnectionState()
   const navigate = useNavigate()
   const nav = useQueueNeighbors(ticketId)
-  const wide = useWide()
+  const wide = useMedia(WIDE)
   const [confirm, setConfirm] = useState<ConfirmOptions | null>(null)
   const [mode, setMode] = useState<ComposerMode>('reply')
   const [focusTick, setFocusTick] = useState(0)
-  const [filter, setFilter] = useState<ThreadFilter>('all')
+  const [filter, setFilter] = useState<ThreadFilter>('messages')
   const [reassigned, setReassigned] = useState<string | null>(null)
   const [drawer, setDrawer] = useState(false)
-  const [railOpen, setRailOpen] = useState(() => {
-    try {
-      return localStorage.getItem(RAIL_KEY) !== '0'
-    } catch {
-      return true
-    }
-  })
+  const [customer, setCustomer] = useState(false)
+  const [sideTab, setSideTab] = useState<SideTab>('timeline')
+  const compact = !wide
 
   const readOnly = !staff
   const open = ticket ? isOpenStatus(ticket.status) : false
   const mine = ticket?.assigned_to?.id === meId
   const busy = t.update.isPending
 
-  const toggleRail = useCallback(() => {
-    if (!wide) return setDrawer((v) => !v)
-    setRailOpen((v) => {
-      try {
-        localStorage.setItem(RAIL_KEY, v ? '0' : '1')
-      } catch {
-        /* ignore */
-      }
-      return !v
-    })
-  }, [wide])
+  const toggleDrawer = useCallback(() => setDrawer((v) => !v), [])
+
+  // Writing a note shows the notes; replying shows the conversation. Picking a tab above moves the composer to match.
+  const changeFilter = useCallback((f: ThreadFilter) => {
+    setFilter(f)
+    setMode(f === 'notes' ? 'note' : 'reply')
+  }, [])
+
+  const showCustomer = useCallback(() => {
+    setDrawer(false)
+    setCustomer(true)
+  }, [])
 
   // Someone else took the ticket while it was open here.
   const prevOwner = useRef<number | null | undefined>(undefined)
@@ -143,9 +148,9 @@ export function TicketView({ id }: { id: string }) {
   const onPrev = nav.prevId ? () => goTo(nav.prevId) : undefined
   const onNext = nav.nextId ? () => goTo(nav.nextId) : undefined
   const showNotes = useCallback(() => {
-    setFilter('notes')
+    changeFilter('notes')
     setDrawer(false)
-  }, [])
+  }, [changeFilter])
 
   // Shortcuts (ignored while typing) and the matching palette commands.
   useShortcut('r', () => openComposer('reply'), { description: 'Reply to the customer', group: 'Ticket' })
@@ -154,7 +159,8 @@ export function TicketView({ id }: { id: string }) {
   useShortcut('a', take, { description: 'Assign to me', group: 'Ticket', enabled: !!ticket && !readOnly })
   useShortcut(']', () => onNext?.(), { description: 'Next ticket in the list', group: 'Ticket', enabled: !!onNext })
   useShortcut('[', () => onPrev?.(), { description: 'Previous ticket in the list', group: 'Ticket', enabled: !!onPrev })
-  useShortcut('i', toggleRail, { description: 'Show or hide the details panel', group: 'Ticket' })
+  useShortcut('i', toggleDrawer, { description: 'Open ticket details', group: 'Ticket', enabled: !wide })
+  useShortcut('c', showCustomer, { description: 'Customer details', group: 'Ticket', enabled: !!ticket })
 
   const commands = useMemo<Command[]>(
     () => [
@@ -168,25 +174,28 @@ export function TicketView({ id }: { id: string }) {
       { id: 'ticket.next', title: 'Next ticket', group: 'This ticket', icon: ChevronDown, shortcut: ']', when: !!onNext, perform: () => onNext?.() },
       { id: 'ticket.prev', title: 'Previous ticket', group: 'This ticket', icon: ChevronUp, shortcut: '[', when: !!onPrev, perform: () => onPrev?.() },
       { id: 'ticket.notes', title: 'Show only team notes', group: 'This ticket', icon: Lock, perform: showNotes },
-      { id: 'ticket.panel', title: 'Show or hide details panel', group: 'This ticket', icon: PanelRight, shortcut: 'i', perform: toggleRail },
+      { id: 'ticket.panel', title: 'Open ticket details', group: 'This ticket', icon: PanelRight, shortcut: 'i', when: !wide, perform: toggleDrawer },
+      { id: 'ticket.customer', title: 'Customer details', group: 'This ticket', icon: CircleUserRound, shortcut: 'c', keywords: ['requester', 'profile', 'account'], when: !!ticket, perform: showCustomer },
       { id: 'ticket.copy', title: 'Copy ticket link', group: 'This ticket', icon: CopyIcon, perform: () => void navigator.clipboard.writeText(window.location.href.split('?')[0]) },
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [ticket?.status, ticket?.assigned_to?.id, ticket?.ai_status, mine, open, readOnly, nav.prevId, nav.nextId, openComposer, take, resolve, reopen, showNotes, toggleRail],
+    [ticket?.status, ticket?.assigned_to?.id, ticket?.ai_status, mine, open, readOnly, wide, nav.prevId, nav.nextId, openComposer, take, resolve, reopen, showNotes, toggleDrawer, showCustomer],
   )
   useRegisterCommands(commands)
 
   if (t.isLoading) {
     return (
-      <div className="flex min-h-0 flex-1 flex-col" aria-busy="true" aria-label="Loading ticket">
-        <div className="space-y-3 border-b border-line bg-surface p-5">
+      <div className={cn('flex min-h-0 flex-1 flex-col pt-6 pb-6 md:pt-8 md:pb-8', PAGE)} aria-busy="true" aria-label="Loading ticket">
+        <Skeleton className="mb-4 h-9 w-36 sm:mb-5" />
+        <div className="space-y-4 rounded-panel border border-line bg-surface p-6 shadow-panel">
           <Skeleton className="h-5 w-48" />
-          <Skeleton className="h-7 w-2/3" />
-          <div className="flex gap-2"><Skeleton className="h-7 w-24" /><Skeleton className="h-7 w-20" /><Skeleton className="h-7 w-28" /></div>
+          <Skeleton className="h-8 w-2/3" />
+          <Skeleton className="h-10 w-full rounded-control" />
+          <div className="flex gap-3 border-t border-line pt-5"><Skeleton className="h-9 w-32" /><Skeleton className="h-9 w-32" /><Skeleton className="h-9 w-32 max-sm:hidden" /><Skeleton className="h-9 w-32 max-sm:hidden" /></div>
         </div>
-        <div className="flex min-h-0 flex-1">
-          <div className="min-w-0 flex-1 bg-surface-2 p-6"><SkeletonRows rows={4} /></div>
-          <div className="hidden w-[360px] border-l border-line bg-surface p-4 min-[1180px]:block"><SkeletonRows rows={5} /></div>
+        <div className="mt-4 flex min-h-0 flex-1 gap-4">
+          <div className="min-w-0 flex-1 rounded-panel border border-line bg-surface p-5 shadow-panel"><SkeletonRows rows={4} /></div>
+          <div className="hidden w-[400px] rounded-panel border border-line bg-surface p-4 shadow-panel min-[1180px]:block"><SkeletonRows rows={5} /></div>
         </div>
       </div>
     )
@@ -204,17 +213,16 @@ export function TicketView({ id }: { id: string }) {
   }
   if (!ticket) return null
 
-  const rail = (
-    <Rail
+  const fields: FieldsProps = { categories: t.categories, members: t.members, meId, readOnly, onUpdate: (patch) => t.update.mutate(patch), onAssign: assign }
+  const side = (inDrawer: boolean) => (
+    <SidePanel
       ticket={ticket}
       t={t}
-      draft={t.draft.data}
-      meId={meId}
-      readOnly={readOnly}
-      busy={busy}
-      onAddNote={() => openComposer('note')}
-      onShowNotes={showNotes}
-      onAssign={assign}
+      tab={sideTab}
+      onTab={setSideTab}
+      inDrawer={inDrawer}
+      fields={fields}
+      onCustomer={showCustomer}
     />
   )
 
@@ -238,52 +246,63 @@ export function TicketView({ id }: { id: string }) {
   ].filter(Boolean)
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col bg-surface-2">
-      <TicketHeader
-        ticket={ticket}
-        a={{
-          nav,
-          onPrev,
-          onNext,
-          wide,
-          railOpen: wide ? railOpen : drawer,
-          onToggleRail: toggleRail,
-          members: t.members,
-          meId,
-          readOnly,
-          busy,
-          onTake: take,
-          onAssign: assign,
-          onResolve: resolve,
-          onReopen: reopen,
-          onRerun: () => t.rerun.mutate(),
-          rerunning: t.rerun.isPending,
-        }}
-      />
-      {notices.length > 0 && <div className="shrink-0 space-y-2 border-b border-line bg-surface px-3 py-2 sm:px-5">{notices}</div>}
+    // The page scrolls as a whole; the conversation and side panel below get a fixed, comfortable height and scroll inside.
+    <div className="scroll-quiet flex min-h-0 flex-1 flex-col overflow-y-auto">
+      <div className={cn('shrink-0 pt-6 md:pt-8', PAGE)}>
+        <div className="mb-4 flex items-center gap-1.5 sm:mb-5">
+          <Button asChild variant="ghost" size="sm" className="-ml-2 h-9 px-3 text-[13px] text-ink-2">
+            <Link to={nav.backTo} aria-label={`Back to ${nav.backLabel.toLowerCase()}`}><ArrowLeft /> {nav.backLabel}</Link>
+          </Button>
+          {nav.position && nav.total ? (
+            <div className="ml-auto flex items-center gap-1" role="group" aria-label="Move between tickets">
+              <IconButton label="Previous ticket" shortcut="[" icon={ChevronUp} onClick={onPrev} disabled={!onPrev} className="size-9" />
+              <span className="px-1.5 text-[13px] font-medium whitespace-nowrap text-ink-3 tabular-nums" aria-live="polite">{nav.position} of {nav.total}</span>
+              <IconButton label="Next ticket" shortcut="]" icon={ChevronDown} onClick={onNext} disabled={!onNext} className="size-9" />
+            </div>
+          ) : null}
+        </div>
+        <TicketHeader
+          ticket={ticket}
+          fields={fields}
+          a={{
+            compact,
+            onOpenDetails: toggleDrawer,
+            onCustomer: showCustomer,
+            meId,
+            readOnly,
+            busy,
+            onResolve: resolve,
+            onReopen: reopen,
+            onRerun: () => t.rerun.mutate(),
+            rerunning: t.rerun.isPending,
+          }}
+        />
+        {notices.length > 0 && <div className="mt-3 space-y-2">{notices}</div>}
+      </div>
 
-      <div className="flex min-h-0 flex-1">
-        <section aria-label="Conversation" className="flex min-h-0 min-w-0 flex-1 flex-col">
-          <Thread ticket={ticket} meName={t.me?.full_name} filter={filter} onFilterChange={setFilter} />
+      <div className={cn('flex h-[max(36rem,calc(100svh-6rem))] shrink-0 gap-6 pt-8 pb-6 md:pt-10 md:pb-8', PAGE)}>
+        <section aria-label="Conversation" className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-panel border border-line bg-thread shadow-panel">
+          <Thread ticket={ticket} meName={t.me?.full_name} filter={filter} onFilterChange={changeFilter} />
           <Composer ticket={ticket} t={t} mode={mode} onModeChange={setMode} focusTick={focusTick} readOnly={readOnly} onReopen={reopen} />
         </section>
 
-        {wide && railOpen && (
-          <aside aria-label="Ticket details" className="scroll-quiet hidden w-[360px] shrink-0 overflow-y-auto border-l border-line bg-surface pb-16 min-[1180px]:block">
-            {rail}
+        {wide && (
+          <aside aria-label="Timeline and similar tickets" className="hidden w-[400px] shrink-0 overflow-hidden rounded-panel border border-line bg-surface shadow-panel min-[1180px]:block">
+            {side(false)}
           </aside>
         )}
       </div>
 
       {!wide && (
         <Sheet open={drawer} onOpenChange={setDrawer}>
-          <SheetContent side="right" className="w-[min(26rem,100vw)] gap-0 overflow-y-auto bg-surface p-0 sm:max-w-md">
+          <SheetContent side="right" className="gap-0 overflow-y-auto bg-surface p-0 data-[side=right]:w-[min(26rem,100vw)] data-[side=right]:sm:max-w-md">
             <SheetTitle className="sr-only">Ticket details</SheetTitle>
-            <SheetDescription className="sr-only">Customer, ticket fields, similar tickets, notes and activity.</SheetDescription>
-            <div className="pt-10 pb-16">{rail}</div>
+            <SheetDescription className="sr-only">Customer, ticket fields, timeline, similar tickets and notes.</SheetDescription>
+            <div className="pt-12 pb-16">{side(true)}</div>
           </SheetContent>
         </Sheet>
       )}
+      <CustomerDialog ticket={ticket} open={customer} onOpenChange={setCustomer} />
       <ConfirmDialog options={confirm} onClose={() => setConfirm(null)} />
     </div>
   )

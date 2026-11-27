@@ -180,7 +180,7 @@ export function SetupScreen({ name, step, progress, waking = false, ready = fals
         reduce
           ? { opacity: 0 }
           : reveal
-            ? { y: '-108%', transition: { duration: 0.7, ease: [0.22, 1, 0.36, 1] } }
+            ? { y: '-108%', transition: { duration: 1.15, ease: [0.22, 1, 0.36, 1] } }
             : { opacity: 0, y: -16, scale: 0.985, filter: 'blur(6px)' }
       }
       transition={{ duration: reduce ? 0.2 : 0.55, ease: [0.22, 1, 0.36, 1] }}

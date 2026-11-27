@@ -1,17 +1,19 @@
-import { ArrowDown, Download, FileText, ImageIcon, Lock, Loader2, Sparkles, UserCheck, Activity as ActivityIcon, Tag, Flame, CheckCheck, RotateCcw } from 'lucide-react'
+import { ArrowDown, Download, FileText, ImageIcon, Lock, Loader2, MessagesSquare, Sparkles } from 'lucide-react'
 import { Fragment, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { toast } from 'sonner'
 
 import { useWorkspace } from '@/auth/workspace'
 import { RelativeTime } from '@/components/common'
-import { Avatar, Chip, SegmentedControl } from '@/components/ds'
+import { Avatar, fill, SegmentedControl } from '@/components/ds'
 import { announce } from '@/components/shell/announce'
 import { errorMessage } from '@/lib/api'
 import { formatBytes } from '@/lib/format'
 import type { Activity, Attachment, Message, StaffTicketDetail } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
-import { dayLabel, type ThreadFilter } from './ticket-ui'
+import { activityLook, dayLabel, isOpenStatus, waitingOnUs, type ThreadFilter } from './ticket-ui'
+
+const ECHOES = new Set(['CREATED', 'REPLIED', 'NOTE_ADDED', 'REQUESTER_REPLIED'])
 
 type Item = { key: string; at: string; kind: 'message'; message: Message } | { key: string; at: string; kind: 'event'; activity: Activity }
 
@@ -70,18 +72,26 @@ function DayDivider({ label }: { label: string }) {
   )
 }
 
-const EVENT_ICONS: Record<string, typeof ActivityIcon> = { assigned: UserCheck, status: CheckCheck, resolved: CheckCheck, reopened: RotateCcw, category: Tag, priority: Flame }
-
+/**
+ * Something that happened to the ticket, shown in the conversation where it happened as one quiet centred line: the action's icon in
+ * its colour, what changed ("In Progress → Resolved"), and who did it. The timeline beside the conversation carries the detailed view.
+ */
 function EventRow({ activity }: { activity: Activity }) {
-  const Icon = Object.entries(EVENT_ICONS).find(([k]) => activity.action.toLowerCase().includes(k))?.[1] ?? ActivityIcon
+  const { icon: Icon, hue } = activityLook(activity.action)
+  const ai = activity.action.startsWith('AI_')
   return (
-    <li className="flex items-center justify-center gap-2 text-xs text-ink-3">
-      <Icon className="size-3.5 shrink-0" aria-hidden />
-      <span className="min-w-0 truncate">
-        <span className="font-medium text-ink-2">{activity.label}</span>
-        {(activity.from_value || activity.to_value) && <> {activity.from_value ? `${activity.from_value} → ` : ''}{activity.to_value}</>}
-        {' · '}{activity.actor_name ?? 'System'} · <RelativeTime value={activity.created_at} />
-      </span>
+    <li className="flex justify-center px-6">
+      <p className="inline-flex max-w-full flex-wrap items-center justify-center gap-x-1.5 gap-y-0.5 text-center text-[12.5px] leading-5 text-ink-3">
+        <Icon className={cn('size-3.5 shrink-0', ai && 'text-ai')} style={ai ? undefined : { color: fill(hue) }} aria-hidden />
+        <span className={cn('font-semibold', ai ? 'text-lav-ink' : 'text-ink-2')}>{activity.label}</span>
+        {(activity.from_value || activity.to_value) && (
+          <span className="text-ink-2">
+            {activity.from_value && <>{activity.from_value} <span aria-hidden>→</span><span className="sr-only">changed to</span> </>}
+            <span className="font-medium text-ink">{activity.to_value}</span>
+          </span>
+        )}
+        <span>· {activity.actor_name ?? (ai ? 'AI' : 'System')} · <RelativeTime value={activity.created_at} /></span>
+      </p>
     </li>
   )
 }
@@ -108,7 +118,9 @@ function Bubble({ side, name, time, children, meta, tone, fresh, pending }: {
         <div
           className={cn(
             'min-w-0 rounded-panel px-4 py-3 text-[15px] leading-relaxed [overflow-wrap:anywhere] whitespace-pre-wrap transition-shadow duration-700',
-            tone === 'agent' ? 'rounded-br-sm bg-violet-soft text-ink' : 'rounded-bl-sm border border-line bg-surface text-ink shadow-panel',
+            tone === 'agent'
+              ? 'rounded-br-sm border border-violet/20 bg-violet-soft text-ink shadow-[0_1px_2px_rgb(11_122_92/0.08)]'
+              : 'rounded-bl-sm border border-line bg-bubble text-ink shadow-panel',
             side === 'left' && tone === 'customer' && 'rounded-bl-sm',
             fresh && 'ring-2 ring-violet/50',
           )}
@@ -123,20 +135,25 @@ function Bubble({ side, name, time, children, meta, tone, fresh, pending }: {
 function NoteRow({ note, fresh }: { note: Message; fresh?: boolean }) {
   return (
     <li className="mx-auto w-full max-w-[94%]">
-      <div className={cn('rounded-panel border border-butter-line bg-butter px-4 py-3 transition-shadow duration-700', fresh && 'ring-2 ring-butter-ink/40')}>
+      <div className={cn('rounded-panel border border-note-line bg-note px-4 py-3 transition-shadow duration-700', fresh && 'ring-2 ring-note-solid/40')}>
         <div className="mb-1.5 flex flex-wrap items-center gap-2 text-xs">
           <Avatar name={note.sender_name} size="xs" />
           <span className="font-semibold text-ink">{note.sender_name}</span>
-          <Chip tone="amber" icon={Lock} size="sm">Internal note · team only</Chip>
+          <span className="inline-flex h-5 items-center gap-1 rounded-chip border border-note-line bg-note-2 px-1.5 text-[11.5px] font-semibold text-note-ink">
+            <Lock className="size-3" aria-hidden /> Internal note · team only
+          </span>
           <RelativeTime value={note.created_at} className="ml-auto text-ink-3" />
         </div>
-        <p className="text-[15px] leading-relaxed [overflow-wrap:anywhere] whitespace-pre-wrap text-butter-ink">{note.body}</p>
+        <p className="text-[15px] leading-relaxed [overflow-wrap:anywhere] whitespace-pre-wrap text-ink">{note.body}</p>
       </div>
     </li>
   )
 }
 
-/** The message list: customer, agent and internal-note rows, system events inline, date dividers, live arrival handling. */
+/**
+ * The conversation. "Messages" is the whole story in order: customer and agent messages, team notes, and every step in between
+ * (AI triage, status, priority, owner changes) as a coloured event row. "Notes" narrows it to the team's notes. Date dividers, live arrival handling.
+ */
 export function Thread({ ticket, meName, filter, onFilterChange }: { ticket: StaffTicketDetail; meName?: string; filter: ThreadFilter; onFilterChange: (f: ThreadFilter) => void }) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const atBottom = useRef(true)
@@ -151,10 +168,11 @@ export function Thread({ ticket, meName, filter, onFilterChange }: { ticket: Sta
   const name = ticket.requester_profile.name
 
   const items = useMemo<Item[]>(() => {
-    const shown = body.filter((m) => (filter === 'notes' ? m.is_internal : filter === 'messages' ? !m.is_internal : true))
+    const shown = filter === 'notes' ? body.filter((m) => m.is_internal) : body
     const out: Item[] = [
       ...shown.map((m): Item => ({ key: `m${m.id}`, at: m.created_at, kind: 'message', message: m })),
-      ...(filter === 'all' ? ticket.activities.map((a): Item => ({ key: `a${a.id}`, at: a.created_at, kind: 'event', activity: a })) : []),
+      // Steps that are a message themselves (created, replied, note added) would only repeat the bubble next to them; the timeline lists them.
+      ...(filter === 'messages' ? ticket.activities.filter((a) => !ECHOES.has(a.action)).map((a): Item => ({ key: `a${a.id}`, at: a.created_at, kind: 'event', activity: a })) : []),
     ]
     return out.sort((x, y) => Date.parse(x.at) - Date.parse(y.at))
   }, [body, ticket.activities, filter])
@@ -215,26 +233,44 @@ export function Thread({ ticket, meName, filter, onFilterChange }: { ticket: Sta
 
   const noteCount = body.filter((m) => m.is_internal).length
   const messageCount = body.filter((m) => !m.is_internal).length + 1
+  // The customer spoke last and the ticket is still open: their latest message is waiting on us.
+  const lastPublic = [...body].reverse().find((m) => !m.is_internal)
+  const awaiting = isOpenStatus(ticket.status) && waitingOnUs(ticket) ? { at: lastPublic?.created_at ?? ticket.created_at } : null
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-line bg-surface px-3 py-2 sm:px-5">
-        <h2 className="text-sm font-semibold text-ink max-sm:hidden">Conversation <span className="font-normal text-ink-3">· {messageCount} {messageCount === 1 ? 'message' : 'messages'}</span></h2>
+      <div className="flex shrink-0 items-stretch justify-between gap-3 border-b border-line bg-surface px-4 sm:px-5">
+        <div className="flex min-w-0 items-center gap-3 py-3">
+          <h2 className="flex items-center gap-2 text-[15px] font-semibold tracking-tight text-ink max-sm:hidden">
+            <MessagesSquare className="size-4 text-ink-3" aria-hidden /> Conversation
+          </h2>
+          {awaiting && (
+            <span className="inline-flex h-7 items-center gap-2 rounded-chip border border-sky-line bg-sky pr-2.5 pl-2 text-[12.5px] font-semibold whitespace-nowrap text-sky-ink">
+              <span aria-hidden className="relative flex size-2">
+                <span className="absolute inset-0 animate-ping rounded-full bg-sky-ink/60 motion-reduce:hidden" />
+                <span className="relative size-2 rounded-full bg-sky-ink" />
+              </span>
+              New message from {name.split(' ')[0]}
+              <span className="font-medium opacity-75">· <RelativeTime value={awaiting.at} /></span>
+            </span>
+          )}
+        </div>
         <SegmentedControl<ThreadFilter>
           ariaLabel="Show in conversation"
           size="sm"
+          variant="underline"
+          className="shrink-0"
           value={filter}
           onChange={onFilterChange}
           options={[
-            { value: 'all', label: 'Everything' },
-            { value: 'messages', label: 'Messages' },
-            { value: 'notes', label: 'Team notes', count: noteCount },
+            { value: 'messages', label: 'Messages', count: messageCount },
+            { value: 'notes', label: 'Notes', count: noteCount },
           ]}
         />
       </div>
       <div className="relative min-h-0 flex-1">
-      <div ref={scrollRef} onScroll={onScroll} tabIndex={0} role="log" aria-label="Conversation messages" aria-live="off" className="scroll-quiet h-full overflow-y-auto bg-surface-2 px-3 py-5 sm:px-6 [scroll-padding-bottom:1rem]">
-        <ol className="mx-auto flex max-w-3xl flex-col gap-5">
+      <div ref={scrollRef} onScroll={onScroll} tabIndex={0} role="log" aria-label="Conversation messages" aria-live="off" className="scroll-quiet h-full overflow-y-auto bg-thread px-4 py-6 sm:px-7 [scroll-padding-bottom:1rem]">
+        <ol className="flex flex-col gap-6">
           {filter !== 'notes' && (
             <>
               <DayDivider label={dayLabel(ticket.created_at)} />

@@ -21,6 +21,7 @@ REST_FRAMEWORK = {**REST_FRAMEWORK, "DEFAULT_THROTTLE_RATES": {  # noqa: F405
     "login": "1000/min",
     "demo_start": "1000/hour",
     "register": "1000/hour",
+    "workspace_request": "1000/hour",
 }}
 AI_DAILY_CALL_CAP = 1000
 AI_WORKSPACE_DAILY_CAP = 1000

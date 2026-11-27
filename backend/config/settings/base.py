@@ -167,6 +167,7 @@ REST_FRAMEWORK = {
         "login": "20/min",
         "demo_start": DEMO_START_THROTTLE,
         "register": "10/hour",
+        "workspace_request": "5/hour",
     },
 }
 

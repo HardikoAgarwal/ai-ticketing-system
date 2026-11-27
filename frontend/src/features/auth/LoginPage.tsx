@@ -3,13 +3,16 @@ import { useRef, useState, type FormEvent } from 'react'
 import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 
 import { homeFor, useAuth } from '@/auth/AuthContext'
-import { DemoLauncher } from '@/components/DemoLauncher'
 import { Button } from '@/components/ui/button'
 
-import { AuthLayout, AuthLink } from './AuthLayout'
+import { AuthLayout } from './AuthLayout'
 import { FormAlert, PasswordField, TextField } from './fields'
 import { friendlyError } from './errors'
 
+/**
+ * Sign in, and nothing else. Agents and customers share this page, so it carries no demo, no workspace request and
+ * no word about how accounts are made: the demo and the request form both live on the landing page.
+ */
 export function LoginPage() {
   const { user, login } = useAuth()
   const navigate = useNavigate()
@@ -46,32 +49,16 @@ export function LoginPage() {
   }
 
   return (
-    <AuthLayout
-      title="Welcome back"
-      subtitle="Sign in to your workspace."
-      footer={
-        <>
-          New here? <AuthLink to="/signup">Create a workspace</AuthLink> and invite your team.
-        </>
-      }
-    >
+    <AuthLayout title="Welcome back" subtitle="Sign in to continue.">
       <form onSubmit={submit} className="space-y-4" noValidate>
         <FormAlert message={error} />
-        <TextField ref={emailRef} label="Email" type="email" autoComplete="email" inputMode="email" autoFocus value={email} onChange={(e) => setEmail(e.target.value)} error={fieldErrors.email} />
+        <TextField ref={emailRef} label="Email" type="email" autoComplete="email" inputMode="email" placeholder="you@example.com" autoFocus value={email} onChange={(e) => setEmail(e.target.value)} error={fieldErrors.email} />
         <PasswordField ref={passwordRef} label="Password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} error={fieldErrors.password} />
         <Button type="submit" size="lg" className="w-full" disabled={busy}>
-          {busy && <Loader2 className="animate-spin motion-reduce:animate-none" aria-hidden />} {busy ? 'Signing in…' : 'Sign in'}
+          {busy && <Loader2 className="animate-spin motion-reduce:animate-none" aria-hidden />}
+          {busy ? 'Signing in…' : 'Sign in'}
         </Button>
       </form>
-
-      <div className="mt-8" role="separator" aria-label="or">
-        <div className="relative flex items-center">
-          <span className="h-px flex-1 bg-line" />
-          <span className="px-3 text-xs font-semibold tracking-wide text-ink-3 uppercase">or try a demo</span>
-          <span className="h-px flex-1 bg-line" />
-        </div>
-      </div>
-      <DemoLauncher className="mt-5" />
     </AuthLayout>
   )
 }

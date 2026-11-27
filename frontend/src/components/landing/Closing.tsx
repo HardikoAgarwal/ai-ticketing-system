@@ -30,7 +30,7 @@ const FAQ_GROUPS: { label: string; items: { q: string; a: string }[] }[] = [
   {
     label: 'Using it for real',
     items: [
-      { q: 'Can I bring my own knowledge base and categories?', a: 'Yes. Each workspace has its own articles, categories, SLA targets, tone of voice and team. Create a workspace in a minute and edit all of it in Settings.' },
+      { q: 'Can I bring my own knowledge base and categories?', a: 'Yes. Each workspace has its own articles, categories, SLA targets, tone of voice and team. Request a workspace and edit all of it in Settings once you are set up.' },
       { q: 'Can my team and customers both log in?', a: 'Yes. Workspaces have owners, admins, agents and customers. Agents get the queue and AI tools; customers get a simple portal to raise and follow tickets.' },
       { q: 'Is it free and open source?', a: 'It is a portfolio project, open on GitHub, and runs entirely on free hosting tiers.' },
     ],
@@ -67,12 +67,15 @@ export function Faq() {
   return (
     <section id="faq" data-nav="light" className="relative -mt-10 rounded-t-[2.5rem] bg-(--lp-lav) pb-32 text-(--lp-ink)">
       <div className="relative mx-auto grid max-w-6xl gap-12 px-5 pt-24 sm:px-8 sm:pt-32 lg:grid-cols-[0.8fr_1.35fr] lg:gap-16">
-        <div className="lg:sticky lg:top-28 lg:self-start">
-          <h2 className="text-[clamp(2.4rem,5.4vw,4.4rem)] leading-[0.98] font-semibold tracking-[-0.045em]">
-            <WordReveal text="Fair questions." />
-          </h2>
-          <p className="mt-4 max-w-xs text-neutral-600">Short, honest answers about the AI, the demo and your data.</p>
-          <div className="mt-8 max-w-sm rounded-3xl bg-(--lp-ink) p-6 text-white">
+        {/* tablets: headline on the left, the "Still curious?" card on the right, so the row is not half empty */}
+        <div className="md:max-lg:grid md:max-lg:grid-cols-2 md:max-lg:items-end md:max-lg:gap-8 lg:sticky lg:top-28 lg:self-start">
+          <div>
+            <h2 className="text-[clamp(2.4rem,5.4vw,4.4rem)] leading-[0.98] font-semibold tracking-[-0.045em]">
+              <WordReveal text="Fair questions." />
+            </h2>
+            <p className="mt-4 max-w-xs text-neutral-600">Short, honest answers about the AI, the demo and your data.</p>
+          </div>
+          <div className="mt-8 max-w-sm rounded-3xl bg-(--lp-ink) p-6 text-white md:max-lg:mt-0 md:max-lg:max-w-none">
             <p className="text-lg font-semibold tracking-tight">Still curious?</p>
             <p className="mt-1.5 text-sm text-white/65">The fastest answer is two minutes in a live sandbox: answer a ticket with an AI draft, then see the customer’s side.</p>
             <a href="#demo" className={cn(lpBtnLimeOnDark, 'mt-5 h-12 gap-2 py-1.5 pr-1.5 pl-5 text-sm')}>
@@ -116,9 +119,9 @@ export function FinalCta() {
               <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
             </LpBtnIcon>
           </a>
-          <Link to="/signup" className={cn(lpBtnSecondaryOnDark, 'h-14 px-7 text-base')}>
-            Create your own workspace
-          </Link>
+          <a href="#request" className={cn(lpBtnSecondaryOnDark, 'h-14 px-7 text-base')}>
+            Request a workspace
+          </a>
         </Reveal>
       </div>
     </section>
@@ -153,7 +156,7 @@ export function Footer() {
           </Col>
           <Col title="Try it">
             <li><a className={link} href="#demo">Live demo</a></li>
-            <li><Link className={link} to="/signup">Create a workspace</Link></li>
+            <li><a className={link} href="#request">Request a workspace</a></li>
             <li><Link className={link} to="/login">Log in</Link></li>
           </Col>
           <Col title="Project">
@@ -161,7 +164,7 @@ export function Footer() {
             <li className="text-sm font-normal opacity-70">Built with React, Django and Gemini.</li>
           </Col>
         </div>
-        <p className="mt-12 text-sm opacity-70">A portfolio project: the demo data is fictional and no real customer data is stored.</p>
+        <p className="mt-12 text-sm opacity-70">A portfolio project: the demo data is fictional. Workspace requests are kept only so we can reply to them.</p>
       </div>
       <div className="pointer-events-none mt-8 overflow-hidden px-2 pb-2 select-none" aria-hidden>
         <p className="text-center text-[clamp(3rem,13.4vw,15rem)] leading-[0.95] font-semibold tracking-[-0.07em] whitespace-nowrap text-(--lp-ink)">{BRAND}</p>

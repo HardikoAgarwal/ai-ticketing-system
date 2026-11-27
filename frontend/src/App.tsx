@@ -7,7 +7,7 @@ import { FullPageLoader } from '@/components/states'
 import { SetupHandoffOverlay } from '@/features/auth/SetupHandoff'
 import { AgentLayout } from '@/layouts/AgentLayout'
 import { CustomerLayout } from '@/layouts/CustomerLayout'
-import { InvitePage, LoginPage, SignupPage } from '@/pages/AuthPages'
+import { InvitePage, LoginPage } from '@/pages/AuthPages'
 import { LandingPage } from '@/pages/LandingPage'
 import { NotFoundPage } from '@/pages/NotFoundPage'
 import { NewTicketPage } from '@/pages/customer/NewTicketPage'
@@ -42,9 +42,12 @@ export default function App() {
       <Suspense fallback={<FullPageLoader />}>
         <Routes>
           <Route path="/" element={<LandingPage />} />
+          {/* sign in is shared by agents and customers; the demo and the workspace request are sections of the landing page */}
           <Route path="/login" element={<LoginPage />} />
-          <Route path="/signup" element={<SignupPage />} />
           <Route path="/invite/:token" element={<InvitePage />} />
+          <Route path="/demo" element={<Navigate to="/#demo" replace />} />
+          <Route path="/signup" element={<Navigate to="/#request" replace />} />
+          <Route path="/request-access" element={<Navigate to="/#request" replace />} />
           {/* hidden dev previews; not linked in product nav */}
           <Route path="/_design" element={<DesignSystemPage />} />
           <Route path="/_setup-preview" element={<SetupPreviewPage />} />

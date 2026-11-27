@@ -44,7 +44,7 @@ function Selector({ t, index, busy, onStart }: { t: TemplateMeta; index: number;
       {/* Slanted colour header — fixed height + 2-line title so every card matches */}
       <div className="relative h-[11rem] shrink-0 sm:h-[11.75rem]">
         <div
-          className="absolute inset-0 grid grid-rows-[auto_1fr] gap-3 px-5 pt-5 pb-7 sm:px-6 sm:pt-5 sm:pb-8"
+          className="absolute inset-0 grid grid-rows-[auto_1fr] gap-3 px-5 pt-5 pb-7 sm:px-6 sm:pt-5 sm:pb-8 md:max-lg:px-4"
           style={{
             backgroundColor: th.accent,
             color: th.accentInk,
@@ -52,10 +52,10 @@ function Selector({ t, index, busy, onStart }: { t: TemplateMeta; index: number;
           }}
         >
           <div className="flex h-14 items-center justify-between gap-3 sm:h-16">
-            <span className="flex size-14 shrink-0 items-center justify-center rounded-[1.2rem] bg-black/10 sm:size-16 sm:rounded-[1.35rem]">
-              <Icon className="size-8 sm:size-9" strokeWidth={1.75} />
+            <span className="flex size-14 shrink-0 items-center justify-center rounded-[1.2rem] bg-black/10 sm:size-16 sm:rounded-[1.35rem] md:max-lg:size-12 md:max-lg:rounded-2xl">
+              <Icon className="size-8 sm:size-9 md:max-lg:size-7" strokeWidth={1.75} />
             </span>
-            <span className="rounded-full border-2 border-(--lp-ink)/15 bg-white px-3 py-1.5 text-[11px] font-bold tracking-[0.05em] text-(--lp-ink) uppercase">
+            <span className="rounded-full border-2 border-(--lp-ink)/15 bg-white px-3 py-1.5 text-[11px] font-bold tracking-[0.05em] whitespace-nowrap text-(--lp-ink) uppercase md:max-lg:px-2.5 md:max-lg:text-[10px]">
               {t.industry}
             </span>
           </div>
@@ -66,7 +66,7 @@ function Selector({ t, index, busy, onStart }: { t: TemplateMeta; index: number;
       </div>
 
       {/* Fixed-band body: every row has a locked height so columns align */}
-      <div className="grid flex-1 grid-rows-[2.7rem_3.25rem_auto_auto] gap-4 px-5 pt-2 pb-5 sm:px-6 sm:pb-6">
+      <div className="grid flex-1 grid-rows-[2.7rem_3.25rem_auto_auto] gap-4 px-5 pt-2 pb-5 sm:px-6 sm:pb-6 md:max-lg:px-4 md:max-lg:pb-5">
         <p className="line-clamp-2 text-[0.92rem] leading-relaxed text-(--lp-muted)">{t.tagline}</p>
 
         <ul className="space-y-2">

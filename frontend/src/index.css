@@ -54,6 +54,10 @@
     --color-ink-3: var(--ink-3);
     --color-violet: var(--violet);
     --color-violet-soft: var(--violet-soft);
+    --color-brand: var(--brand);
+    --color-brand-line: var(--brand-line);
+    --color-on-brand: var(--on-brand);
+    --color-on-brand-2: var(--on-brand-2);
     --color-ai: var(--ai);
     --color-aurora-1: var(--aurora-1);
     --color-aurora-2: var(--aurora-2);
@@ -70,6 +74,14 @@
     --color-butter: var(--butter);
     --color-butter-line: var(--butter-line);
     --color-butter-ink: var(--butter-ink);
+    --color-thread: var(--thread);
+    --color-bubble: var(--bubble);
+    --color-note: var(--note);
+    --color-note-2: var(--note-2);
+    --color-note-line: var(--note-line);
+    --color-note-ink: var(--note-ink);
+    --color-note-solid: var(--note-solid);
+    --color-on-note: var(--on-note);
     --color-rose: var(--rose);
     --color-rose-line: var(--rose-line);
     --color-rose-ink: var(--rose-ink);
@@ -106,6 +118,9 @@
     --canvas: #f8f6f1;
     --surface: #ffffff;
     --surface-2: #f6f3ec;
+    /* the conversation well: the same warm stone as the page, a step deeper, so white and green bubbles sit on it clearly */
+    --thread: #f1ece2;
+    --bubble: #ffffff;
     --sunken: #eeeae0;
     /* every second table row: plain white / a second near-white in light, two blacks in dark (no colour tint) */
     --row-alt: #f6f6f4;
@@ -119,11 +134,18 @@
        The token keeps its old name so existing classes follow; violet/cyan/pink now belong to AI only (aurora, lav). */
     --violet: #0b7a5c;
     --violet-soft: #dcf1e8;
+    /* brand fill: the one large solid block of the accent (auth side panel, logo tile) and the text that sits on it.
+       on-brand is 5.3:1 and on-brand-2 is 4.6:1 on the fill, so nothing on it needs a see-through white. */
+    --brand: #0b7a5c;
+    --brand-line: rgb(255 255 255 / 0.22);
+    --on-brand: #ffffff;
+    --on-brand-2: #e2f6ee;
     --ai: #5b3df5;
     --aurora-1: #7c5cff;
     --aurora-2: #22d3ee;
     --aurora-3: #ff7ab8;
-    --aurora-glow: 0 0 0 1px rgb(124 92 255 / 0.18), 0 8px 32px -10px rgb(124 92 255 / 0.4);
+    --aurora-glow: 0 0 0 1px rgb(124 92 255 / 0.28), 0 10px 40px -8px rgb(124 92 255 / 0.52), 0 0 56px -14px rgb(255 122 184 / 0.32);
+    --aurora-glow-strong: 0 0 0 1px rgb(124 92 255 / 0.4), 0 14px 52px -6px rgb(124 92 255 / 0.7), 0 0 64px -10px rgb(255 122 184 / 0.4);
     /* pastel states: bg / border / foreground, each foreground >= 4.5:1 on its own bg */
     --lav: #ece8ff;
     --lav-line: #d4cbff;
@@ -137,6 +159,13 @@
     --butter: #fff0b8;
     --butter-line: #ffe28a;
     --butter-ink: #7a5200;
+    /* internal notes: a warm amber of their own, kept apart from butter (warnings). note-ink is 6:1 on note, on-note 5:1 on note-solid */
+    --note: #fff8ec;
+    --note-2: #fdedd3;
+    --note-line: #f5cf96;
+    --note-ink: #8a4300;
+    --note-solid: #b35900;
+    --on-note: #ffffff;
     --rose: #ffe3ec;
     --rose-line: #ffc7d8;
     --rose-ink: #b3123f;
@@ -204,6 +233,9 @@
     --canvas: #121110;
     --surface: #1a1917;
     --surface-2: #211f1c;
+    /* recessed a step below the card, so the lighter bubbles lift off it */
+    --thread: #151412;
+    --bubble: #24221f;
     --sunken: #0c0b0a;
     --row-alt: #232220;
     --line: #2e2b27;
@@ -213,11 +245,15 @@
     --ink-3: #a9a398;
     --violet: #4fd1a1;
     --violet-soft: rgb(79 209 161 / 0.16);
+    /* a deeper emerald, so the block sits calmly beside the dark canvas instead of glaring */
+    --brand: #0a6650;
     --ai: #a99aff;
     --aurora-1: #8f75ff;
     --aurora-2: #38e0f5;
     --aurora-3: #ff8cc4;
-    --aurora-glow: 0 0 0 1px rgb(143 117 255 / 0.3), 0 8px 36px -8px rgb(143 117 255 / 0.55);
+    /* Dark canvas amplifies any glow, so stay well below the light-theme strength. */
+    --aurora-glow: 0 0 0 1px rgb(143 117 255 / 0.26), 0 8px 24px -10px rgb(143 117 255 / 0.3), 0 0 32px -18px rgb(255 140 196 / 0.18);
+    --aurora-glow-strong: 0 0 0 1px rgb(143 117 255 / 0.34), 0 10px 30px -8px rgb(143 117 255 / 0.4), 0 0 40px -16px rgb(255 140 196 / 0.24);
     --lav: rgb(124 92 255 / 0.16);
     --lav-line: rgb(124 92 255 / 0.34);
     --lav-ink: #cfc6ff;
@@ -230,6 +266,12 @@
     --butter: rgb(250 204 21 / 0.13);
     --butter-line: rgb(250 204 21 / 0.3);
     --butter-ink: #f6dc7d;
+    --note: rgb(245 158 11 / 0.08);
+    --note-2: rgb(245 158 11 / 0.14);
+    --note-line: rgb(245 158 11 / 0.32);
+    --note-ink: #fcc97a;
+    --note-solid: #f59e0b;
+    --on-note: #1c1405;
     --rose: rgb(255 92 140 / 0.14);
     --rose-line: rgb(255 92 140 / 0.32);
     --rose-ink: #ffadc6;
@@ -455,7 +497,7 @@
 }
 @keyframes ai-breathe {
   50% {
-    box-shadow: 0 0 0 1px rgb(124 92 255 / 0.28), 0 10px 44px -6px rgb(124 92 255 / 0.55);
+    box-shadow: var(--aurora-glow-strong);
   }
 }
 @keyframes ai-shimmer {
@@ -565,6 +607,10 @@
 @utility ai-surface {
   background-color: var(--surface);
   box-shadow: var(--aurora-glow);
+  /* Bold AI cards get a wider aurora ring than quiet chips / quiet surfaces. */
+  &::before {
+    padding: 2px;
+  }
   &[data-working='true'] {
     animation: ai-breathe 2.6s ease-in-out infinite;
   }
@@ -751,6 +797,7 @@ html {
   --lp-hero: #cfe3ff;
   --lp-features: #6a4df4;
   --lp-demo: #ff9a6c;
+  --lp-request: #8fe3c4;
   /* shared surface language: radii, border and shadow used by every card on the page */
   --lp-radius: 1.75rem;
   --lp-shadow: 0 24px 60px -30px rgba(40, 30, 110, 0.38);

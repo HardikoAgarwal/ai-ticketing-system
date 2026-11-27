@@ -5,7 +5,7 @@ import { SETUP_STEPS } from '@/features/auth/setup-steps'
 import { SetupScreen } from '@/features/auth/SetupScreen'
 
 const HANDOFF_KEY = 'helpdesk:setup-handoff'
-const EXIT_MS = 720
+const EXIT_MS = 1200
 
 type Handoff = {
   name: string

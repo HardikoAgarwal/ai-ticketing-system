@@ -31,7 +31,7 @@ function Window({ label, children }: { label: string; children: ReactNode }) {
           </motion.span>
         </AnimatePresence>
       </div>
-      <div className="min-h-[min(27rem,60svh)] p-5 text-(--lp-ink) sm:min-h-[min(31rem,58svh)] sm:p-8">{children}</div>
+      <div className="@container min-h-[min(27rem,60svh)] p-5 text-(--lp-ink) sm:min-h-[min(31rem,58svh)] sm:p-8 md:max-lg:p-6">{children}</div>
     </div>
   )
 }
@@ -128,7 +128,7 @@ function Panel({ step }: { step: number }) {
       </div>
     )
   return (
-    <div className="grid gap-3 sm:grid-cols-2">
+    <div className="grid gap-3 @sm:grid-cols-2">
       <div className="space-y-2">
         <p className="text-[11px] font-semibold tracking-wide text-(--lp-muted)/70 uppercase">Agent</p>
         <div className="rounded-2xl border p-3 text-[12px] leading-relaxed">Hi Marcus, your workspace stays fully active during the retry window. Saving a new card triggers an instant retry.</div>
@@ -193,10 +193,11 @@ function StepCard({ step, index, active = true, compact = false }: { step: (type
   )
 }
 
-/** Stacked layout for phones, tablets and reduced-motion: a text card, then the mock on its tinted plate, equal rhythm, no pinning. */
+/** Layout for phones, tablets and reduced-motion, with no pinning.
+ *  Phones: a text card, then the mock on its tinted plate. From tablet width up: text beside the mock, swapping sides on every step. */
 function StoryStacked() {
   return (
-    <div className="relative mx-auto max-w-2xl space-y-24 px-5 pb-28 sm:space-y-32 sm:px-8 lg:max-w-5xl">
+    <div className="relative mx-auto max-w-2xl space-y-24 px-5 pb-28 sm:space-y-32 sm:px-8 md:max-w-5xl md:space-y-28">
       {STEPS.map((s, i) => (
         <StackedStep key={s.n} step={s} index={i} />
       ))}
@@ -207,11 +208,23 @@ function StoryStacked() {
 function StackedStep({ step, index }: { step: (typeof STEPS)[number]; index: number }) {
   const ref = useRef<HTMLDivElement>(null)
   const seen = useInView(ref, { once: true, margin: '-15% 0px' })
+  const flip = index % 2 === 1
   return (
-    <div ref={ref} className="space-y-10">
-      <StepCard step={step} index={index} compact />
-      <div className="relative mx-2 sm:mx-4">
-        <div aria-hidden className="absolute -inset-3 -z-10 rounded-[2.4rem] sm:-inset-5" style={{ backgroundColor: STEP_COLORS[index], transform: `rotate(${index % 2 ? -2.5 : 2.5}deg)` }} />
+    <div ref={ref} className={cn('space-y-10 md:grid md:items-center md:gap-10 md:space-y-0 lg:gap-16', flip ? 'md:grid-cols-[1.2fr_0.8fr]' : 'md:grid-cols-[0.8fr_1.2fr]')}>
+      <div className="md:hidden">
+        <StepCard step={step} index={index} compact />
+      </div>
+      {/* tablets: the same open text as the desktop stage (big number, heading, description), no card around it */}
+      <div className={cn('hidden md:block', flip && 'md:order-2')}>
+        <span aria-hidden className="block text-[clamp(5rem,11vw,8rem)] leading-[0.82] font-semibold tracking-[-0.07em]" style={{ color: STEP_COLORS[index] === '#c8f560' ? '#9bc72e' : STEP_COLORS[index] }}>
+          {step.n}
+        </span>
+        <h3 className="mt-5 text-[clamp(1.9rem,3.6vw,2.8rem)] leading-[1.06] font-semibold tracking-[-0.04em] text-balance">{step.title}</h3>
+        <p className="mt-4 text-[1.05rem] leading-[1.65] text-(--lp-muted) lg:text-[1.2rem]">{step.body}</p>
+      </div>
+      {/* isolate: keeps the tinted plate (-z-10) above the section background instead of behind it */}
+      <div className={cn('relative isolate mx-2 sm:mx-4', flip && 'md:order-1')}>
+        <div aria-hidden className="absolute -inset-3 -z-10 rounded-[2.4rem] sm:-inset-5 md:-inset-4" style={{ backgroundColor: STEP_COLORS[index], transform: `rotate(${index % 2 ? -2.5 : 2.5}deg)` }} />
         <Window label={step.view}>{seen ? <Panel step={index} /> : <div className="min-h-[20rem]" />}</Window>
       </div>
     </div>

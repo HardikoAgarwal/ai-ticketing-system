@@ -6,8 +6,8 @@ React 19 + Vite + TypeScript + Tailwind v4 + shadcn/ui + TanStack Query.
 
 | Path | Who | What |
 |---|---|---|
-| `/` | public | Landing page, demo launcher |
-| `/login`, `/signup`, `/invite/:token` | public | Auth |
+| `/` | public | Landing page, demo launcher, request-a-workspace form (`/#request`; `/signup` redirects there) |
+| `/login`, `/invite/:token` | public | Sign in and accept an invite (shared by agents and customers) |
 | `/w/:slug/agent` | staff (owner/admin/agent) | Queue, ticket workspace, analytics, knowledge base, settings |
 | `/w/:slug/help` | customers (requesters) | My tickets, new request with live KB suggestions, ticket thread, CSAT |
 
