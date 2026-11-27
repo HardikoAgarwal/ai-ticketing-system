@@ -1,13 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Bot, ChevronRight, FileText, Lightbulb, MoreHorizontal, Sparkles, Trash2 } from 'lucide-react'
+import { Bot, ChevronRight, FileText, Lightbulb, Tag, Trash2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 
 import { useWorkspace } from '@/auth/workspace'
 import { ConfirmDialog, type ConfirmOptions } from '@/components/ConfirmDialog'
-import { CHIP_TONES, ErrorState, Panel, Skeleton, type ChipTone } from '@/components/ds'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { ErrorState, Panel, Skeleton } from '@/components/ds'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { StatusPill } from '@/features/inbox/StatusPill'
 import { PageHeader } from '@/features/shared/PageHeader'
@@ -16,28 +15,29 @@ import { errorMessage } from '@/lib/api'
 import { cn } from '@/lib/utils'
 import type { Article } from '@/lib/types'
 
+import { AiButton } from './AiButton'
 import { AiPreviewDialog } from './AiPreviewDialog'
 import { AiSearchDialog } from './AiSearchDialog'
 import { flagsFor, splitPassages, visibilityOf } from './kb-utils'
 import { TipsDialog } from './TipsDialog'
-import { VisibilityCards } from './VisibilityCards'
+import { VisibilitySwitch } from './VisibilitySwitch'
 
 const NONE = '__none__'
 const FIELD_LABEL = 'block text-[11px] font-semibold tracking-[0.1em] text-ink-3 uppercase'
 
-/** A tab sitting on the top edge of the article card, in the same style as the New message / Overdue tabs on a ticket card. */
-function TabChip({ tone, icon: Icon, onClick, children }: { tone: ChipTone; icon: typeof Bot; onClick: () => void; children: React.ReactNode }) {
+/** A quiet outlined button in the card header; the icon carries the colour. */
+function HeaderButton({ icon: Icon, iconClass, onClick, children }: { icon: typeof Bot; iconClass: string; onClick: () => void; children: React.ReactNode }) {
   return (
-    <button type="button" onClick={onClick} className={cn('inline-flex h-9 items-center gap-2 rounded-t-xl border border-b-0 px-4 text-sm font-semibold whitespace-nowrap transition-[filter] hover:brightness-95 focus-visible:ring-2 focus-visible:ring-violet focus-visible:outline-none dark:hover:brightness-125', CHIP_TONES[tone])}>
-      <Icon className="size-4" aria-hidden />
+    <button type="button" onClick={onClick} className="inline-flex h-9 items-center gap-2 rounded-control border border-line-strong bg-surface px-3.5 text-sm font-semibold text-ink transition-colors hover:bg-canvas focus-visible:ring-2 focus-visible:ring-violet focus-visible:outline-none">
+      <Icon className={cn('size-4', iconClass)} aria-hidden />
       {children}
     </button>
   )
 }
 
 /**
- * One full page for writing a new article and editing an existing one: category and visibility in a slim bar, then a big title and
- * writing area. The AI preview, writing tips and Test AI search are buttons in the header that open modals; a save bar appears when something changed.
+ * One full page for writing a new article and editing an existing one. The card has a header (AI preview, Writing tips, Test AI search and
+ * Delete, then the visibility switch and category) and a body (big title and writing area); a save bar appears when something changed.
  */
 export function ArticleEditorPage() {
   const { id } = useParams()
@@ -158,66 +158,57 @@ export function ArticleEditorPage() {
       />
       {crumbs}
 
-      <div className="mt-8 flex items-end justify-between gap-3 px-6 sm:px-8">
-        <div className="flex flex-wrap items-end gap-1.5">
-          <TabChip tone="blue" icon={Bot} onClick={() => setModal('preview')}>
-            AI preview
-          </TabChip>
-          {!readOnly && (
-            <TabChip tone="amber" icon={Lightbulb} onClick={() => setModal('tips')}>
-              Writing tips
-            </TabChip>
-          )}
-        </div>
-        <div className="flex items-end gap-1.5">
-          <TabChip tone="ai" icon={Sparkles} onClick={() => setModal('test')}>
-            Test AI search
-          </TabChip>
-          {!isNew && manager && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button type="button" aria-label="More actions" className="inline-flex h-9 w-10 items-center justify-center rounded-t-xl border border-b-0 border-line-strong bg-surface text-ink-2 transition-colors hover:bg-surface-2 hover:text-ink focus-visible:ring-2 focus-visible:ring-violet focus-visible:outline-none">
-                  <MoreHorizontal className="size-4" aria-hidden />
+      <Panel className="mt-8">
+        <header className="rounded-t-panel border-b border-line bg-surface-2">
+          <div className="flex flex-wrap items-center gap-2 border-b border-line px-6 py-3.5 sm:px-8">
+            <HeaderButton icon={Bot} iconClass="text-sky-ink" onClick={() => setModal('preview')}>
+              AI preview
+            </HeaderButton>
+            {!readOnly && (
+              <HeaderButton icon={Lightbulb} iconClass="text-butter-ink" onClick={() => setModal('tips')}>
+                Writing tips
+              </HeaderButton>
+            )}
+            <div className="ml-auto flex flex-wrap items-center gap-2">
+              <AiButton className="h-9" onClick={() => setModal('test')}>
+                Test AI search
+              </AiButton>
+              {!isNew && manager && (
+                <button type="button" onClick={askDelete} className="inline-flex h-9 items-center gap-2 rounded-control border border-rose-line bg-surface px-3.5 text-sm font-semibold text-rose-ink transition-colors hover:bg-rose focus-visible:ring-2 focus-visible:ring-violet focus-visible:outline-none">
+                  <Trash2 className="size-4" aria-hidden />
+                  Delete
                 </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem variant="destructive" onClick={askDelete}>
-                  <Trash2 /> Delete article
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
-        </div>
-      </div>
-
-      <Panel>
-        <div className="grid gap-x-10 gap-y-6 border-b border-line px-6 py-6 sm:px-8 md:grid-cols-[15rem_minmax(0,1fr)]">
-          <div>
-            <label htmlFor="article-category" className={FIELD_LABEL}>
-              Category
-            </label>
-            <Select value={value.category ? String(value.category) : NONE} disabled={readOnly} onValueChange={(v) => set({ category: v === NONE ? null : Number(v) })}>
-              <SelectTrigger id="article-category" className="mt-2 h-11 w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={NONE}>No category</SelectItem>
-                {categories.data?.map((c) => (
-                  <SelectItem key={c.id} value={String(c.id)}>
-                    {c.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <p className="mt-2 text-[13px] leading-5 text-ink-2">The AI favours articles in a ticket&apos;s own category.</p>
-          </div>
-          <div>
-            <span className={FIELD_LABEL}>Who can use it</span>
-            <div className="mt-2">
-              <VisibilityCards value={visibility} disabled={readOnly} onChange={(v) => set(flagsFor(v))} />
+              )}
             </div>
           </div>
-        </div>
+          <div className="flex flex-wrap items-end justify-between gap-x-8 gap-y-4 px-6 py-4 sm:px-8">
+            <div className="min-w-0">
+              <span className={FIELD_LABEL}>Who can use it</span>
+              <div className="mt-2">
+                <VisibilitySwitch value={visibility} disabled={readOnly} onChange={(v) => set(flagsFor(v))} />
+              </div>
+            </div>
+            <div className="w-full sm:w-64">
+              <label htmlFor="article-category" className={FIELD_LABEL}>
+                Category
+              </label>
+              <Select value={value.category ? String(value.category) : NONE} disabled={readOnly} onValueChange={(v) => set({ category: v === NONE ? null : Number(v) })}>
+                <SelectTrigger id="article-category" className="mt-2 h-11 w-full bg-surface *:data-[slot=select-value]:flex-1 *:data-[slot=select-value]:justify-start">
+                  <Tag className="size-4 text-ink-3" aria-hidden />
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={NONE}>No category</SelectItem>
+                  {categories.data?.map((c) => (
+                    <SelectItem key={c.id} value={String(c.id)}>
+                      {c.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </header>
         <div className="p-6 sm:p-8">
           <input
             aria-label="Article title"
