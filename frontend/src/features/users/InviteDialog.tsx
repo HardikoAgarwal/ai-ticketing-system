@@ -30,7 +30,7 @@ export async function copyInviteLink(token: string) {
 const CHOICES = ['AGENT', 'ADMIN'] as const
 
 /** Create an invite: email and role. Then the private link is shown to copy and share; the person picks their own password. */
-export function InviteDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
+export function InviteDialog({ open, onOpenChange, demo = false, onDemoInvite }: { open: boolean; onOpenChange: (open: boolean) => void; /** Demo workspace: the invite is only made on this page (nothing is sent), so the whole flow can be seen. */ demo?: boolean; onDemoInvite?: (invite: Invite) => void }) {
   const { slug, api } = useWorkspace()
   const queryClient = useQueryClient()
   const [email, setEmail] = useState('')
@@ -39,7 +39,12 @@ export function InviteDialog({ open, onOpenChange }: { open: boolean; onOpenChan
   const [copied, setCopied] = useState(false)
 
   const invite = useMutation({
-    mutationFn: () => api.createInvite({ email: email.trim(), role }),
+    mutationFn: async () => {
+      if (!demo) return api.createInvite({ email: email.trim(), role })
+      const fake: Invite = { id: -Date.now(), email: email.trim(), role, token: `demo-${Math.random().toString(36).slice(2, 10)}`, accepted_at: null, created_at: new Date().toISOString() }
+      onDemoInvite?.(fake)
+      return fake
+    },
     onSuccess: (inv) => {
       setCreated(inv)
       queryClient.invalidateQueries({ queryKey: ['invites', slug] })
@@ -64,7 +69,7 @@ export function InviteDialog({ open, onOpenChange }: { open: boolean; onOpenChan
         <div className="border-b border-line px-6 py-6 pr-14">
           <DialogTitle className="text-2xl leading-8 font-semibold tracking-tight text-ink">{created ? 'Invite ready' : 'Invite a teammate'}</DialogTitle>
           <DialogDescription className="mt-1.5 text-[15px] leading-6 text-ink-2">
-            {created ? `Send this private link to ${created.email}. They choose their own password.` : 'We create a private link. Share it with them and they choose their own password.'}
+            {created ? `Send this private link to ${created.email}. They choose their own password.` : 'We create a private link. Share it with them and they choose their own password.'}{demo && ' This is a demo preview: nothing is saved.'}
           </DialogDescription>
         </div>
 

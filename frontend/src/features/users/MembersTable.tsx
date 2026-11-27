@@ -5,7 +5,6 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { formatDate } from '@/lib/format'
 import type { Member, Role } from '@/lib/types'
 
-import { DemoLock } from './DemoLock'
 import { RoleChip } from './roles'
 
 const ROW = 'even:bg-[var(--row-alt)]'
@@ -66,11 +65,6 @@ export function MembersTable({ members, kind, meId, viewer, demo, showEmail, onR
                 <span className="text-sm text-ink-2">{formatDate(m.joined_at)}</span>
               </Td>
               <Td className="text-right">
-                {manageable && demo && (
-                  <DemoLock locked>
-                    <IconButton label={`Actions for ${m.full_name}`} icon={MoreHorizontal} disabled />
-                  </DemoLock>
-                )}
                 {hasMenu && (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
