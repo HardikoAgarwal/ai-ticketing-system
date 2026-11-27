@@ -1,5 +1,5 @@
 import { Check, ChevronDown, ChevronsUpDown, PanelLeftClose, PanelLeftOpen, Search, type LucideIcon } from 'lucide-react'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 
 import { homeFor, useAuth } from '@/auth/AuthContext'
@@ -60,8 +60,8 @@ function usePinned() {
 }
 
 /* Labels live in the DOM always (screen readers); they are only hidden visually while the dock is collapsed. */
-const SHOW = 'group-hover/dock:opacity-100 group-has-[:focus-visible,[data-state=open]]/dock:opacity-100 group-data-[pinned=true]/dock:opacity-100'
-const SHOW_FLEX = 'hidden group-hover/dock:inline-flex group-has-[:focus-visible,[data-state=open]]/dock:inline-flex group-data-[pinned=true]/dock:inline-flex'
+const SHOW = 'group-hover/dock:opacity-100 group-data-[force=true]/dock:opacity-100 group-has-[:focus-visible,[data-state=open]]/dock:opacity-100 group-data-[pinned=true]/dock:opacity-100'
+const SHOW_FLEX = 'hidden group-hover/dock:inline-flex group-data-[force=true]/dock:inline-flex group-has-[:focus-visible,[data-state=open]]/dock:inline-flex group-data-[pinned=true]/dock:inline-flex'
 const LABEL = 'min-w-0 truncate whitespace-nowrap opacity-0 transition-opacity duration-150 ' + SHOW
 const ROW = 'flex h-10 w-full items-center gap-3 rounded-control px-[13.5px] text-sm font-medium transition-colors'
 
@@ -74,7 +74,7 @@ function WorkspaceBlock() {
     <button className={cn(ROW, 'h-[45px] rounded-[12px] px-[2.5px] text-ink hover:bg-sunken')} aria-label={memberships.length > 1 ? `Workspace: ${brief?.name}. Switch workspace` : `Workspace: ${brief?.name}`}>
       <Avatar name={brief?.name} size="lg" className="bg-ink text-canvas border-ink" />
       <span className={cn(LABEL, 'flex-1 pl-0.5 text-left text-[15px] font-semibold tracking-tight')}>{brief?.name ?? 'Workspace'}</span>
-      {memberships.length > 1 && <ChevronsUpDown className={cn('size-4 shrink-0 text-ink-3 opacity-0 group-hover/dock:opacity-100 group-has-[:focus-visible,[data-state=open]]/dock:opacity-100 group-data-[pinned=true]/dock:opacity-100')} aria-hidden />}
+      {memberships.length > 1 && <ChevronsUpDown className={cn('size-4 shrink-0 text-ink-3 opacity-0 group-hover/dock:opacity-100 group-data-[force=true]/dock:opacity-100 group-has-[:focus-visible,[data-state=open]]/dock:opacity-100 group-data-[pinned=true]/dock:opacity-100')} aria-hidden />}
     </button>
   )
   if (memberships.length <= 1) return trigger
@@ -108,11 +108,11 @@ function NavRow({ item, sub = false }: { item: DockItem; sub?: boolean }) {
     >
       <span className="relative flex size-[18px] shrink-0 items-center justify-center">
         <item.icon className={sub ? 'size-4' : 'size-[18px]'} aria-hidden />
-        {!!item.count && !active && <span className="absolute -top-1.5 -right-2 size-2 rounded-full bg-violet ring-2 ring-surface group-hover/dock:hidden group-has-[:focus-visible,[data-state=open]]/dock:hidden group-data-[pinned=true]/dock:hidden" aria-hidden />}
+        {!!item.count && !active && <span className="absolute -top-1.5 -right-2 size-2 rounded-full bg-violet ring-2 ring-surface group-hover/dock:hidden group-data-[force=true]/dock:hidden group-has-[:focus-visible,[data-state=open]]/dock:hidden group-data-[pinned=true]/dock:hidden" aria-hidden />}
       </span>
       <span className={cn(LABEL, 'flex-1')}>{item.label}</span>
       {!!item.count && (
-        <span className={cn('hidden h-6 min-w-6 items-center justify-center rounded-md bg-violet px-2 text-[13px] font-bold text-white tabular-nums shadow-sm group-hover/dock:inline-flex group-has-[:focus-visible,[data-state=open]]/dock:inline-flex group-data-[pinned=true]/dock:inline-flex')}>{item.count}</span>
+        <span className={cn('hidden h-6 min-w-6 items-center justify-center rounded-md bg-violet px-2 text-[13px] font-bold text-white tabular-nums shadow-sm group-hover/dock:inline-flex group-data-[force=true]/dock:inline-flex group-has-[:focus-visible,[data-state=open]]/dock:inline-flex group-data-[pinned=true]/dock:inline-flex')}>{item.count}</span>
       )}
     </Link>
   )
@@ -142,9 +142,9 @@ function NavGroup({ item }: { item: DockItem }) {
           <item.icon className="size-[18px]" aria-hidden />
         </span>
         <span className={cn(LABEL, 'flex-1 text-left')}>{item.label}</span>
-        <ChevronDown className={cn('size-4 shrink-0 text-ink-3 opacity-0 transition-[transform,opacity] duration-200 group-hover/dock:opacity-100 group-has-[:focus-visible,[data-state=open]]/dock:opacity-100 group-data-[pinned=true]/dock:opacity-100', open && 'rotate-180')} aria-hidden />
+        <ChevronDown className={cn('size-4 shrink-0 text-ink-3 opacity-0 transition-[transform,opacity] duration-200 group-hover/dock:opacity-100 group-data-[force=true]/dock:opacity-100 group-has-[:focus-visible,[data-state=open]]/dock:opacity-100 group-data-[pinned=true]/dock:opacity-100', open && 'rotate-180')} aria-hidden />
       </button>
-      <ul id={listId} hidden={!open} className="mt-1 ml-[22px] hidden flex-col gap-1 group-hover/dock:[&:not([hidden])]:flex group-has-[:focus-visible,[data-state=open]]/dock:[&:not([hidden])]:flex group-data-[pinned=true]/dock:[&:not([hidden])]:flex">
+      <ul id={listId} hidden={!open} className="mt-1 ml-[22px] hidden flex-col gap-1 group-hover/dock:[&:not([hidden])]:flex group-data-[force=true]/dock:[&:not([hidden])]:flex group-has-[:focus-visible,[data-state=open]]/dock:[&:not([hidden])]:flex group-data-[pinned=true]/dock:[&:not([hidden])]:flex">
         {item.children?.map((c, i) => {
           const count = item.children?.length ?? 0
           const last = i === count - 1
@@ -179,6 +179,9 @@ function NavGroup({ item }: { item: DockItem }) {
  */
 export function Dock({ items }: { items: DockItem[] }) {
   const [pinned, togglePinned] = usePinned()
+  // `force` keeps the hover-opened sidebar open while the pointer moves from it onto the edge tab (the tab is outside the sidebar, so otherwise it would close)
+  const [force, setForce] = useState(false)
+  const tabRef = useRef<HTMLButtonElement>(null)
   const state = useConnectionState()
   const status = {
     live: { label: 'Live updates', dot: 'bg-mint-ink' },
@@ -191,21 +194,24 @@ export function Dock({ items }: { items: DockItem[] }) {
       <nav
         aria-label="Primary"
         data-pinned={pinned}
-        className="group/dock fixed inset-y-0 left-0 z-40 w-16 border-r border-line bg-surface transition-[width,box-shadow] duration-200 hover:w-[232px] hover:shadow-dock has-[:focus-visible,[data-state=open]]:w-[232px] has-[:focus-visible,[data-state=open]]:shadow-dock data-[pinned=true]:w-[232px]"
+        data-force={force}
+        onPointerLeave={(e) => setForce(e.relatedTarget === tabRef.current)}
+        onPointerEnter={() => setForce(false)}
+        className="peer/dock group/dock fixed inset-y-0 left-0 z-40 w-16 border-r border-line bg-surface transition-[width,box-shadow] duration-200 hover:w-[232px] hover:shadow-dock has-[:focus-visible,[data-state=open]]:w-[232px] has-[:focus-visible,[data-state=open]]:shadow-dock data-[pinned=true]:w-[232px] data-[force=true]:w-[232px] data-[force=true]:shadow-dock"
       >
-        <div className="flex h-full w-full flex-col overflow-hidden px-[9px] pt-3 pb-5">
+        <div className="flex h-full w-full flex-col overflow-hidden px-[9px] pt-3 pb-6">
           <WorkspaceBlock />
           <button type="button" onClick={openPalette} className={cn(ROW, 'mt-3 border border-line-strong px-[12.5px] text-ink-3 hover:border-violet/60 hover:text-ink')} aria-label="Search tickets and run commands">
             <Search className="size-[18px] shrink-0" aria-hidden />
             <span className={cn(LABEL, 'flex-1 text-left')}>Search</span>
-            <Kbd keys="mod+k" className="hidden group-hover/dock:inline-flex group-has-[:focus-visible,[data-state=open]]/dock:inline-flex group-data-[pinned=true]/dock:inline-flex" />
+            <Kbd keys="mod+k" className="hidden group-hover/dock:inline-flex group-data-[force=true]/dock:inline-flex group-has-[:focus-visible,[data-state=open]]/dock:inline-flex group-data-[pinned=true]/dock:inline-flex" />
           </button>
           <ul className="scroll-quiet mt-3 flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto overflow-x-hidden">
             {items.map((it) => (
               <li key={it.to}>{it.children ? <NavGroup item={it} /> : <NavRow item={it} />}</li>
             ))}
           </ul>
-          <div className="mt-3 flex flex-col gap-1 border-t border-line pt-3">
+          <div className="mt-3 flex flex-col gap-3 border-t border-line pt-3">
             <NotificationBell variant="dock" labelClassName={LABEL} badgeClassName={SHOW_FLEX} rowClassName={cn(ROW, 'text-ink-2 hover:bg-sunken hover:text-ink')} />
             <UserMenu variant="dock" labelClassName={LABEL} trailingClassName={cn('opacity-0 transition-opacity duration-150', SHOW)} status={status} rowClassName={cn(ROW, 'h-[45px] rounded-[14px] border border-line bg-surface-2 px-[3.5px] text-ink hover:bg-sunken')} />
           </div>
@@ -213,13 +219,16 @@ export function Dock({ items }: { items: DockItem[] }) {
       </nav>
       {/* a tab fixed to the sidebar's right edge: the sidebar's own colour, flat where it meets the sidebar, rounded outside. It sits beside the sidebar (not in it), so pointing at it does not open the collapsed sidebar */}
       <button
+        ref={tabRef}
         type="button"
         onClick={togglePinned}
+        data-force={force}
+        onPointerLeave={() => setForce(false)}
         aria-pressed={pinned}
         aria-label={pinned ? 'Collapse the sidebar' : 'Keep the sidebar open'}
         title={pinned ? 'Collapse the sidebar' : 'Keep the sidebar open'}
         className={cn(
-          'fixed bottom-6 z-30 hidden h-11 w-10 items-center justify-center rounded-r-full border border-l-0 border-line bg-surface pr-1 text-ink-2 transition-[left,color,background-color] duration-200 hover:bg-surface-2 hover:text-ink focus-visible:ring-2 focus-visible:ring-violet focus-visible:outline-none md:flex',
+          'peer-hover/dock:left-[232px] peer-has-[:focus-visible,[data-state=open]]/dock:left-[232px] fixed bottom-6 z-30 hidden h-[45px] w-10 items-center justify-center rounded-r-full border border-l-0 border-line bg-surface pr-1 text-ink-2 transition-[left,color,background-color] duration-200 hover:bg-surface-2 hover:text-ink focus-visible:ring-2 focus-visible:ring-violet focus-visible:outline-none data-[force=true]:left-[232px] md:flex',
           pinned ? 'left-[232px]' : 'left-16',
         )}
       >

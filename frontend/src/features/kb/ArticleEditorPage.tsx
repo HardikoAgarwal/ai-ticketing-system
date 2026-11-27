@@ -23,7 +23,7 @@ import { TipsDialog } from './TipsDialog'
 import { VisibilityCards } from './VisibilityCards'
 
 const NONE = '__none__'
-const ITEM = 'rounded-lg py-3 pr-10 pl-3.5 text-base font-medium text-ink-2 focus:bg-surface-2 focus:text-ink data-[state=checked]:bg-surface-2 data-[state=checked]:font-semibold data-[state=checked]:text-ink'
+const ITEM = 'rounded-lg py-3 pr-10 pl-3.5 text-base font-medium text-ink-2 focus:bg-violet-soft focus:text-ink data-[state=checked]:bg-violet-soft data-[state=checked]:font-semibold data-[state=checked]:text-ink'
 const FIELD_LABEL = 'block text-base font-semibold text-ink'
 
 /**

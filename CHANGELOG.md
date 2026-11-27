@@ -2,6 +2,8 @@
 
 ## Unreleased: Helpdesk AI rewrite (from the BookLeaf author portal)
 ### Changed
+- Sidebar: the edge tab now moves with the sidebar when it opens on hover (and stays put while you move the pointer onto it, without opening a collapsed sidebar by itself); it is vertically level with the profile button, the profile sits a little higher, and there is more space between Notifications and the profile.
+- Dropdowns and selects use the green theme like inputs do: the highlighted option in select lists and dropdown menus is soft green (was neutral grey/black), the chosen option's check is green, an open select shows the green border and ring, and the category dropdown in the article editor matches.
 - Sidebar: Notifications is a plain full-width row like the other sidebar items (no border or background of its own), keeping the unread count as a badge on the right.
 - Sidebar bottom: more space under the profile button; the profile and workspace buttons now have concentric rounded corners (outer corner a little rounder than the avatar inside it); Notifications is a full-width bordered row in the same style as the profile button, with the unread count as a badge on the right.
 - Sidebar: the open/collapse tab has the sidebar's own background and sits beside the sidebar (not inside it), so pointing at it no longer opens the collapsed sidebar. Notifications is back at the bottom, directly above the profile button. The profile avatar is a little bigger (36px) with a larger name, and in the collapsed rail the profile and workspace buttons are square so the padding is equal on every side.
