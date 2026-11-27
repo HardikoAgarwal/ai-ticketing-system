@@ -14,7 +14,7 @@ import { cn } from '@/lib/utils'
 export function SettingsCard({ title, description, actions, flush, children, className }: { title: string; description?: ReactNode; actions?: ReactNode; /** No row dividers or row padding: the content lays itself out. */ flush?: boolean; children: ReactNode; className?: string }) {
   return (
     <Panel as="section" className={className}>
-      <header className="flex flex-wrap items-start justify-between gap-x-6 gap-y-3 border-b border-line px-6 py-5">
+      <header className="flex flex-wrap items-start justify-between gap-x-6 gap-y-3 rounded-t-panel border-b border-line-strong bg-surface-2 px-6 py-5">
         <div className="min-w-0">
           <h2 className="text-lg leading-6 font-semibold tracking-tight text-ink">{title}</h2>
           {description && <p className="mt-1 max-w-2xl text-sm leading-6 text-ink-2">{description}</p>}

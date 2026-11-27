@@ -71,14 +71,15 @@ export function AiSettings({ f, readOnly }: { f: WorkspaceFormApi; readOnly: boo
           </div>
           <ProgressBar value={Math.max(pct, u ? 2 : 0)} tone={pct >= 90 ? 'red' : pct >= 70 ? 'amber' : 'ai'} label="Live AI calls used today" />
           {u && <p className="mt-1.5 text-xs text-ink-3">Across all workspaces on this server: {u.global_used} of {u.global_cap} today.</p>}
-        </div>
-        <div>
-          <h3 className="mb-1 flex items-center gap-2 text-sm font-semibold text-ink">
-            <Info className="size-4 text-ink-3" aria-hidden /> When the AI is off or out of budget
-          </h3>
-          <p className="text-[13px] leading-5 text-ink-2">
-            Nothing breaks. New tickets are still categorised and prioritised instantly by <span className="font-medium text-ink">keyword rules</span> (set in Categories), SLA timers still run, and the composer simply has no draft. Agents reply as usual.
-          </p>
+          <div role="note" className="mt-5 flex items-start gap-3.5 rounded-control border border-sky-line bg-sky p-4 text-sky-ink">
+            <Info className="mt-0.5 size-5 shrink-0" aria-hidden />
+            <div className="min-w-0">
+              <p className="text-sm font-semibold">When the AI is off or out of budget</p>
+              <p className="mt-1 text-[13px] leading-5">
+                Nothing breaks. New tickets are still categorised and prioritised instantly by <span className="font-semibold">keyword rules</span> (set in Categories), SLA timers still run, and the composer simply has no draft. Agents reply as usual.
+              </p>
+            </div>
+          </div>
         </div>
       </SettingsCard>
     </div>

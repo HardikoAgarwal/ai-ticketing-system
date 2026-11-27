@@ -43,7 +43,7 @@ export function GeneralSettings({ f, readOnly }: { f: WorkspaceFormApi; readOnly
             </p>
           </div>
         </Row>
-        <Row stack label="Tone of voice" htmlFor="ws-tone" hint="Written guidance the AI follows in every draft. Describe how you’d like replies to sound; agents can always edit before sending.">
+        <Row label="Tone of voice" htmlFor="ws-tone" hint="Written guidance the AI follows in every draft. Describe how you’d like replies to sound; agents can always edit before sending.">
           <Textarea id="ws-tone" rows={4} value={form.tone} disabled={readOnly} className="leading-relaxed" placeholder="e.g. Friendly and concise. Own mistakes plainly. Never promise timelines we haven’t committed to." onChange={(e) => set('tone', e.target.value)} />
           {!readOnly && (
             <div className="flex flex-wrap items-center gap-1.5 pt-1 text-xs text-ink-3">

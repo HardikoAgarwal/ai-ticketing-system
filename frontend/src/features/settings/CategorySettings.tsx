@@ -31,32 +31,37 @@ function CategoryForm({ initial, busy, submitLabel, onSubmit, onCancel }: { init
   const [description, setDescription] = useState(initial?.description ?? '')
   const [keywords, setKeywords] = useState(Object.keys(initial?.keywords ?? {}).join(', '))
   const id = initial ? `c${initial.id}` : 'new'
+  const field = 'grid gap-x-8 gap-y-2 md:grid-cols-[minmax(0,13rem)_minmax(0,1fr)]'
   return (
     <form
-      className="space-y-4"
+      className="space-y-5"
       onSubmit={(e) => {
         e.preventDefault()
         if (name.trim() && !busy) onSubmit({ name: name.trim(), description, keywords: toKeywords(keywords, initial?.keywords) })
       }}
     >
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div className="space-y-1.5">
+      <div className={field}>
+        <div>
           <Label htmlFor={`${id}-name`}>Name</Label>
-          <Input id={`${id}-name`} value={name} maxLength={80} placeholder="e.g. Shipping & Delivery" autoFocus onChange={(e) => setName(e.target.value)} />
-          <p className="text-xs text-ink-3">Shown on tickets and in analytics.</p>
+          <p className="mt-1 text-[13px] leading-5 text-ink-2">Shown on tickets and in analytics.</p>
         </div>
-        <div className="space-y-1.5">
+        <Input id={`${id}-name`} value={name} maxLength={80} placeholder="e.g. Shipping & Delivery" autoFocus className="h-11 max-w-md" onChange={(e) => setName(e.target.value)} />
+      </div>
+      <div className={field}>
+        <div>
+          <Label htmlFor={`${id}-desc`}>Description</Label>
+          <p className="mt-1 text-[13px] leading-5 text-ink-2">Plain words. The AI reads this to decide which tickets belong here.</p>
+        </div>
+        <Input id={`${id}-desc`} value={description} maxLength={300} placeholder="Late, lost or damaged deliveries and tracking questions." className="h-11" onChange={(e) => setDescription(e.target.value)} />
+      </div>
+      <div className={field}>
+        <div>
           <Label htmlFor={`${id}-kw`}>Keywords</Label>
-          <Input id={`${id}-kw`} value={keywords} placeholder="shipping, delivery, tracking" onChange={(e) => setKeywords(e.target.value)} />
-          <p className="text-xs text-ink-3">Comma separated. They sort tickets instantly when AI is off or unavailable.</p>
+          <p className="mt-1 text-[13px] leading-5 text-ink-2">Comma separated. They sort tickets instantly when AI is off or unavailable.</p>
         </div>
+        <Input id={`${id}-kw`} value={keywords} placeholder="shipping, delivery, tracking" className="h-11" onChange={(e) => setKeywords(e.target.value)} />
       </div>
-      <div className="space-y-1.5">
-        <Label htmlFor={`${id}-desc`}>Description</Label>
-        <Input id={`${id}-desc`} value={description} maxLength={300} placeholder="Late, lost or damaged deliveries and tracking questions." onChange={(e) => setDescription(e.target.value)} />
-        <p className="text-xs text-ink-3">Plain words. The AI reads this to decide which tickets belong here.</p>
-      </div>
-      <div className="flex gap-2">
+      <div className="flex gap-2 md:pl-[calc(13rem+2rem)]">
         <Button type="submit" size="sm" disabled={!name.trim() || busy}>
           {busy ? <Loader2 className="animate-spin" /> : initial ? <Check /> : <Plus />} {submitLabel}
         </Button>
