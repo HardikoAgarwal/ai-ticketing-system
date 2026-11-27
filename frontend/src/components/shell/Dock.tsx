@@ -1,4 +1,4 @@
-import { Check, ChevronsUpDown, Moon, PanelLeftClose, PanelLeftOpen, Search, Sun, type LucideIcon } from 'lucide-react'
+import { Check, ChevronDown, ChevronsUpDown, Moon, PanelLeftClose, PanelLeftOpen, Search, Sun, type LucideIcon } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 
@@ -21,8 +21,8 @@ export interface DockItem {
   /** Exact match only (no sub-routes), e.g. Home, so it is not active on every page below it. */
   end?: boolean
   count?: number
-  /** Items with the same group sit together under a small heading (shown when the dock is open). */
-  group?: string
+  /** Sub-pages: the item becomes an expandable row (a dropdown submenu) that stays closed until opened or until one of them is the current page. */
+  children?: DockItem[]
   /** Not active on this path prefix, for a sibling that lives under the same URL (Active vs History). */
   exclude?: string
   /** Label for the phone tab bar, where there is no group heading to explain "Active". */
@@ -113,18 +113,18 @@ function LiveRow() {
   )
 }
 
-function NavRow({ item }: { item: DockItem }) {
+function NavRow({ item, sub = false }: { item: DockItem; sub?: boolean }) {
   const { pathname } = useLocation()
   const active = isItemActive(item, pathname)
   return (
     <Link
       to={item.to}
       aria-current={active ? 'page' : undefined}
-      aria-label={[item.group, item.label].filter(Boolean).join(': ') + (item.count ? `, ${item.count}` : '')}
-      className={cn(ROW, 'relative', active ? 'bg-ink text-canvas' : 'text-ink-2 hover:bg-sunken hover:text-ink')}
+      aria-label={item.label + (item.count ? `, ${item.count}` : '')}
+      className={cn(ROW, 'relative', sub && 'h-9 text-[13px]', active ? 'bg-ink text-canvas' : 'text-ink-2 hover:bg-sunken hover:text-ink')}
     >
       <span className="relative flex size-[18px] shrink-0 items-center justify-center">
-        <item.icon className="size-[18px]" aria-hidden />
+        <item.icon className={sub ? 'size-4' : 'size-[18px]'} aria-hidden />
         {!!item.count && !active && <span className="absolute -top-1.5 -right-2 size-2 rounded-full bg-violet ring-2 ring-surface group-hover/dock:hidden group-focus-within/dock:hidden group-data-[pinned=true]/dock:hidden" aria-hidden />}
       </span>
       <span className={cn(LABEL, 'flex-1')}>{item.label}</span>
@@ -132,6 +132,42 @@ function NavRow({ item }: { item: DockItem }) {
         <span className={cn('hidden rounded-md px-1.5 text-xs font-semibold tabular-nums group-hover/dock:inline group-focus-within/dock:inline group-data-[pinned=true]/dock:inline', active ? 'bg-canvas/20 text-canvas' : 'bg-violet-soft text-lav-ink')}>{item.count}</span>
       )}
     </Link>
+  )
+}
+
+/**
+ * A dock row that opens a dropdown submenu (Settings and its tabs). It stays closed until you open it, and opens by itself when you are on one of its pages.
+ * The submenu is only shown while the dock itself is expanded; the collapsed icon rail shows just the parent icon.
+ */
+function NavGroup({ item }: { item: DockItem }) {
+  const { pathname } = useLocation()
+  const [manual, setManual] = useState<boolean | null>(null)
+  const childActive = !!item.children?.some((c) => isItemActive(c, pathname))
+  const open = manual ?? childActive
+  const listId = `dock-sub-${item.label.replace(/\s+/g, '-').toLowerCase()}`
+  return (
+    <div>
+      <button
+        type="button"
+        aria-expanded={open}
+        aria-controls={listId}
+        onClick={() => setManual(!open)}
+        className={cn(ROW, 'relative', childActive ? 'font-semibold text-ink' : 'text-ink-2 hover:bg-sunken hover:text-ink', childActive && !open && 'bg-sunken')}
+      >
+        <span className="relative flex size-[18px] shrink-0 items-center justify-center">
+          <item.icon className="size-[18px]" aria-hidden />
+        </span>
+        <span className={cn(LABEL, 'flex-1 text-left')}>{item.label}</span>
+        <ChevronDown className={cn('size-4 shrink-0 text-ink-3 opacity-0 transition-[transform,opacity] duration-200 group-hover/dock:opacity-100 group-focus-within/dock:opacity-100 group-data-[pinned=true]/dock:opacity-100', open && 'rotate-180')} aria-hidden />
+      </button>
+      <ul id={listId} hidden={!open} className="mt-1 ml-[19px] hidden flex-col gap-1 border-l border-line pl-2 group-hover/dock:[&:not([hidden])]:flex group-focus-within/dock:[&:not([hidden])]:flex group-data-[pinned=true]/dock:[&:not([hidden])]:flex">
+        {item.children?.map((c) => (
+          <li key={c.to}>
+            <NavRow item={c} sub />
+          </li>
+        ))}
+      </ul>
+    </div>
   )
 }
 
@@ -157,11 +193,8 @@ export function Dock({ items }: { items: DockItem[] }) {
           <Kbd keys="mod+k" className="hidden group-hover/dock:inline-flex group-focus-within/dock:inline-flex group-data-[pinned=true]/dock:inline-flex" />
         </button>
         <ul className="scroll-quiet mt-3 flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto overflow-x-hidden">
-          {items.map((it, i) => (
-            <li key={it.to} className={it.group ? (items[i - 1]?.group !== it.group ? 'mt-3 border-t border-line pt-2' : undefined) : items[i - 1]?.group ? 'mt-3 border-t border-line pt-3' : undefined}>
-              {it.group && items[i - 1]?.group !== it.group && <p className={cn(LABEL, 'px-[11px] pb-1 text-[11px] font-semibold tracking-[0.1em] text-ink-3 uppercase')}>{it.group}</p>}
-              <NavRow item={it} />
-            </li>
+          {items.map((it) => (
+            <li key={it.to}>{it.children ? <NavGroup item={it} /> : <NavRow item={it} />}</li>
           ))}
         </ul>
         <div className="flex flex-col gap-1">

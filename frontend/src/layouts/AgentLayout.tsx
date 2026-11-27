@@ -23,7 +23,7 @@ import { useTheme } from '@/theme/ThemeProvider'
 /** Bottom tab bar for phones (the dock is hidden below md). */
 function TabBar({ items }: { items: DockItem[] }) {
   const { pathname } = useLocation()
-  // a phone tab bar is short: items marked `mobile: false` are left out, and one can stand in for a whole group (Settings)
+  // a phone tab bar is short: items marked `mobile: false` are left out, and one can use its own link and icon; submenu items never appear here
   const tabs = items.flatMap((it) => (it.mobile === false ? [] : [it.mobile ? { ...it, to: it.mobile.to, icon: it.mobile.icon, end: false } : it]))
   return (
     <nav aria-label="Primary" className="flex shrink-0 items-stretch justify-around border-t border-line bg-surface px-2 pb-[max(0.25rem,env(safe-area-inset-bottom))] md:hidden">
@@ -62,12 +62,12 @@ function Frame() {
     () => [
       { to: base, label: 'Home', icon: LayoutDashboard, end: true },
       // Active is the list and /tickets/:id; History (resolved and closed) lives under its own URL. The badge is the open count.
-      { to: `${base}/tickets`, label: 'Active', mobileLabel: 'Tickets', group: 'Tickets', icon: Inbox, exclude: `${base}/tickets/history`, count: stats ? stats.open + stats.in_progress : undefined },
-      { to: `${base}/tickets/history`, label: 'History', group: 'Tickets', icon: History },
+      { to: `${base}/tickets`, label: 'Active tickets', mobileLabel: 'Tickets', icon: Inbox, exclude: `${base}/tickets/history`, count: stats ? stats.open + stats.in_progress : undefined },
+      { to: `${base}/tickets/history`, label: 'Ticket history', mobileLabel: 'History', icon: History },
       { to: `${base}/knowledge`, label: 'Knowledge', icon: BookOpen },
       ...(manager ? [{ to: `${base}/users`, label: 'Manage users', mobileLabel: 'Users', icon: Users }] : []),
-      // Each Settings tab is its own page, listed under a "Settings" heading. On a phone they collapse into one "Settings" tab.
-      ...SETTINGS_SECTIONS.map((s, i): DockItem => ({ to: `${base}/settings/${s.key}`, label: s.label, mobileLabel: 'Settings', group: 'Settings', icon: s.icon, mobile: i === 0 ? { to: `${base}/settings`, icon: Settings } : false })),
+      // Settings is one row that opens a dropdown of its tabs. On a phone it is a single tab; the tabs are chips on the page.
+      { to: `${base}/settings`, label: 'Settings', icon: Settings, mobile: { to: `${base}/settings`, icon: Settings }, children: SETTINGS_SECTIONS.map((s): DockItem => ({ to: `${base}/settings/${s.key}`, label: s.label, icon: s.icon })) },
     ],
     [base, stats, manager],
   )

@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Headphones, Lock, MailPlus, Search, Shield, Users, UserPlus, X } from 'lucide-react'
+import { Headphones, MailPlus, Search, Shield, Users, UserPlus, X } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Navigate } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -19,6 +19,7 @@ import { errorMessage } from '@/lib/api'
 import type { Invite, Member } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
+import { DemoLock } from './DemoLock'
 import { InviteDialog } from './InviteDialog'
 import { InvitesTable } from './InvitesTable'
 import { MembersTable } from './MembersTable'
@@ -153,20 +154,15 @@ export function UsersPage() {
                   </button>
                 )}
               </div>
-              <Button className="h-10" disabled={isDemo} onClick={() => setInviting(true)}>
-                <UserPlus /> Invite user
-              </Button>
+              <DemoLock locked={isDemo}>
+                <Button className="h-10" disabled={isDemo} onClick={() => setInviting(true)}>
+                  <UserPlus /> Invite user
+                </Button>
+              </DemoLock>
             </>
           }
         />
       </div>
-
-      {isDemo && (
-        <p className="mb-6 flex items-center gap-2.5 rounded-control border border-line bg-surface-2 px-4 py-3 text-sm text-ink-2">
-          <Lock className="size-4 shrink-0" aria-hidden />
-          Team changes are switched off in demo workspaces. Create your own workspace to invite people, change roles and remove users.
-        </p>
-      )}
 
       {loading ? (
         <div className="space-y-8">
