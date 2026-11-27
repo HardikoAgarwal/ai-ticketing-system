@@ -1,20 +1,21 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Bot, ChevronRight, FileText, Lightbulb, Trash2 } from 'lucide-react'
+import { Bot, ChevronRight, FileText, Lightbulb, Sparkles, Trash2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 
 import { useWorkspace } from '@/auth/workspace'
 import { ConfirmDialog, type ConfirmOptions } from '@/components/ConfirmDialog'
-import { ErrorState, Panel, Skeleton } from '@/components/ds'
+import { RelativeTime } from '@/components/common'
+import { CHIP_TONES, ErrorState, Panel, Skeleton } from '@/components/ds'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { StatusPill } from '@/features/inbox/StatusPill'
 import { PageHeader } from '@/features/shared/PageHeader'
 import { SaveBar } from '@/features/settings/rows'
 import { errorMessage } from '@/lib/api'
+import { cn } from '@/lib/utils'
 import type { Article } from '@/lib/types'
 
-import { AiButton } from './AiButton'
 import { AiPreviewDialog } from './AiPreviewDialog'
 import { AiSearchDialog } from './AiSearchDialog'
 import { flagsFor, splitPassages, visibilityOf } from './kb-utils'
@@ -24,19 +25,29 @@ import { VisibilityCards } from './VisibilityCards'
 const NONE = '__none__'
 const FIELD_LABEL = 'block text-base font-semibold text-ink'
 
-/** A neutral tab on the top edge of the article card (same shape as the New message / Overdue tabs on a ticket card). */
-function TabChip({ icon: Icon, onClick, children }: { icon: typeof Bot; onClick: () => void; children: React.ReactNode }) {
+/** A tab on the top edge of the article card (same shape as the New message / Overdue tabs on a ticket card): neutral, or the AI tone. */
+function TabChip({ icon: Icon, ai, onClick, children }: { icon: typeof Bot; ai?: boolean; onClick: () => void; children: React.ReactNode }) {
   return (
-    <button type="button" onClick={onClick} className="inline-flex h-9 items-center gap-2 rounded-t-xl border border-b-0 border-line bg-surface px-4 text-sm font-semibold whitespace-nowrap text-ink-2 transition-colors hover:bg-surface-2 hover:text-ink focus-visible:ring-2 focus-visible:ring-violet focus-visible:outline-none">
-      <Icon className="size-4" aria-hidden />
+    <button type="button" onClick={onClick} className={cn('inline-flex h-11 items-center gap-2.5 rounded-t-xl border border-b-0 px-5 text-[15px] font-semibold whitespace-nowrap transition-[filter,background-color] focus-visible:ring-2 focus-visible:ring-violet focus-visible:outline-none', ai ? cn(CHIP_TONES.ai, 'hover:brightness-95 dark:hover:brightness-125') : 'border-line bg-surface text-ink-2 hover:bg-surface-2 hover:text-ink')}>
+      <Icon className="size-[18px]" aria-hidden />
       {children}
     </button>
   )
 }
 
+/** One labelled fact in the card footer. */
+function Detail({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="min-w-0">
+      <dt className="text-[11px] font-semibold tracking-[0.1em] text-ink-3 uppercase">{label}</dt>
+      <dd className="mt-1.5 text-lg leading-7 font-semibold text-ink tabular-nums">{children}</dd>
+    </div>
+  )
+}
+
 /**
- * One full page for writing a new article and editing an existing one. How it works and Writing tips are tabs above the card; the card holds
- * category, visibility, then the title and writing area, with Test AI search and Delete in its footer; a save bar appears when something changed.
+ * One full page for writing a new article and editing an existing one. AI preview, Writing tips and Test AI search are tabs above the card; the card holds
+ * category, visibility, then the title and writing area, with the article's details and Delete in its footer; a save bar appears when something changed.
  */
 export function ArticleEditorPage() {
   const { id } = useParams()
@@ -157,25 +168,30 @@ export function ArticleEditorPage() {
       />
       {crumbs}
 
-      <div className="mt-8 flex flex-wrap items-end gap-1.5 px-6 sm:px-8">
-        <TabChip icon={Bot} onClick={() => setModal('preview')}>
-          How it works
-        </TabChip>
-        {!readOnly && (
-          <TabChip icon={Lightbulb} onClick={() => setModal('tips')}>
-            Writing tips
+      <div className="mt-8 flex flex-wrap items-end justify-between gap-x-3 gap-y-2 px-6 sm:px-8">
+        <div className="flex flex-wrap items-end gap-2">
+          <TabChip icon={Bot} onClick={() => setModal('preview')}>
+            AI preview
           </TabChip>
-        )}
+          {!readOnly && (
+            <TabChip icon={Lightbulb} onClick={() => setModal('tips')}>
+              Writing tips
+            </TabChip>
+          )}
+        </div>
+        <TabChip ai icon={Sparkles} onClick={() => setModal('test')}>
+          Test AI search
+        </TabChip>
       </div>
 
       <Panel>
         <div className="space-y-8 border-b border-line p-6 sm:p-8">
-          <div className="max-w-md">
+          <div className="max-w-xl">
             <label htmlFor="article-category" className={FIELD_LABEL}>
               Select category for article
             </label>
             <Select value={value.category ? String(value.category) : NONE} disabled={readOnly} onValueChange={(v) => set({ category: v === NONE ? null : Number(v) })}>
-              <SelectTrigger id="article-category" className="mt-3 h-12 w-full text-base">
+              <SelectTrigger id="article-category" className="mt-3 h-14 w-full px-4 text-lg">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -187,7 +203,6 @@ export function ArticleEditorPage() {
                 ))}
               </SelectContent>
             </Select>
-            <p className="mt-2 text-[13px] leading-5 text-ink-2">The AI favours articles in a ticket&apos;s own category.</p>
           </div>
           <div>
             <span className={FIELD_LABEL}>Who can use it</span>
@@ -216,22 +231,27 @@ export function ArticleEditorPage() {
             className="block min-h-[28rem] w-full resize-y rounded-control border-0 bg-transparent p-0 text-base leading-7 text-ink outline-none placeholder:text-ink-3 disabled:opacity-100"
           />
         </div>
-        <footer className="flex flex-wrap items-center gap-3 rounded-b-panel border-t border-line bg-surface-2 px-6 py-3.5 sm:px-8">
-          <AiButton className="h-9" onClick={() => setModal('test')}>
-            Test AI search
-          </AiButton>
+        <footer className="flex flex-wrap items-center gap-x-10 gap-y-5 rounded-b-panel border-t border-line bg-surface-2 px-6 py-5 sm:px-8">
+          <dl className="flex flex-wrap gap-x-10 gap-y-4">
+            <Detail label="Words">{words}</Detail>
+            <Detail label="Passages">{passages.length}</Detail>
+            {!isNew && listItem.data && (
+              <Detail label="AI search">
+                {!listItem.data.is_published ? <span className="text-ink-3">Not used</span> : <StatusPill hue={listItem.data.indexed ? 'mint' : 'butter'}>{listItem.data.indexed ? 'Ready' : 'Indexing'}</StatusPill>}
+              </Detail>
+            )}
+            {!isNew && value.updated_at && (
+              <Detail label="Last edited">
+                <RelativeTime value={value.updated_at} />
+              </Detail>
+            )}
+          </dl>
           {!isNew && manager && (
-            <button type="button" onClick={askDelete} className="inline-flex h-9 items-center gap-2 rounded-control border border-rose-line bg-surface px-3.5 text-sm font-semibold text-rose-ink transition-colors hover:bg-rose focus-visible:ring-2 focus-visible:ring-violet focus-visible:outline-none">
-              <Trash2 className="size-4" aria-hidden />
+            <button type="button" onClick={askDelete} className="ml-auto inline-flex h-12 items-center gap-2.5 rounded-control border border-rose-line bg-rose px-6 text-[15px] font-semibold text-rose-ink transition-[filter] hover:brightness-95 focus-visible:ring-2 focus-visible:ring-violet focus-visible:outline-none dark:hover:brightness-125">
+              <Trash2 className="size-[18px]" aria-hidden />
               Delete article
             </button>
           )}
-          <div className="ml-auto flex flex-wrap items-center gap-3 text-[13px] text-ink-2">
-            <span className="tabular-nums">
-              {words} {words === 1 ? 'word' : 'words'} · {passages.length} {passages.length === 1 ? 'passage' : 'passages'}
-            </span>
-            {!isNew && listItem.data && listItem.data.is_published && <StatusPill hue={listItem.data.indexed ? 'mint' : 'butter'}>{listItem.data.indexed ? 'AI search ready' : 'Indexing for AI search'}</StatusPill>}
-          </div>
         </footer>
       </Panel>
 
