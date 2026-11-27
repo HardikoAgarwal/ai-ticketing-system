@@ -1,4 +1,4 @@
-import { AlertTriangle, Check, Loader2, Lock, RotateCcw } from 'lucide-react'
+import { AlertTriangle, Check, Loader2, Lock, RotateCcw, type LucideIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 
 import { Panel } from '@/components/ds'
@@ -11,13 +11,18 @@ import { cn } from '@/lib/utils'
  * One card of related settings: a title and a line of explanation on top, then the settings stacked with space between them (no divider lines inside a card). A settings page is a
  * short stack of these, so each tab reads as a few clearly named groups instead of one long list.
  */
-export function SettingsCard({ title, description, actions, children, className }: { title: string; description?: ReactNode; actions?: ReactNode; children: ReactNode; className?: string }) {
+export function SettingsCard({ icon: Icon, title, description, actions, children, className }: { icon: LucideIcon; title: string; description?: ReactNode; actions?: ReactNode; children: ReactNode; className?: string }) {
   return (
     <Panel as="section" className={className}>
-      <header className="flex flex-wrap items-start justify-between gap-x-6 gap-y-3 rounded-t-panel border-b border-mint-line bg-mint px-6 py-5">
-        <div className="min-w-0">
-          <h2 className="text-lg leading-6 font-semibold tracking-tight text-mint-ink">{title}</h2>
-          {description && <p className="mt-1 max-w-2xl text-sm leading-6 text-mint-ink/80">{description}</p>}
+      <header className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3 rounded-t-panel border-b border-mint-line/70 bg-mint/35 px-6 py-5">
+        <div className="flex min-w-0 items-center gap-4">
+          <span className="flex size-11 shrink-0 items-center justify-center rounded-control bg-surface text-ink shadow-card ring-1 ring-mint-line" aria-hidden>
+            <Icon className="size-5" />
+          </span>
+          <div className="min-w-0">
+            <h2 className="text-lg leading-6 font-semibold tracking-tight text-ink">{title}</h2>
+            {description && <p className="mt-0.5 max-w-2xl text-sm leading-6 text-ink-2">{description}</p>}
+          </div>
         </div>
         {actions}
       </header>

@@ -1,3 +1,5 @@
+import { Clock } from 'lucide-react'
+
 import { fill } from '@/components/ds'
 import { Input } from '@/components/ui/input'
 import { PRIORITIES, PRIORITY_META } from '@/lib/constants'
@@ -10,18 +12,6 @@ const OK = fill('mint')
 const RISK = fill('butter')
 const LATE = fill('rose')
 
-/** One swatch of the legend. */
-function Key({ color, label, children }: { color: string; label: string; children: string }) {
-  return (
-    <div className="flex items-start gap-2.5">
-      <span className="mt-1 size-3.5 shrink-0 rounded-[4px]" style={{ background: color }} aria-hidden />
-      <p className="text-[13px] leading-5 text-ink-2">
-        <span className="font-semibold text-ink">{label}.</span> {children}
-      </p>
-    </div>
-  )
-}
-
 /**
  * Response targets. Each priority is a bar that shows what the target means for a ticket: green while there is time, amber for the last quarter,
  * and a pale red tail for "overdue". Every bar is on the same scale, so a longer bar is simply more time.
@@ -32,19 +22,7 @@ export function SlaSettings({ f, readOnly }: { f: WorkspaceFormApi; readOnly: bo
   const orderWarning = PRIORITIES.some((p, i) => i > 0 && form.sla_hours[p] < form.sla_hours[PRIORITIES[i - 1]])
   return (
     <div className="space-y-6">
-      <SettingsCard title="First-response targets" description="How many hours your team has to send the first reply to a new ticket, for each priority.">
-        <div className="grid gap-3 sm:grid-cols-3">
-          <Key color={OK} label="On track">
-            Plenty of time left to reply.
-          </Key>
-          <Key color={RISK} label="At risk">
-            The last quarter of the time. The ticket gets a warning.
-          </Key>
-          <Key color={LATE} label="Overdue">
-            The time is up with no reply. The ticket is flagged.
-          </Key>
-        </div>
-
+      <SettingsCard icon={Clock} title="First-response targets" description="How many hours your team has to send the first reply to a new ticket, for each priority.">
         {PRIORITIES.map((p) => {
           const hours = form.sla_hours[p]
           const atRisk = Math.round(hours * 0.75 * 10) / 10
@@ -64,20 +42,20 @@ export function SlaSettings({ f, readOnly }: { f: WorkspaceFormApi; readOnly: bo
                   <div className="h-full transition-[width] duration-300 motion-reduce:transition-none" style={{ width: `${share * 0.75}%`, background: OK }} />
                   <div className="h-full transition-[width] duration-300 motion-reduce:transition-none" style={{ width: `${share * 0.25}%`, background: RISK }} />
                 </div>
-                <p className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[13px] text-ink-2">
-                  <span>
-                    <span className="mr-1.5 inline-block size-2 rounded-full align-middle" style={{ background: OK }} aria-hidden />
+                <div className="mt-2.5 flex justify-between gap-3 text-[13px] text-ink-2">
+                  <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
+                    <span className="size-2.5 rounded-full" style={{ background: OK }} aria-hidden />
                     On track to <span className="font-semibold text-ink">{atRisk}h</span>
                   </span>
-                  <span>
-                    <span className="mr-1.5 inline-block size-2 rounded-full align-middle" style={{ background: RISK }} aria-hidden />
+                  <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
+                    <span className="size-2.5 rounded-full" style={{ background: RISK }} aria-hidden />
                     At risk to <span className="font-semibold text-ink">{hours}h</span>
                   </span>
-                  <span>
-                    <span className="mr-1.5 inline-block size-2 rounded-full align-middle" style={{ background: LATE }} aria-hidden />
-                    Overdue after
+                  <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
+                    <span className="size-2.5 rounded-full" style={{ background: LATE }} aria-hidden />
+                    Overdue after <span className="font-semibold text-ink">{hours}h</span>
                   </span>
-                </p>
+                </div>
               </div>
               <div className="flex items-center gap-2 md:justify-end">
                 <Input
@@ -103,11 +81,6 @@ export function SlaSettings({ f, readOnly }: { f: WorkspaceFormApi; readOnly: bo
         )}
       </SettingsCard>
 
-      <SettingsCard title="How targets work">
-        <p className="text-sm leading-6 text-ink-2">
-          The clock starts when a ticket arrives and stops at the first reply from your team. Changing a target updates deadlines for new tickets and for a ticket whenever its priority changes.
-        </p>
-      </SettingsCard>
     </div>
   )
 }

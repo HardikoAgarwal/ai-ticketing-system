@@ -2,16 +2,16 @@ import { useQuery } from '@tanstack/react-query'
 import { Gauge, Info, MessageSquareQuote, ScanText, Sparkles, UserRoundCheck } from 'lucide-react'
 
 import { useWorkspace } from '@/auth/workspace'
-import { AiSpark, AiSurface, Chip, ProgressBar } from '@/components/ds'
+import { AiSpark, AiSurface, Chip, fill, on, ProgressBar, type Hue } from '@/components/ds'
 import { Switch } from '@/components/ui/switch'
 
 import { SettingsCard } from './rows'
 import type { WorkspaceFormApi } from './use-workspace-form'
 
-const FEATURES = [
-  { icon: ScanText, title: 'Triages every ticket', body: 'Picks a category and priority, reads the customer’s mood and writes a one-line summary, in seconds.' },
-  { icon: MessageSquareQuote, title: 'Drafts grounded replies', body: 'Writes from your knowledge base and the customer’s own details, and cites its sources. Never sent automatically.' },
-  { icon: UserRoundCheck, title: 'Spots duplicates', body: 'Flags tickets that look like ones you already have, so the team can answer once.' },
+const FEATURES: { icon: typeof ScanText; hue: Hue; title: string; body: string }[] = [
+  { icon: ScanText, hue: 'lav', title: 'Triages every ticket', body: 'Picks a category and priority, reads the customer’s mood and writes a one-line summary, in seconds.' },
+  { icon: MessageSquareQuote, hue: 'sky', title: 'Drafts grounded replies', body: 'Writes from your knowledge base and the customer’s own details, and cites its sources. Never sent automatically.' },
+  { icon: UserRoundCheck, hue: 'mint', title: 'Spots duplicates', body: 'Flags tickets that look like ones you already have, so the team can answer once.' },
 ]
 
 export function AiSettings({ f, readOnly }: { f: WorkspaceFormApi; readOnly: boolean }) {
@@ -22,7 +22,7 @@ export function AiSettings({ f, readOnly }: { f: WorkspaceFormApi; readOnly: boo
   const pct = u ? Math.min(100, Math.round((u.workspace_used / Math.max(1, u.workspace_cap)) * 100)) : 0
   return (
     <div className="space-y-6">
-      <SettingsCard title="Assistant" description="Switch the AI on or off and see what it does while it is on.">
+      <SettingsCard icon={Sparkles} title="Assistant" description="Switch the AI on or off and see what it does while it is on.">
         <div>
           <AiSurface tone={form.ai_enabled ? 'bold' : 'quiet'} className="p-4">
             <div className="flex items-center gap-4">
@@ -44,18 +44,20 @@ export function AiSettings({ f, readOnly }: { f: WorkspaceFormApi; readOnly: boo
             </div>
           </AiSurface>
         </div>
-        <div className="grid gap-4 md:grid-cols-3">
-          {FEATURES.map(({ icon: Icon, title, body }) => (
-            <div key={title} className="rounded-control bg-surface-2 p-4">
-              <Icon className="mb-2.5 size-5 text-ai" aria-hidden />
-              <p className="text-sm font-semibold text-ink">{title}</p>
-              <p className="mt-1 text-[13px] leading-5 text-ink-2">{body}</p>
-            </div>
+        <ul className="grid gap-4 md:grid-cols-3" aria-label="What the AI does">
+          {FEATURES.map(({ icon: Icon, hue, title, body }) => (
+            <li key={title} className="flex flex-col rounded-control border border-line bg-surface p-5 shadow-card">
+              <span className="flex size-11 items-center justify-center rounded-control" style={{ background: fill(hue), color: on(hue) }} aria-hidden>
+                <Icon className="size-5" />
+              </span>
+              <p className="mt-4 text-[15px] font-semibold text-ink">{title}</p>
+              <p className="mt-1.5 text-[13px] leading-5 text-ink-2">{body}</p>
+            </li>
           ))}
-        </div>
+        </ul>
       </SettingsCard>
 
-      <SettingsCard title="Budget and fallback" description="A daily limit keeps costs predictable, and nothing breaks if it runs out.">
+      <SettingsCard icon={Gauge} title="Budget and fallback" description="A daily limit keeps costs predictable, and nothing breaks if it runs out.">
         <div>
           <div className="mb-2.5 flex items-end justify-between gap-3">
             <div>

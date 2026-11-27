@@ -1,4 +1,4 @@
-import { MessageSquareQuote } from 'lucide-react'
+import { Building2, MessageSquareQuote } from 'lucide-react'
 
 import { Chip } from '@/components/ds'
 import { Input } from '@/components/ui/input'
@@ -17,7 +17,7 @@ export function GeneralSettings({ f, readOnly }: { f: WorkspaceFormApi; readOnly
   const { form, set } = f
   return (
     <div className="space-y-6">
-      <SettingsCard title="Workspace" description="The name and one-line description of your business.">
+      <SettingsCard icon={Building2} title="Workspace" description="The name and one-line description of your business.">
         <Row label="Workspace name" htmlFor="ws-name" hint="Shown in the sidebar and to customers in their portal.">
           <Input id="ws-name" value={form.name} disabled={readOnly} maxLength={120} className="h-11 max-w-md" onChange={(e) => set('name', e.target.value)} />
         </Row>
@@ -26,7 +26,7 @@ export function GeneralSettings({ f, readOnly }: { f: WorkspaceFormApi; readOnly
         </Row>
       </SettingsCard>
 
-      <SettingsCard title="Replies" description="How the AI drafts replies, and how every reply ends.">
+      <SettingsCard icon={MessageSquareQuote} title="Replies" description="How the AI drafts replies, and how every reply ends.">
         <Row label="Reply sign-off" htmlFor="ws-title" hint="The team name every reply ends with.">
           <Input id="ws-title" value={form.agent_title} disabled={readOnly} maxLength={80} className="h-11 max-w-md" onChange={(e) => set('agent_title', e.target.value)} />
           <div className="mt-3 max-w-md rounded-control bg-surface-2 p-4">

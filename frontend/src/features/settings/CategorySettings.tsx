@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Pencil, Plus, Trash2 } from 'lucide-react'
+import { Pencil, Plus, Tag, Tags, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 
@@ -52,6 +52,7 @@ export function CategorySettings({ readOnly }: { readOnly: boolean }) {
 
   return (
     <SettingsCard
+      icon={Tags}
       title="Ticket categories"
       description="Give each category a plain-words description for the AI, and keywords for the instant backup."
       actions={
@@ -69,50 +70,55 @@ export function CategorySettings({ readOnly }: { readOnly: boolean }) {
       ) : !data?.length ? (
         <p className="text-sm text-ink-2">No categories yet. Add one so tickets can be sorted.</p>
       ) : (
-        data.map((c) => {
-          const tone = categoryTone(c.key, c.name)
-          const kws = Object.keys(c.keywords)
-          return (
-            <div key={c.id} className="flex items-start gap-3.5 rounded-control bg-surface-2 p-4">
-              <span className={`mt-1.5 size-3 shrink-0 rounded-full ${tone.dot}`} aria-hidden />
-              <div className="min-w-0 flex-1">
-                <p className="flex flex-wrap items-center gap-2 text-sm font-semibold text-ink">
-                  {c.name}
-                  {c.is_default && (
-                    <Chip size="sm" tone="slate" title="Tickets that match nothing else land here. It can’t be deleted.">
-                      Default
-                    </Chip>
-                  )}
-                </p>
-                <p className="mt-0.5 text-[13px] leading-5 text-ink-2">{c.description || 'No description yet. Add one so the AI knows what belongs here.'}</p>
-                {kws.length > 0 && (
-                  <ul aria-label={`Keywords for ${c.name}`} className="mt-2 flex flex-wrap gap-1.5">
-                    {kws.slice(0, 10).map((k) => (
-                      <li key={k}>
-                        <Chip size="sm" tone="slate">
+        <ul className="space-y-4">
+          {data.map((c) => {
+            const tone = categoryTone(c.key, c.name)
+            const kws = Object.keys(c.keywords)
+            return (
+              <li key={c.id} className="flex items-start gap-4 rounded-control border border-line bg-surface p-5 shadow-card">
+                <span className={`flex size-11 shrink-0 items-center justify-center rounded-control text-white ${tone.dot}`} aria-hidden>
+                  <Tag className="size-5" />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="flex flex-wrap items-center gap-2 text-[15px] font-semibold text-ink">
+                    {c.name}
+                    {c.is_default && (
+                      <Chip size="sm" tone="slate" title="Tickets that match nothing else land here. It can’t be deleted.">
+                        Default
+                      </Chip>
+                    )}
+                  </p>
+                  <p className="mt-1 text-[13px] leading-5 text-ink-2">{c.description || 'No description yet. Add one so the AI knows what belongs here.'}</p>
+                  {kws.length > 0 && (
+                    <ul aria-label={`Keywords for ${c.name}`} className="mt-3 flex flex-wrap gap-1.5">
+                      {kws.slice(0, 10).map((k) => (
+                        <li key={k} className="inline-flex h-6 items-center rounded-md border border-dashed border-line-strong px-2 font-mono text-xs text-ink-2">
+                          <span className="mr-0.5 text-ink-3" aria-hidden>
+                            #
+                          </span>
                           {k}
-                        </Chip>
-                      </li>
-                    ))}
-                    {kws.length > 10 && <li className="py-1 text-xs text-ink-3">+{kws.length - 10} more</li>}
-                  </ul>
-                )}
-              </div>
-              {!readOnly && (
-                <div className="flex shrink-0 gap-0.5">
-                  <IconButton label={`Edit ${c.name}`} icon={Pencil} onClick={() => setDialog(c)} />
-                  {!c.is_default && (
-                    <IconButton
-                      label={`Delete ${c.name}`}
-                      icon={Trash2}
-                      onClick={() => setConfirm({ title: 'Delete category?', description: 'Tickets in this category become uncategorised. This can’t be undone.', confirmLabel: 'Delete', destructive: true, onConfirm: () => remove.mutate(c) })}
-                    />
+                        </li>
+                      ))}
+                      {kws.length > 10 && <li className="inline-flex h-6 items-center text-xs text-ink-3">+{kws.length - 10} more</li>}
+                    </ul>
                   )}
                 </div>
-              )}
-            </div>
-          )
-        })
+                {!readOnly && (
+                  <div className="flex shrink-0 gap-0.5">
+                    <IconButton label={`Edit ${c.name}`} icon={Pencil} onClick={() => setDialog(c)} />
+                    {!c.is_default && (
+                      <IconButton
+                        label={`Delete ${c.name}`}
+                        icon={Trash2}
+                        onClick={() => setConfirm({ title: 'Delete category?', description: 'Tickets in this category become uncategorised. This can’t be undone.', confirmLabel: 'Delete', destructive: true, onConfirm: () => remove.mutate(c) })}
+                      />
+                    )}
+                  </div>
+                )}
+              </li>
+            )
+          })}
+        </ul>
       )}
       {dialog && (
         <CategoryDialog
