@@ -23,13 +23,21 @@ import { TipsDialog } from './TipsDialog'
 import { VisibilityCards } from './VisibilityCards'
 
 const NONE = '__none__'
+const ITEM = 'rounded-lg py-3 pr-10 pl-3.5 text-base font-medium text-ink-2 focus:bg-surface-2 focus:text-ink data-[state=checked]:bg-surface-2 data-[state=checked]:font-semibold data-[state=checked]:text-ink'
 const FIELD_LABEL = 'block text-base font-semibold text-ink'
 
-/** A tab on the top edge of the article card (same shape as the New message / Overdue tabs on a ticket card): neutral, or the AI tone. */
+/** A tab on the top edge of the article card (same shape as the New message / Overdue tabs on a ticket card): theme-coloured, or AI-styled. */
 function TabChip({ icon: Icon, ai, onClick, children }: { icon: typeof Bot; ai?: boolean; onClick: () => void; children: React.ReactNode }) {
   return (
-    <button type="button" onClick={onClick} className={cn('inline-flex h-11 items-center gap-2.5 rounded-t-xl border border-b-0 px-5 text-[15px] font-semibold whitespace-nowrap transition-[filter,background-color] focus-visible:ring-2 focus-visible:ring-violet focus-visible:outline-none', ai ? cn(CHIP_TONES.ai, 'hover:brightness-95 dark:hover:brightness-125') : 'border-line bg-surface text-ink-2 hover:bg-surface-2 hover:text-ink')}>
-      <Icon className="size-[18px]" aria-hidden />
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        'inline-flex h-11 items-center gap-2.5 rounded-t-xl px-5 text-[15px] font-semibold whitespace-nowrap focus-visible:ring-2 focus-visible:ring-violet focus-visible:outline-none',
+        ai ? 'ai-border bg-surface text-ink transition-colors hover:bg-surface-2' : cn('border border-b-0 transition-[filter] hover:brightness-95 dark:hover:brightness-125', CHIP_TONES.green),
+      )}
+    >
+      <Icon className={cn('size-[18px]', ai && 'text-ai')} aria-hidden />
       {children}
     </button>
   )
@@ -194,10 +202,12 @@ export function ArticleEditorPage() {
               <SelectTrigger id="article-category" className="mt-3 h-14 w-full px-4 text-lg">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={NONE}>No category</SelectItem>
+              <SelectContent position="popper" align="start" sideOffset={8} className="w-(--radix-select-trigger-width) rounded-xl p-1.5">
+                <SelectItem value={NONE} className={ITEM}>
+                  No category
+                </SelectItem>
                 {categories.data?.map((c) => (
-                  <SelectItem key={c.id} value={String(c.id)}>
+                  <SelectItem key={c.id} value={String(c.id)} className={ITEM}>
                     {c.name}
                   </SelectItem>
                 ))}
