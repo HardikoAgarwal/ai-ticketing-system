@@ -65,7 +65,7 @@ export function InviteDialog({ open, onOpenChange, demo = false, onDemoInvite }:
 
   return (
     <Dialog open={open} onOpenChange={close}>
-      <DialogContent className="gap-0 p-0 sm:max-w-lg">
+      <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-lg">
         <div className="border-b border-line px-6 py-6 pr-14">
           <DialogTitle className="text-2xl leading-8 font-semibold tracking-tight text-ink">{created ? 'Invite ready' : 'Invite a teammate'}</DialogTitle>
           <DialogDescription className="mt-1.5 text-[15px] leading-6 text-ink-2">
@@ -104,9 +104,9 @@ export function InviteDialog({ open, onOpenChange, demo = false, onDemoInvite }:
                     const m = ROLE_META[c]
                     const on = role === c
                     return (
-                      <button key={c} type="button" role="radio" aria-checked={on} onClick={() => setRole(c)} className={cn('flex flex-col items-start gap-1.5 rounded-control border-2 p-3.5 text-left transition-colors focus-visible:ring-2 focus-visible:ring-violet focus-visible:ring-offset-2 focus-visible:outline-none', on ? 'border-ink bg-surface-2' : 'border-line hover:border-line-strong hover:bg-surface-2')}>
+                      <button key={c} type="button" role="radio" aria-checked={on} onClick={() => setRole(c)} className={cn('flex flex-col items-start gap-1.5 rounded-control border-2 p-3.5 text-left transition-colors focus-visible:ring-2 focus-visible:ring-violet focus-visible:ring-offset-2 focus-visible:outline-none', on ? 'border-violet bg-violet-soft' : 'border-line hover:border-violet/50 hover:bg-violet-soft/40')}>
                         <span className="flex items-center gap-2 text-sm font-semibold text-ink">
-                          <m.icon className="size-4" aria-hidden /> {m.label}
+                          <m.icon className={cn('size-4', on && 'text-violet')} aria-hidden /> {m.label}
                         </span>
                         <span className="text-[13px] leading-5 text-ink-2">{c === 'AGENT' ? 'Works tickets and replies to customers.' : 'Also manages settings, the knowledge base and the team.'}</span>
                       </button>

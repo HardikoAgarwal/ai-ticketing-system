@@ -5,9 +5,11 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { formatDate } from '@/lib/format'
 import type { Member, Role } from '@/lib/types'
 
-import { RoleChip } from './roles'
+import { RoleChip, ROLE_META } from './roles'
 
 const ROW = 'even:bg-[var(--row-alt)]'
+const ITEM = 'items-center gap-3.5 rounded-lg px-3 py-3'
+const TILE = 'flex size-10 shrink-0 items-center justify-center rounded-control bg-sunken text-ink'
 
 /** Who may change a member: only the owner changes roles; owners remove anyone but the owner, admins remove agents. Mirrors the server. */
 export function permissions(viewer: Role, target: Member, isSelf: boolean) {
@@ -70,26 +72,49 @@ export function MembersTable({ members, kind, meId, viewer, demo, showEmail, onR
                     <DropdownMenuTrigger asChild>
                       <IconButton label={`Actions for ${m.full_name}`} icon={MoreHorizontal} />
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuContent align="end" sideOffset={8} className="w-80 p-2">
+                      <div className="px-3 pt-2.5 pb-3">
+                        <p className="truncate text-[15px] font-semibold text-ink">{m.full_name}</p>
+                        <p className="mt-0.5 text-xs text-ink-3">{ROLE_META[m.role].label}</p>
+                      </div>
+                      <DropdownMenuSeparator className="my-1" />
                       {can.changeRole && (
                         <>
-                          <DropdownMenuLabel className="text-xs text-ink-3">Change role</DropdownMenuLabel>
+                          <DropdownMenuLabel className="px-3 pt-2 pb-1 text-[11px] font-semibold tracking-[0.08em] text-ink-3 uppercase">Change role</DropdownMenuLabel>
                           {m.role !== 'ADMIN' && (
-                            <DropdownMenuItem onClick={() => onRole(m, 'ADMIN')}>
-                              <Shield /> Make admin
+                            <DropdownMenuItem className={ITEM} onClick={() => onRole(m, 'ADMIN')}>
+                              <span className={TILE}>
+                                <Shield className="size-[18px]" />
+                              </span>
+                              <span className="min-w-0">
+                                <span className="block text-[15px] font-semibold text-ink">Make admin</span>
+                                <span className="mt-0.5 block text-[13px] leading-5 font-normal text-ink-2">Can change settings and manage the team.</span>
+                              </span>
                             </DropdownMenuItem>
                           )}
                           {m.role !== 'AGENT' && (
-                            <DropdownMenuItem onClick={() => onRole(m, 'AGENT')}>
-                              <Headphones /> Make agent
+                            <DropdownMenuItem className={ITEM} onClick={() => onRole(m, 'AGENT')}>
+                              <span className={TILE}>
+                                <Headphones className="size-[18px]" />
+                              </span>
+                              <span className="min-w-0">
+                                <span className="block text-[15px] font-semibold text-ink">Make agent</span>
+                                <span className="mt-0.5 block text-[13px] leading-5 font-normal text-ink-2">Works the inbox and replies to customers.</span>
+                              </span>
                             </DropdownMenuItem>
                           )}
-                          {can.remove && <DropdownMenuSeparator />}
+                          {can.remove && <DropdownMenuSeparator className="my-1.5" />}
                         </>
                       )}
                       {can.remove && (
-                        <DropdownMenuItem variant="destructive" onClick={() => onRemove(m)}>
-                          <UserMinus /> Remove from workspace
+                        <DropdownMenuItem variant="destructive" className={ITEM} onClick={() => onRemove(m)}>
+                          <span className="flex size-10 shrink-0 items-center justify-center rounded-control bg-rose text-rose-ink">
+                            <UserMinus className="size-[18px]" />
+                          </span>
+                          <span className="min-w-0">
+                            <span className="block text-[15px] font-semibold">Remove from workspace</span>
+                            <span className="mt-0.5 block text-[13px] leading-5 font-normal opacity-80">Loses access now; open tickets go back to the queue.</span>
+                          </span>
                         </DropdownMenuItem>
                       )}
                     </DropdownMenuContent>

@@ -23,7 +23,7 @@ import { InvitesTable } from './InvitesTable'
 import { MembersTable } from './MembersTable'
 import { RolesDialog } from './RolesDialog'
 
-/** Which group the table shows. Nothing selected means the whole team; the tiles above the table are the only filter. */
+/** Which group the table shows. Nothing selected means everyone (owners, admins, agents and customers); the tiles above the table are the only filter. */
 type Filter = 'all' | 'admin' | 'agent' | 'customers' | 'invites'
 
 const USER_COLUMNS: SkeletonColumn[] = [
@@ -108,7 +108,8 @@ export function UsersPage() {
 
   const needle = q.trim().toLowerCase()
   const match = (text: string) => !needle || text.toLowerCase().includes(needle)
-  const shownTeam = staff.filter((m) => (filter === 'admin' ? m.role !== 'AGENT' : filter === 'agent' ? m.role === 'AGENT' : true) && match(`${m.full_name} ${m.email}`))
+  const everyone = [...staff, ...customers]
+  const shownTeam = (filter === 'all' ? everyone : staff).filter((m) => (filter === 'admin' ? m.role !== 'AGENT' : filter === 'agent' ? m.role === 'AGENT' : true) && match(`${m.full_name} ${m.email} ${m.company ?? ''}`))
   const shownCustomers = customers.filter((m) => match(`${m.full_name} ${m.email} ${m.company ?? ''}`))
   const shownInvites = pending.filter((i) => match(i.email))
 
@@ -125,8 +126,6 @@ export function UsersPage() {
   const pick = (f: Filter) => setFilter((cur) => (cur === f ? 'all' : f))
   const loading = members.isLoading || invites.isLoading
   const error = members.error ?? invites.error
-  const heading = filter === 'customers' ? 'Customers' : filter === 'invites' ? 'Pending invites' : filter === 'admin' ? 'Owners & admins' : filter === 'agent' ? 'Agents' : 'Team'
-  const headingCount = filter === 'customers' ? shownCustomers.length : filter === 'invites' ? shownInvites.length : shownTeam.length
 
   return (
     <div className="mx-auto w-full max-w-[1400px] pb-8">
@@ -183,11 +182,6 @@ export function UsersPage() {
           </div>
 
           <div>
-            <h2 className="mb-4 flex items-center gap-2.5 text-[15px] font-semibold text-ink">
-              {heading}
-              <span className="rounded-md bg-sunken px-2 py-0.5 text-xs font-semibold text-ink-2 tabular-nums">{headingCount}</span>
-            </h2>
-
             {filter === 'invites' ? (
               shownInvites.length ? (
                 <InvitesTable invites={shownInvites} onRevoke={askRevoke} />
@@ -218,7 +212,7 @@ export function UsersPage() {
             ) : shownTeam.length ? (
               <MembersTable members={shownTeam} kind="team" meId={user?.id} viewer={viewerRole ?? 'AGENT'} demo={false} showEmail={!isDemo} onRole={askRole} onRemove={askRemove} />
             ) : (
-              <Message icon={Users} hue="lav" title={needle ? 'No one matches' : 'No team yet'}>
+              <Message icon={Users} hue="lav" title={needle ? 'No one matches' : 'No one here yet'}>
                 {needle ? 'Try a different name or clear the filter by selecting the tile again.' : 'Invite your first teammate to get started.'}
               </Message>
             )}
