@@ -2,6 +2,7 @@
 
 ## Unreleased: Helpdesk AI rewrite (from the BookLeaf author portal)
 ### Changed
+- Article editor, round four: the back button became a breadcrumb under the header (Knowledge base / article title). AI preview and Writing tips are tab-shaped chips on the card's top edge (blue and amber), with Test AI search (AI style) and the "..." menu on the right. Inside the card, Category is a labelled select with a hint and visibility is three equal cards (Public, Staff only, Draft) each with a coloured icon and a one-line explanation. The Writing tips and AI preview modals lost their header icons; AI preview now shows passage, word and longest-passage counts, a colour-coded bar showing how the article is split, and numbered passage cards.
 - Tables: alternate rows are plain neutral shades, no colour: white and a near-white in light mode, two blacks in dark mode (`--row-alt`).
 - Article editor layout: a soft pill "Knowledge base" back button at the top; AI preview and Writing tips as chips on the left and Test AI search (plus the "..." menu) on the right, above the card; inside the card, labelled Category and Visibility fields (with their hints) sit above a separator, then the title and writing area.
 - Page headers no longer show the workspace name above the title. Article editor: the header is just the title and description; category, visibility (with its one-line explanation) and the AI preview / Writing tips / Test AI search buttons sit in a row below it, outside the card, and the article card with the title and writing area comes after.

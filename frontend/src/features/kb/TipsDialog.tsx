@@ -1,4 +1,4 @@
-import { CircleCheck, Lightbulb } from 'lucide-react'
+import { CircleCheck } from 'lucide-react'
 
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
 
@@ -14,10 +14,7 @@ export function TipsDialog({ open, onOpenChange }: { open: boolean; onOpenChange
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="scroll-quiet max-h-[90vh] gap-0 overflow-y-auto p-0 sm:max-w-xl">
-        <div className="border-b border-line px-6 py-6">
-          <span className="mb-3 flex size-11 items-center justify-center rounded-panel bg-butter text-butter-ink ring-1 ring-butter-line ring-inset" aria-hidden>
-            <Lightbulb className="size-5" />
-          </span>
+        <div className="border-b border-line px-6 py-6 pr-14">
           <DialogTitle className="text-2xl leading-8 font-semibold tracking-tight text-ink">Writing tips</DialogTitle>
           <DialogDescription className="mt-1.5 text-[15px] leading-6 text-ink-2">Articles the AI can use well are short, specific and end with a next step.</DialogDescription>
         </div>

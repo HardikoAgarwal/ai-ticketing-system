@@ -1,39 +1,35 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, Bot, FileText, Lightbulb, MoreHorizontal, Trash2 } from 'lucide-react'
+import { Bot, ChevronRight, FileText, Lightbulb, MoreHorizontal, Sparkles, Trash2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 
 import { useWorkspace } from '@/auth/workspace'
 import { ConfirmDialog, type ConfirmOptions } from '@/components/ConfirmDialog'
-import { ErrorState, Panel, SegmentedControl, Skeleton } from '@/components/ds'
-import { Button } from '@/components/ui/button'
+import { CHIP_TONES, ErrorState, Panel, Skeleton, type ChipTone } from '@/components/ds'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { StatusPill } from '@/features/inbox/StatusPill'
 import { PageHeader } from '@/features/shared/PageHeader'
 import { SaveBar } from '@/features/settings/rows'
 import { errorMessage } from '@/lib/api'
+import { cn } from '@/lib/utils'
 import type { Article } from '@/lib/types'
 
-import { AiButton } from './AiButton'
 import { AiPreviewDialog } from './AiPreviewDialog'
 import { AiSearchDialog } from './AiSearchDialog'
-import { flagsFor, splitPassages, visibilityOf, VISIBILITY, type Visibility } from './kb-utils'
+import { flagsFor, splitPassages, visibilityOf } from './kb-utils'
 import { TipsDialog } from './TipsDialog'
+import { VisibilityCards } from './VisibilityCards'
 
 const NONE = '__none__'
 const FIELD_LABEL = 'block text-[11px] font-semibold tracking-[0.1em] text-ink-3 uppercase'
 
-/** A small action chip above the article card (AI preview, Writing tips). */
-function ToolChip({ icon: Icon, onClick, children }: { icon: typeof Bot; onClick: () => void; children: React.ReactNode }) {
+/** A tab sitting on the top edge of the article card, in the same style as the New message / Overdue tabs on a ticket card. */
+function TabChip({ tone, icon: Icon, onClick, children }: { tone: ChipTone; icon: typeof Bot; onClick: () => void; children: React.ReactNode }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="inline-flex h-9 items-center gap-2 rounded-control border border-line-strong bg-surface px-3.5 text-sm font-semibold text-ink shadow-card transition-colors hover:bg-surface-2 focus-visible:ring-2 focus-visible:ring-violet focus-visible:ring-offset-2 focus-visible:outline-none"
-    >
-      <Icon className="size-4 text-ink-2" aria-hidden />
+    <button type="button" onClick={onClick} className={cn('inline-flex h-9 items-center gap-2 rounded-t-xl border border-b-0 px-4 text-sm font-semibold whitespace-nowrap transition-[filter] hover:brightness-95 focus-visible:ring-2 focus-visible:ring-violet focus-visible:outline-none dark:hover:brightness-125', CHIP_TONES[tone])}>
+      <Icon className="size-4" aria-hidden />
       {children}
     </button>
   )
@@ -116,63 +112,73 @@ export function ArticleEditorPage() {
   if (isNew && !manager) return <Navigate to={base} replace />
   const readOnly = !manager
 
-  const back = (
-    <button
-      type="button"
-      onClick={leave}
-      className="mb-6 inline-flex h-10 items-center gap-2 rounded-control border border-line-strong bg-surface px-4 text-sm font-semibold text-ink shadow-card transition-colors hover:bg-surface-2 focus-visible:ring-2 focus-visible:ring-violet focus-visible:ring-offset-2 focus-visible:outline-none"
-    >
-      <ArrowLeft className="size-4" aria-hidden /> Knowledge base
-    </button>
+  const crumbs = (
+    <nav aria-label="Breadcrumb" className="mt-4">
+      <ol className="flex min-w-0 items-center gap-2 text-sm">
+        <li>
+          <button type="button" onClick={leave} className="rounded-sm font-medium text-ink-2 hover:text-ink hover:underline focus-visible:ring-2 focus-visible:ring-violet focus-visible:outline-none">
+            Knowledge base
+          </button>
+        </li>
+        <li aria-hidden className="text-ink-3">
+          <ChevronRight className="size-4" />
+        </li>
+        <li className="min-w-0 truncate font-semibold text-ink" aria-current="page">
+          {isNew ? 'New article' : title.trim() || 'Untitled article'}
+        </li>
+      </ol>
+    </nav>
   )
 
   if (!isNew && existing.isLoading) {
     return (
       <div className="mx-auto w-full max-w-[1000px]">
-        {back}
-        <Skeleton className="h-[560px] rounded-panel" />
+        {crumbs}
+        <Skeleton className="mt-8 h-[560px] rounded-panel" />
       </div>
     )
   }
   if (!isNew && existing.isError) {
     return (
       <div className="mx-auto w-full max-w-[1000px]">
-        {back}
-        <ErrorState error={existing.error} onRetry={() => existing.refetch()} title="We couldn't open this article" />
+        {crumbs}
+        <div className="mt-8">
+          <ErrorState error={existing.error} onRetry={() => existing.refetch()} title="We couldn't open this article" />
+        </div>
       </div>
     )
   }
 
   return (
     <div className="mx-auto w-full max-w-[1000px] pb-8">
-      {back}
       <PageHeader
         icon={FileText}
         title={readOnly ? 'Article' : isNew ? 'New article' : 'Edit article'}
         description={readOnly ? 'Only owners and admins can edit. You can read exactly what the AI reads.' : 'Write it the way you would explain it to a customer. The AI quotes this and cites it.'}
       />
+      {crumbs}
 
-      <div className="mt-8 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-2">
-          <ToolChip icon={Bot} onClick={() => setModal('preview')}>
+      <div className="mt-8 flex items-end justify-between gap-3 px-6 sm:px-8">
+        <div className="flex flex-wrap items-end gap-1.5">
+          <TabChip tone="blue" icon={Bot} onClick={() => setModal('preview')}>
             AI preview
-          </ToolChip>
+          </TabChip>
           {!readOnly && (
-            <ToolChip icon={Lightbulb} onClick={() => setModal('tips')}>
+            <TabChip tone="amber" icon={Lightbulb} onClick={() => setModal('tips')}>
               Writing tips
-            </ToolChip>
+            </TabChip>
           )}
         </div>
-        <div className="flex items-center gap-2">
-          <AiButton className="h-9" onClick={() => setModal('test')}>
+        <div className="flex items-end gap-1.5">
+          <TabChip tone="ai" icon={Sparkles} onClick={() => setModal('test')}>
             Test AI search
-          </AiButton>
+          </TabChip>
           {!isNew && manager && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="icon" className="size-9 border-line-strong bg-surface shadow-card" aria-label="More actions">
-                  <MoreHorizontal />
-                </Button>
+                <button type="button" aria-label="More actions" className="inline-flex h-9 w-10 items-center justify-center rounded-t-xl border border-b-0 border-line-strong bg-surface text-ink-2 transition-colors hover:bg-surface-2 hover:text-ink focus-visible:ring-2 focus-visible:ring-violet focus-visible:outline-none">
+                  <MoreHorizontal className="size-4" aria-hidden />
+                </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem variant="destructive" onClick={askDelete}>
@@ -184,14 +190,14 @@ export function ArticleEditorPage() {
         </div>
       </div>
 
-      <Panel className="mt-4">
-        <div className="grid gap-x-10 gap-y-5 border-b border-line px-6 py-6 sm:px-8 md:grid-cols-[16rem_minmax(0,1fr)]">
+      <Panel>
+        <div className="grid gap-x-10 gap-y-6 border-b border-line px-6 py-6 sm:px-8 md:grid-cols-[15rem_minmax(0,1fr)]">
           <div>
             <label htmlFor="article-category" className={FIELD_LABEL}>
               Category
             </label>
             <Select value={value.category ? String(value.category) : NONE} disabled={readOnly} onValueChange={(v) => set({ category: v === NONE ? null : Number(v) })}>
-              <SelectTrigger id="article-category" className="mt-2 h-10 w-full">
+              <SelectTrigger id="article-category" className="mt-2 h-11 w-full">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -203,24 +209,13 @@ export function ArticleEditorPage() {
                 ))}
               </SelectContent>
             </Select>
-            <p className="mt-2 text-[13px] leading-5 text-ink-2">Articles in a ticket&apos;s category are favoured by the AI.</p>
+            <p className="mt-2 text-[13px] leading-5 text-ink-2">The AI favours articles in a ticket&apos;s own category.</p>
           </div>
           <div>
-            <span id="article-visibility" className={FIELD_LABEL}>
-              Visibility
-            </span>
+            <span className={FIELD_LABEL}>Who can use it</span>
             <div className="mt-2">
-              <SegmentedControl<Visibility>
-                ariaLabel="Visibility"
-                className="h-10"
-                value={visibility}
-                onChange={(v) => !readOnly && set(flagsFor(v))}
-                options={(Object.keys(VISIBILITY) as Visibility[]).map((k) => ({ value: k, label: VISIBILITY[k].label, icon: VISIBILITY[k].icon, disabled: readOnly }))}
-              />
+              <VisibilityCards value={visibility} disabled={readOnly} onChange={(v) => set(flagsFor(v))} />
             </div>
-            <p className="mt-2 text-[13px] leading-5 text-ink-2" aria-live="polite">
-              {VISIBILITY[visibility].hint}
-            </p>
           </div>
         </div>
         <div className="p-6 sm:p-8">
