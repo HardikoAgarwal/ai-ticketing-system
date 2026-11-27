@@ -2,6 +2,9 @@
 
 ## Unreleased: Helpdesk AI rewrite (from the BookLeaf author portal)
 ### Changed
+- Automation: "Close automatically" is a real switch (a rounded track with a sliding knob and ON / OFF written inside, green when on) with a sentence beside it saying what it does now ("Resolved tickets close after 7 days with no reply"), replacing the segmented Off/On control.
+- Sidebar Settings thread: only the current tab's tick is dark, with the line down to it; ticks above it stay grey.
+- Number fields everywhere no longer show the browser's up/down spinner arrows.
 - Settings round: card headers use the same tint as table headers (`sunken`, works in light and dark) with an icon tile and a normal title. Only the label sits outside a field; its explanation is an (i) icon next to the label with a hover/focus tooltip. **AI assistant:** the "Live AI today" block is roomier, with a big count, a taller bar and a "% of today's allowance used" line. **Automation:** Close automatically is an Off / On toggle below its label; "Close after" stays visible but disabled (showing 7 days) while it is off; the "Closing runs shortly after you save…" note is gone. **Categories:** a clean list with hairline separators instead of tiles.
 - Sidebar: in the collapsed rail the active highlight is centred on the icon (equal left and right padding); the Settings thread is thinner (1px) and turns dark from the top down to the current tab.
 - Page headers: icon, title and description are top-aligned (also against the actions), and a header with no actions lets its description use the full width.

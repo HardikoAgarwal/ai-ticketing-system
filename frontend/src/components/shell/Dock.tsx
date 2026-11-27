@@ -165,19 +165,20 @@ function NavGroup({ item }: { item: DockItem }) {
         {item.children?.map((c, i) => {
           const count = item.children?.length ?? 0
           const last = i === count - 1
-          const reached = activeIndex >= 0 && i <= activeIndex // this item is at or above the current one: its part of the thread is dark
-          const passed = activeIndex >= 0 && i < activeIndex // the current item is further down: the thread carries on below this tick
+          const current = i === activeIndex // only this tick is dark
+          const reached = activeIndex >= 0 && i <= activeIndex // the line above this tick leads down to the current tab: dark
+          const passed = activeIndex >= 0 && i < activeIndex // the current tab is further down: the line carries on below this tick
           return (
-            // a thread: a thin line runs down the left, dark from the top to the current tab and grey below it; every tab hangs off it with a short tick
-            // (the last one with a rounded corner)
+            // a thread: a thin line runs down the left, dark from the top to the current tab and grey below it; every tab hangs off it with a short grey tick,
+            // and only the current tab's tick is dark (the last tab has a rounded corner)
             <li key={c.to} className="relative pl-6">
               {last ? (
-                <span aria-hidden className={cn('absolute top-0 left-0 h-[18px] w-4 rounded-bl-[10px] border-b border-l transition-colors', reached ? 'border-ink' : 'border-line-strong')} />
+                <span aria-hidden className={cn('absolute top-0 left-0 h-[18px] w-4 rounded-bl-[10px] border-b border-l transition-colors', current ? 'border-ink' : 'border-line-strong')} />
               ) : (
                 <>
                   <span aria-hidden className={cn('absolute top-0 left-0 h-[18px] w-px transition-colors', reached ? 'bg-ink' : 'bg-line-strong')} />
                   <span aria-hidden className={cn('absolute top-[18px] -bottom-1 left-0 w-px transition-colors', passed ? 'bg-ink' : 'bg-line-strong')} />
-                  <span aria-hidden className={cn('absolute top-[18px] left-0 h-px w-4 transition-colors', reached ? 'bg-ink' : 'bg-line-strong')} />
+                  <span aria-hidden className={cn('absolute top-[18px] left-0 h-px w-4 transition-colors', current ? 'bg-ink' : 'bg-line-strong')} />
                 </>
               )}
               <NavRow item={c} sub />

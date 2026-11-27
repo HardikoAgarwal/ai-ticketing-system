@@ -1,9 +1,10 @@
 import { ArrowRight, Archive, CheckCheck, Route, Timer } from 'lucide-react'
 
-import { fill, on, SegmentedControl, SolidChip } from '@/components/ds'
+import { fill, on, SolidChip } from '@/components/ds'
 import { Input } from '@/components/ui/input'
 
 import { InfoTip, Row, SettingsCard } from './rows'
+import { Toggle } from './Toggle'
 import type { WorkspaceFormApi } from './use-workspace-form'
 
 const DEFAULT_DAYS = 7
@@ -47,22 +48,25 @@ export function AutomationSettings({ f, readOnly }: { f: WorkspaceFormApi; readO
   return (
     <div className="space-y-6">
       <SettingsCard icon={Timer} title="Close resolved tickets" description="Moves a Resolved ticket to Closed once the customer has had time to reply.">
-        <div className="space-y-2.5">
+        <div className="space-y-3">
           <div className="flex items-center gap-1.5">
-            <span id="auto-close-label" className="text-sm font-semibold text-ink">
+            <label htmlFor="auto-close-on" className="text-sm font-semibold text-ink">
               Close automatically
-            </span>
+            </label>
             <InfoTip>Off keeps Resolved tickets Resolved until the customer confirms or someone closes them.</InfoTip>
           </div>
-          <SegmentedControl
-            ariaLabel="Close automatically"
-            value={on_ ? 'on' : 'off'}
-            onChange={(v) => set('auto_close_days', v === 'on' ? DEFAULT_DAYS : 0)}
-            options={[
-              { value: 'off', label: 'Off', disabled: readOnly },
-              { value: 'on', label: 'On', disabled: readOnly },
-            ]}
-          />
+          <div className="flex items-center gap-4">
+            <Toggle id="auto-close-on" label="Close resolved tickets automatically" checked={on_} disabled={readOnly} onChange={(v) => set('auto_close_days', v ? DEFAULT_DAYS : 0)} />
+            <p className="text-sm text-ink-2">
+              {on_ ? (
+                <>
+                  Resolved tickets close after <span className="font-semibold text-ink">{form.auto_close_days} {form.auto_close_days === 1 ? 'day' : 'days'}</span> with no reply.
+                </>
+              ) : (
+                'Resolved tickets stay Resolved until the customer confirms or someone closes them.'
+              )}
+            </p>
+          </div>
         </div>
         <Row label="Close after" htmlFor="auto-close-days" hint="Between 1 and 90 days. The countdown starts when the ticket is marked Resolved.">
           <div className={on_ ? 'flex items-center gap-2' : 'flex items-center gap-2 opacity-50'}>
