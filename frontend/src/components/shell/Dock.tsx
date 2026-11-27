@@ -70,7 +70,7 @@ function WorkspaceBlock() {
   const navigate = useNavigate()
   const memberships = user?.memberships ?? []
   const trigger = (
-    <button className={cn(ROW, 'h-14 px-[2.5px] text-ink hover:bg-sunken')} aria-label={memberships.length > 1 ? `Workspace: ${brief?.name}. Switch workspace` : `Workspace: ${brief?.name}`}>
+    <button className={cn(ROW, 'h-[45px] px-[2.5px] text-ink hover:bg-sunken')} aria-label={memberships.length > 1 ? `Workspace: ${brief?.name}. Switch workspace` : `Workspace: ${brief?.name}`}>
       <Avatar name={brief?.name} size="lg" className="bg-ink text-canvas border-ink" />
       <span className={cn(LABEL, 'flex-1 pl-0.5 text-left text-[15px] font-semibold tracking-tight')}>{brief?.name ?? 'Workspace'}</span>
       {memberships.length > 1 && <ChevronsUpDown className={cn('size-4 shrink-0 text-ink-3 opacity-0 group-hover/dock:opacity-100 group-has-[:focus-visible,[data-state=open]]/dock:opacity-100 group-data-[pinned=true]/dock:opacity-100')} aria-hidden />}
@@ -199,30 +199,31 @@ export function Dock({ items }: { items: DockItem[] }) {
             <span className={cn(LABEL, 'flex-1 text-left')}>Search</span>
             <Kbd keys="mod+k" className="hidden group-hover/dock:inline-flex group-has-[:focus-visible,[data-state=open]]/dock:inline-flex group-data-[pinned=true]/dock:inline-flex" />
           </button>
-          <div className="mt-1">
-            <NotificationBell variant="dock" labelClassName={LABEL} rowClassName={cn(ROW, 'text-ink-2 hover:bg-sunken hover:text-ink')} />
-          </div>
           <ul className="scroll-quiet mt-3 flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto overflow-x-hidden">
             {items.map((it) => (
               <li key={it.to}>{it.children ? <NavGroup item={it} /> : <NavRow item={it} />}</li>
             ))}
           </ul>
           <div className="mt-3 flex flex-col gap-1 border-t border-line pt-3">
-            <UserMenu variant="dock" labelClassName={LABEL} trailingClassName={cn('opacity-0 transition-opacity duration-150', SHOW)} status={status} rowClassName={cn(ROW, 'h-14 border border-line bg-surface-2 px-[5.5px] text-ink hover:bg-sunken')} />
+            <NotificationBell variant="dock" labelClassName={LABEL} rowClassName={cn(ROW, 'text-ink-2 hover:bg-sunken hover:text-ink')} />
+            <UserMenu variant="dock" labelClassName={LABEL} trailingClassName={cn('opacity-0 transition-opacity duration-150', SHOW)} status={status} rowClassName={cn(ROW, 'h-[45px] border border-line bg-surface-2 px-[3.5px] text-ink hover:bg-sunken')} />
           </div>
         </div>
-        {/* a tab fixed to the sidebar's right edge: flat where it meets the sidebar, rounded on the outside, with the sidebar open/close icon */}
-        <button
-          type="button"
-          onClick={togglePinned}
-          aria-pressed={pinned}
-          aria-label={pinned ? 'Collapse the sidebar' : 'Keep the sidebar open'}
-          title={pinned ? 'Collapse the sidebar' : 'Keep the sidebar open'}
-          className="absolute bottom-6 left-full z-10 flex h-11 w-10 items-center justify-center rounded-r-full border border-l-0 border-line-strong bg-surface-2 pr-1 text-ink-2 shadow-card transition-colors hover:bg-sunken hover:text-ink focus-visible:ring-2 focus-visible:ring-violet focus-visible:outline-none"
-        >
-          {pinned ? <PanelLeftClose className="size-5" aria-hidden /> : <PanelLeftOpen className="size-5" aria-hidden />}
-        </button>
       </nav>
+      {/* a tab fixed to the sidebar's right edge: the sidebar's own colour, flat where it meets the sidebar, rounded outside. It sits beside the sidebar (not in it), so pointing at it does not open the collapsed sidebar */}
+      <button
+        type="button"
+        onClick={togglePinned}
+        aria-pressed={pinned}
+        aria-label={pinned ? 'Collapse the sidebar' : 'Keep the sidebar open'}
+        title={pinned ? 'Collapse the sidebar' : 'Keep the sidebar open'}
+        className={cn(
+          'fixed bottom-6 z-30 hidden h-11 w-10 items-center justify-center rounded-r-full border border-l-0 border-line bg-surface pr-1 text-ink-2 transition-[left,color,background-color] duration-200 hover:bg-surface-2 hover:text-ink focus-visible:ring-2 focus-visible:ring-violet focus-visible:outline-none md:flex',
+          pinned ? 'left-[232px]' : 'left-16',
+        )}
+      >
+        {pinned ? <PanelLeftClose className="size-5" aria-hidden /> : <PanelLeftOpen className="size-5" aria-hidden />}
+      </button>
     </div>
   )
 }
