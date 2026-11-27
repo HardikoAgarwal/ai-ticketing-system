@@ -73,7 +73,7 @@ export function CategorySettings({ readOnly }: { readOnly: boolean }) {
           const tone = categoryTone(c.key, c.name)
           const kws = Object.keys(c.keywords)
           return (
-            <div key={c.id} className="flex items-start gap-3.5">
+            <div key={c.id} className="flex items-start gap-3.5 rounded-control bg-surface-2 p-4">
               <span className={`mt-1.5 size-3 shrink-0 rounded-full ${tone.dot}`} aria-hidden />
               <div className="min-w-0 flex-1">
                 <p className="flex flex-wrap items-center gap-2 text-sm font-semibold text-ink">

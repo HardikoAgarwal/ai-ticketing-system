@@ -103,7 +103,7 @@ export function SlaSettings({ f, readOnly }: { f: WorkspaceFormApi; readOnly: bo
         )}
       </SettingsCard>
 
-      <SettingsCard title="How targets work" flush>
+      <SettingsCard title="How targets work">
         <p className="text-sm leading-6 text-ink-2">
           The clock starts when a ticket arrives and stops at the first reply from your team. Changing a target updates deadlines for new tickets and for a ticket whenever its priority changes.
         </p>

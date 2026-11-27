@@ -2,6 +2,7 @@
 
 ## Unreleased: Helpdesk AI rewrite (from the BookLeaf author portal)
 ### Changed
+- Settings tidied: no divider lines between the options inside a card (they are stacked with even spacing); card headers use the theme's soft green with green text instead of beige; each category is its own soft tile rather than a row between lines.
 - Sidebar Settings thread fixed: it is now one continuous vertical line centred exactly under the Settings icon, with a short tick to each tab at the middle of its row (the current tab's tick is dark) and a rounded corner on the last tab; before, only the curves showed.
 - Settings: label and field are stacked again (label and explanation on top, the control underneath) instead of side by side, and the card header uses a stronger tint (`sunken`) so it stands clearly apart from the body.
 - Sidebar Settings submenu is a thread: one line runs down the left and every tab hangs off it with a rounded elbow connector; the elbow of the current tab is darker.

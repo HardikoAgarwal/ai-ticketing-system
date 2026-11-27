@@ -70,7 +70,7 @@ export function AutomationSettings({ f, readOnly }: { f: WorkspaceFormApi; readO
         )}
       </SettingsCard>
 
-      <SettingsCard title="How it works" description="The life of one ticket." flush>
+      <SettingsCard title="How it works" description="The life of one ticket.">
         <Lifecycle days={on_ ? form.auto_close_days : DEFAULT_DAYS} />
         {!on_ && <p className="mt-3 text-[13px] text-ink-2">Shown with the suggested 7 days. Turn the switch on to use it.</p>}
         <p className="mt-3 text-[13px] leading-5 text-ink-2">Closing runs shortly after you save, and then about once an hour while your team is using the app. Closed tickets are listed under Tickets, History.</p>

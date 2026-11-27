@@ -8,20 +8,20 @@ import { errorMessage } from '@/lib/api'
 import { cn } from '@/lib/utils'
 
 /**
- * One card of related settings: a title and a line of explanation on top, then the settings as rows separated by hairlines. A settings page is a
+ * One card of related settings: a title and a line of explanation on top, then the settings stacked with space between them (no divider lines inside a card). A settings page is a
  * short stack of these, so each tab reads as a few clearly named groups instead of one long list.
  */
-export function SettingsCard({ title, description, actions, flush, children, className }: { title: string; description?: ReactNode; actions?: ReactNode; /** No row dividers or row padding: the content lays itself out. */ flush?: boolean; children: ReactNode; className?: string }) {
+export function SettingsCard({ title, description, actions, children, className }: { title: string; description?: ReactNode; actions?: ReactNode; children: ReactNode; className?: string }) {
   return (
     <Panel as="section" className={className}>
-      <header className="flex flex-wrap items-start justify-between gap-x-6 gap-y-3 rounded-t-panel border-b border-line-strong bg-sunken px-6 py-5">
+      <header className="flex flex-wrap items-start justify-between gap-x-6 gap-y-3 rounded-t-panel border-b border-mint-line bg-mint px-6 py-5">
         <div className="min-w-0">
-          <h2 className="text-lg leading-6 font-semibold tracking-tight text-ink">{title}</h2>
-          {description && <p className="mt-1 max-w-2xl text-sm leading-6 text-ink-2">{description}</p>}
+          <h2 className="text-lg leading-6 font-semibold tracking-tight text-mint-ink">{title}</h2>
+          {description && <p className="mt-1 max-w-2xl text-sm leading-6 text-mint-ink/80">{description}</p>}
         </div>
         {actions}
       </header>
-      <div className={flush ? 'p-6' : 'divide-y divide-line [&>*]:px-6 [&>*]:py-5'}>{children}</div>
+      <div className="space-y-7 p-6">{children}</div>
     </Panel>
   )
 }
