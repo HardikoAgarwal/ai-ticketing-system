@@ -131,8 +131,40 @@ export function ArticleEditorPage() {
         icon={FileText}
         title={readOnly ? 'Article' : isNew ? 'New article' : 'Edit article'}
         description={readOnly ? 'Only owners and admins can edit. You can read exactly what the AI reads.' : 'Write it the way you would explain it to a customer. The AI quotes this and cites it.'}
-        actions={
-          <>
+      />
+
+      <div className="mt-8 space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-4">
+          <div className="flex flex-wrap items-center gap-x-8 gap-y-4">
+<div className="flex items-center gap-3">
+              <span className="text-[11px] font-semibold tracking-[0.1em] text-ink-3 uppercase">Category</span>
+              <Select value={value.category ? String(value.category) : NONE} disabled={readOnly} onValueChange={(v) => set({ category: v === NONE ? null : Number(v) })}>
+                <SelectTrigger aria-label="Category" className="h-10 w-52">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={NONE}>No category</SelectItem>
+                  {categories.data?.map((c) => (
+                    <SelectItem key={c.id} value={String(c.id)}>
+                      {c.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="text-[11px] font-semibold tracking-[0.1em] text-ink-3 uppercase">Visibility</span>
+              <SegmentedControl<Visibility>
+                ariaLabel="Visibility"
+                className="h-10"
+                value={visibility}
+                onChange={(v) => !readOnly && set(flagsFor(v))}
+                options={(Object.keys(VISIBILITY) as Visibility[]).map((k) => ({ value: k, label: VISIBILITY[k].label, icon: VISIBILITY[k].icon, disabled: readOnly }))}
+              />
+            </div>
+  
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
             <Button variant="outline" className="h-10" onClick={() => setModal('preview')}>
               <Bot /> AI preview
             </Button>
@@ -156,42 +188,14 @@ export function ArticleEditorPage() {
                 </DropdownMenuContent>
               </DropdownMenu>
             )}
-          </>
-        }
-      />
-
-      <Panel className="mt-8">
-        <div className="flex flex-wrap items-center gap-x-8 gap-y-4 border-b border-line px-6 py-4 sm:px-8">
-          <div className="flex items-center gap-3">
-            <span className="text-[11px] font-semibold tracking-[0.1em] text-ink-3 uppercase">Category</span>
-            <Select value={value.category ? String(value.category) : NONE} disabled={readOnly} onValueChange={(v) => set({ category: v === NONE ? null : Number(v) })}>
-              <SelectTrigger aria-label="Category" className="h-10 w-52">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={NONE}>No category</SelectItem>
-                {categories.data?.map((c) => (
-                  <SelectItem key={c.id} value={String(c.id)}>
-                    {c.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
           </div>
-          <div className="flex items-center gap-3">
-            <span className="text-[11px] font-semibold tracking-[0.1em] text-ink-3 uppercase">Visibility</span>
-            <SegmentedControl<Visibility>
-              ariaLabel="Visibility"
-              className="h-10"
-              value={visibility}
-              onChange={(v) => !readOnly && set(flagsFor(v))}
-              options={(Object.keys(VISIBILITY) as Visibility[]).map((k) => ({ value: k, label: VISIBILITY[k].label, icon: VISIBILITY[k].icon, disabled: readOnly }))}
-            />
-          </div>
-          <p className="min-w-56 flex-1 text-[13px] leading-5 text-ink-2" aria-live="polite">
-            {VISIBILITY[visibility].hint}
-          </p>
         </div>
+        <p className="text-[13px] leading-5 text-ink-2" aria-live="polite">
+          {VISIBILITY[visibility].hint}
+        </p>
+      </div>
+
+      <Panel className="mt-6">
         <div className="p-6 sm:p-8">
           <input
             aria-label="Article title"
