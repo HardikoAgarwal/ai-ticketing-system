@@ -2,6 +2,7 @@
 
 ## Unreleased: Helpdesk AI rewrite (from the BookLeaf author portal)
 ### Changed
+- Sidebar Settings submenu is a thread: one line runs down the left and every tab hangs off it with a rounded elbow connector; the elbow of the current tab is darker.
 - Response targets: a three-colour legend (On track, At risk, Overdue) at the top, and each priority is a bar on one shared scale: green while there is time, amber for the last quarter, and a pale red tail for overdue, with the hours for each stage underneath and a larger hours box beside it.
 - Categories: adding and editing happen in a modal (name, description for the AI, keywords shown as chips as you type) instead of an inline form.
 - Settings polish: every setting is label on the left, field on the right (the tone of voice textarea and the category form joined the rest); each card header is tinted with a stronger divider so it reads apart from the body; on the AI tab the "When the AI is off or out of budget" note is a blue banner under the live usage bar.

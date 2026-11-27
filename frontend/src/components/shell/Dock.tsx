@@ -160,12 +160,19 @@ function NavGroup({ item }: { item: DockItem }) {
         <span className={cn(LABEL, 'flex-1 text-left')}>{item.label}</span>
         <ChevronDown className={cn('size-4 shrink-0 text-ink-3 opacity-0 transition-[transform,opacity] duration-200 group-hover/dock:opacity-100 group-focus-within/dock:opacity-100 group-data-[pinned=true]/dock:opacity-100', open && 'rotate-180')} aria-hidden />
       </button>
-      <ul id={listId} hidden={!open} className="mt-1 ml-[19px] hidden flex-col gap-1 border-l border-line pl-2 group-hover/dock:[&:not([hidden])]:flex group-focus-within/dock:[&:not([hidden])]:flex group-data-[pinned=true]/dock:[&:not([hidden])]:flex">
-        {item.children?.map((c) => (
-          <li key={c.to}>
-            <NavRow item={c} sub />
-          </li>
-        ))}
+      <ul id={listId} hidden={!open} className="mt-1 ml-[19px] hidden flex-col gap-1 group-hover/dock:[&:not([hidden])]:flex group-focus-within/dock:[&:not([hidden])]:flex group-data-[pinned=true]/dock:[&:not([hidden])]:flex">
+        {item.children?.map((c, i) => {
+          const last = i === (item.children?.length ?? 0) - 1
+          const active = isItemActive(c, pathname)
+          return (
+            // a thread: one line runs down the left, and each sub item hangs off it with a rounded elbow
+            <li key={c.to} className="relative pl-5">
+              <span aria-hidden className={cn('absolute top-0 left-0 h-[18px] w-4 rounded-bl-[10px] border-b-[1.5px] border-l-[1.5px] transition-colors', active ? 'border-ink' : 'border-line-strong')} />
+              {!last && <span aria-hidden className="absolute top-[18px] -bottom-1 left-0 border-l-[1.5px] border-line-strong" />}
+              <NavRow item={c} sub />
+            </li>
+          )
+        })}
       </ul>
     </div>
   )
