@@ -100,7 +100,7 @@ export function NowCard({ ticket, draft, meId, readOnly, rerunning, onRerun, onU
 
         {state === 'done' && ticket.ai_reasoning && (
           <details className="group mt-3 text-[13px]">
-            <summary className="cursor-pointer text-xs font-medium text-lav-ink underline-offset-2 hover:underline">Why did the AI say this?</summary>
+            <summary className="cursor-pointer text-xs font-medium text-lav-ink">Why did the AI say this?</summary>
             <p className="mt-1.5 leading-relaxed text-ink-3">{ticket.ai_reasoning}</p>
           </details>
         )}

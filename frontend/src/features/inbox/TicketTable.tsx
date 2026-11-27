@@ -51,7 +51,7 @@ function Row({ ticket: t, to, cursor, checked, fresh, meId, onToggle }: { ticket
               e.preventDefault()
               navigate(to)
             }}
-            className={cn('min-w-0 truncate rounded-sm text-[15px] text-ink outline-none hover:underline focus-visible:ring-2 focus-visible:ring-violet', t.has_unread ? 'font-semibold' : 'font-medium')}
+            className={cn('min-w-0 truncate rounded-sm text-[15px] text-ink outline-none focus-visible:ring-2 focus-visible:ring-violet', t.has_unread ? 'font-semibold' : 'font-medium')}
           >
             {t.subject}
           </a>

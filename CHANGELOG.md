@@ -2,6 +2,7 @@
 
 ## Unreleased: Helpdesk AI rewrite (from the BookLeaf author portal)
 ### Changed
+- No more hover underlines anywhere (article, ticket and history titles, the breadcrumb, queue names, auth links, the "Why did the AI say this?" note, link buttons). The confirmation popup is larger and themed: destructive confirms (delete, discard) get a solid red icon tile and a solid red confirm button with a trash icon, a bigger title and text, and large buttons in a tinted footer bar.
 - How it works modal simplified to match Writing tips: no header icon, a short title and one-line description, five numbered steps in a divided list with shorter text, then the three visibility cards.
 - Knowledge base page, round four: the **How it works** tile is much thinner (about 10% of the row, title only), and the **Test AI search** button in the header has a soft turning aurora glow around it (`AiButton` takes a `glow` prop).
 - Knowledge base page, round three: the header is one row with the title (search, Test AI search and New article sit beside it, no wrapping on normal screens). The category filter, the Categories button and the How it works button are gone from the header. Search now also matches category names, so it is the only filter besides the tiles. The visibility tiles have a fourth, much narrower dark tile, **How it works**, that opens the walkthrough modal (on phones it is a full-width row under the three tiles).

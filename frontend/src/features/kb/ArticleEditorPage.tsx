@@ -139,7 +139,7 @@ export function ArticleEditorPage() {
     <nav aria-label="Breadcrumb" className="mt-4">
       <ol className="flex min-w-0 items-center gap-2 text-sm">
         <li>
-          <button type="button" onClick={leave} className="rounded-sm font-medium text-ink-2 hover:text-ink hover:underline focus-visible:ring-2 focus-visible:ring-violet focus-visible:outline-none">
+          <button type="button" onClick={leave} className="rounded-sm font-medium text-ink-2 hover:text-ink focus-visible:ring-2 focus-visible:ring-violet focus-visible:outline-none">
             Knowledge base
           </button>
         </li>

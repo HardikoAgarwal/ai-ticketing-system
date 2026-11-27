@@ -32,7 +32,7 @@ function Row({ article: a, to }: { article: ArticleListItem; to: string }) {
       className={`group ${ROW}`}
     >
       <Td>
-        <Link to={to} className="block truncate rounded-sm text-[15px] font-semibold text-ink outline-none hover:underline focus-visible:ring-2 focus-visible:ring-violet">
+        <Link to={to} className="block truncate rounded-sm text-[15px] font-semibold text-ink outline-none focus-visible:ring-2 focus-visible:ring-violet">
           {a.title}
         </Link>
         <span className="mt-1 block truncate text-[13px] text-ink-2">{a.excerpt}</span>

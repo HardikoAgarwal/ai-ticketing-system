@@ -31,7 +31,7 @@ export function AuthLayout({ title, subtitle, children, footer, width = 'max-w-[
 /** Styled in-text link used by auth footers. */
 export function AuthLink({ to, children }: { to: string; children: ReactNode }) {
   return (
-    <Link to={to} className="rounded-sm font-semibold text-violet underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet">
+    <Link to={to} className="rounded-sm font-semibold text-violet focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet">
       {children}
     </Link>
   )

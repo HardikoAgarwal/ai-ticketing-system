@@ -128,7 +128,7 @@ function Col({ title, children }: { title: string; children: ReactNode }) {
 }
 
 export function Footer() {
-  const link = 'lp-focus inline-flex items-center gap-1 rounded underline-offset-4 hover:underline'
+  const link = 'lp-focus inline-flex items-center gap-1 rounded'
   return (
     <footer data-nav="light" className="relative -mt-10 overflow-hidden rounded-t-[2.5rem] bg-(--lp-lime) text-(--lp-ink)">
       <div className="mx-auto max-w-6xl px-5 pt-16 sm:px-8 sm:pt-20">

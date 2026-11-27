@@ -39,7 +39,7 @@ function Row({ ticket: t, to }: { ticket: StaffTicket; to: string }) {
               e.preventDefault()
               navigate(to)
             }}
-            className="min-w-0 truncate rounded-sm text-[15px] font-medium text-ink outline-none hover:underline focus-visible:ring-2 focus-visible:ring-violet"
+            className="min-w-0 truncate rounded-sm text-[15px] font-medium text-ink outline-none focus-visible:ring-2 focus-visible:ring-violet"
           >
             {t.subject}
           </a>

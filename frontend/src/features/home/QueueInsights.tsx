@@ -51,7 +51,7 @@ export function Workload({ rows, loading, error, onRetry, inbox, className }: { 
                     <Avatar name={r.name} size="lg" />
                   )}
                   <span className="min-w-0 flex-1">
-                    <span className={`block truncate text-sm font-semibold text-ink group-hover:underline ${unassigned ? 'italic' : ''}`}>{r.name}</span>
+                    <span className={`block truncate text-sm font-semibold text-ink ${unassigned ? 'italic' : ''}`}>{r.name}</span>
                     <span className="block text-xs text-ink-2" style={r.overdue ? { color: fill('rose') } : undefined}>
                       {r.overdue ? `${r.overdue} overdue` : r.count ? 'All on time' : unassigned ? 'Everything has an owner' : 'Nothing open'}
                     </span>
