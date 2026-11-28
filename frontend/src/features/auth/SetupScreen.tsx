@@ -40,14 +40,24 @@ const TICKETS = [
 
 type Floater = { key: number; ticket: (typeof TICKETS)[number]; x: number; y: number; delay: number }
 
+/**
+ * The landing page's setup screen hands over to a second copy at the app root (it covers the route change into the
+ * dashboard). The game state lives here so that copy picks up the same score and tickets instead of starting over.
+ */
+const carried = { score: 0, combo: 0, floaters: [] as Floater[], nextKey: 0 }
+
 /** Tap game: stamp floating tickets while the workspace boots. */
-function TicketStampGame({ paused }: { paused?: boolean }) {
+function TicketStampGame({ paused, carry = false }: { paused?: boolean; /** Continue the game the previous setup screen was showing. */ carry?: boolean }) {
   const reduce = useReducedMotion()
-  const [score, setScore] = useState(0)
-  const [combo, setCombo] = useState(0)
-  const [floaters, setFloaters] = useState<Floater[]>([])
+  const [initial] = useState(() => (carry ? carried : { score: 0, combo: 0, floaters: [], nextKey: carried.nextKey }))
+  const [score, setScore] = useState(initial.score)
+  const [combo, setCombo] = useState(initial.combo)
+  const [floaters, setFloaters] = useState<Floater[]>(initial.floaters)
   const [burst, setBurst] = useState<{ id: number; x: number; y: number } | null>(null)
-  const nextKey = useRef(0)
+  const nextKey = useRef(initial.nextKey)
+  useEffect(() => {
+    Object.assign(carried, { score, combo, floaters, nextKey: nextKey.current })
+  }, [score, combo, floaters])
 
   const spawn = useCallback(() => {
     if (paused || reduce) return
@@ -67,10 +77,10 @@ function TicketStampGame({ paused }: { paused?: boolean }) {
 
   useEffect(() => {
     if (paused || reduce) return
-    spawn()
+    if (!carry) spawn()
     const id = window.setInterval(spawn, 1000)
     return () => window.clearInterval(id)
-  }, [paused, reduce, spawn])
+  }, [paused, reduce, spawn, carry])
 
   useEffect(() => {
     if (paused || reduce) return
@@ -117,7 +127,7 @@ function TicketStampGame({ paused }: { paused?: boolean }) {
         </div>
       </div>
       <div className="relative min-h-0 flex-1 touch-manipulation select-none bg-[#fff8ef]">
-        <AnimatePresence>
+        <AnimatePresence initial={!carry}>
           {floaters.map((f) => (
             <motion.button
               key={f.key}
@@ -187,7 +197,7 @@ export function SetupScreen({ name, step, progress, waking = false, ready = fals
       role="dialog"
       aria-modal="true"
       aria-labelledby="setup-title"
-      className="lp fixed inset-0 z-[80] overflow-hidden bg-[#ffc9a8] text-(--lp-ink)"
+      className={cn('lp fixed inset-0 overflow-hidden bg-[#ffc9a8] text-(--lp-ink)', reveal ? 'z-[81]' : 'z-[80]')}
     >
       {/* Landing shapes, faded so content stays readable */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
@@ -204,7 +214,7 @@ export function SetupScreen({ name, step, progress, waking = false, ready = fals
       <div className="relative mx-auto grid h-dvh w-full max-w-6xl grid-rows-[auto_1fr] gap-4 px-4 py-5 sm:gap-5 sm:px-6 sm:py-6 lg:grid-cols-2 lg:grid-rows-1 lg:items-stretch lg:gap-6 lg:py-8">
         {/* Left: progress + steps */}
         <motion.div
-          initial={reduce ? false : { opacity: 0, x: -12 }}
+          initial={reduce || reveal ? false : { opacity: 0, x: -12 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.4 }}
           className={cn('flex min-h-0 flex-col overflow-hidden rounded-[1.5rem] bg-white p-5 sm:p-6', HARD)}
@@ -228,6 +238,7 @@ export function SetupScreen({ name, step, progress, waking = false, ready = fals
               <motion.div
                 className="h-full rounded-full"
                 style={{ backgroundColor: error ? '#ff6a4d' : PROGRESS_COLOR }}
+                initial={false}
                 animate={{ width: `${Math.max(4, progress)}%` }}
                 transition={{ duration: reduce ? 0 : 0.5, ease: 'easeOut' }}
               />
@@ -298,8 +309,8 @@ export function SetupScreen({ name, step, progress, waking = false, ready = fals
         </motion.div>
 
         {/* Right: game */}
-        <motion.div initial={reduce ? false : { opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.4, delay: 0.05 }} className="min-h-[14rem] lg:min-h-0">
-          <TicketStampGame paused={Boolean(error)} />
+        <motion.div initial={reduce || reveal ? false : { opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.4, delay: 0.05 }} className="min-h-[14rem] lg:min-h-0">
+          <TicketStampGame paused={Boolean(error)} carry={reveal} />
         </motion.div>
       </div>
     </motion.div>

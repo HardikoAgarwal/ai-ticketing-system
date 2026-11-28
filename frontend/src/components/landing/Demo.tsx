@@ -108,6 +108,8 @@ function Selector({ t, index, busy, onStart }: { t: TemplateMeta; index: number;
   )
 }
 
+const MIN_SETUP_MS = 10_000
+
 export function Demo({ notice }: { notice?: string | null }) {
   const { startDemo } = useAuth()
   const navigate = useNavigate()
@@ -142,17 +144,22 @@ export function Demo({ notice }: { notice?: string | null }) {
     }
   }, [busy, error])
 
-  // steps advance on a timer, but the last one only lights up once the API call has really finished
-  const step = done ? SETUP_STEPS.length - 1 : Math.min(Math.floor(elapsed / 1.4), SETUP_STEPS.length - 2)
-  const progress = done ? 100 : Math.min(90, 6 + elapsed * 11)
+  // steps advance on a timer paced to fill the minimum setup time, but the last one only lights up once the API call has really finished
+  const stepSeconds = MIN_SETUP_MS / 1000 / (SETUP_STEPS.length - 1)
+  const step = done ? SETUP_STEPS.length - 1 : Math.min(Math.floor(elapsed / stepSeconds), SETUP_STEPS.length - 2)
+  const progress = done ? 100 : Math.min(90, 6 + (elapsed / (MIN_SETUP_MS / 1000)) * 84)
 
   const trigger = useRef<HTMLElement | null>(null)
+  // Bumped by each launch and by Back, so a launch the user backed out of never navigates.
+  const launchRun = useRef(0)
   const launch = async (t: TemplateMeta) => {
     if (busy && !error) return
     if (document.activeElement instanceof HTMLElement && document.activeElement !== document.body) trigger.current = document.activeElement
     setError(null)
     setDone(false)
     setBusy(t)
+    const started = Date.now()
+    const run = ++launchRun.current
     try {
       let slug: string | null = null
       for (let attempt = 0; attempt < 4 && !slug; attempt++) {
@@ -164,6 +171,10 @@ export function Demo({ notice }: { notice?: string | null }) {
         }
       }
       if (!slug) return
+      // The sandbox is often ready instantly; keep the setup screen up long enough to read the steps (and play a round).
+      const left = MIN_SETUP_MS - (Date.now() - started)
+      if (left > 0) await new Promise((r) => setTimeout(r, left))
+      if (run !== launchRun.current) return
       setDone(true)
       // Stay on setup while the dashboard chunk loads, then navigate under the same cover.
       await new Promise((r) => setTimeout(r, 420))
@@ -210,10 +221,11 @@ export function Demo({ notice }: { notice?: string | null }) {
             step={step}
             progress={progress}
             ready={done && !error}
-            waking={elapsed > 7}
+            waking={elapsed > MIN_SETUP_MS / 1000 + 3}
             error={error}
             onRetry={() => launch(busy)}
             onBack={() => {
+              launchRun.current++
               setBusy(null)
               setError(null)
               setDone(false)

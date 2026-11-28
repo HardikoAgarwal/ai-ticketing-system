@@ -73,13 +73,13 @@ export function TicketsPage() {
         title={`Hi ${firstName(user?.full_name)}`}
         description="Your requests in one place. Our team replies here, with a little AI help."
         actions={
-          <>
-            <div className="relative w-full sm:w-72">
+          <div className="flex w-full items-center gap-2 lg:w-auto">
+            <div className="relative min-w-0 flex-1 lg:w-72 lg:flex-none">
               <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-ink-3" aria-hidden />
-              <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search by title or reference" aria-label="Search your requests" className="h-10 bg-surface pl-9" type="search" />
+              <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search requests" aria-label="Search your requests" className="h-10 bg-surface pl-9" type="search" />
             </div>
             {newRequest}
-          </>
+          </div>
         }
       />
 
