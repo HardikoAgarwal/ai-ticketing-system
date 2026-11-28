@@ -7,6 +7,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.ai.drafter import KB_HITS
 from apps.kb import retrieval
 from apps.kb.indexing import reindex_article
 from apps.kb.models import Article
@@ -214,16 +215,49 @@ class ArticleViewSet(WorkspaceViewMixin, viewsets.ModelViewSet):
         reindex_article(article)
 
     @extend_schema(
-        summary="Search the knowledge base (the same retrieval the AI drafts use)",
+        summary="Search the knowledge base (the same retrieval the AI drafts use), with a verdict on whether the question is covered",
         parameters=[OpenApiParameter("q", str, required=True)],
-        responses=inline_serializer("KBHit", fields={"article_id": serializers.IntegerField(), "title": serializers.CharField(),
-                                                     "score": serializers.FloatField(), "text": serializers.CharField()}, many=True),
+        responses=inline_serializer(
+            "KBSearch",
+            fields={
+                "mode": serializers.ChoiceField(choices=["semantic", "keyword"]),
+                "verdict": serializers.ChoiceField(choices=["covered", "partial", "none"]),
+                "pending": serializers.IntegerField(),
+                "hits": inline_serializer(
+                    "KBHit",
+                    fields={
+                        "article_id": serializers.IntegerField(), "title": serializers.CharField(), "category_name": serializers.CharField(allow_null=True),
+                        "score": serializers.FloatField(), "level": serializers.ChoiceField(choices=["strong", "possible"]), "match": serializers.IntegerField(),
+                        "text": serializers.CharField(), "is_internal": serializers.BooleanField(), "matched_terms": serializers.ListField(child=serializers.CharField()),
+                        "used_in_draft": serializers.BooleanField(),
+                    },
+                    many=True,
+                ),
+            },
+        ),
     )
     @action(detail=False, methods=["get"])
     def search(self, request, slug=None):
         q = request.query_params.get("q", "").strip()
-        hits = retrieval.search(request.workspace.id, q, k=5) if q else []
-        return Response([{"article_id": h.article_id, "title": h.title, "score": h.score, "text": h.text} for h in hits])
+        result = retrieval.search_with_info(request.workspace.id, q, k=5) if q else retrieval.SearchResult([], "keyword")
+        names = dict(Category.objects.filter(workspace=request.workspace).values_list("id", "name"))
+        top = result.hits[0].level if result.hits else None
+        return Response(
+            {
+                "mode": result.mode,
+                "verdict": "none" if top is None else "covered" if top == "strong" else "partial",
+                "pending": result.pending,
+                "hits": [
+                    {
+                        "article_id": h.article_id, "title": h.title, "category_name": names.get(h.category_id), "score": h.score, "level": h.level,
+                        "match": h.match, "text": h.text, "is_internal": h.is_internal, "matched_terms": h.matched_terms,
+                        # drafts are given the best KB_HITS articles, so this marks what the AI would really read
+                        "used_in_draft": i < KB_HITS,
+                    }
+                    for i, h in enumerate(result.hits)
+                ],
+            }
+        )
 
 
 @extend_schema(
@@ -240,10 +274,9 @@ class SuggestionView(WorkspaceViewMixin, APIView):
         q = request.query_params.get("q", "").strip()
         if len(q) < 8:
             return Response([])
+        # keyword engine on purpose (no AI quota while someone types); hits already clear its relevance floor
         hits = retrieval.search(request.workspace.id, q, k=3, include_internal=False, use_embeddings=False)
-        return Response(
-            [{"article_id": h.article_id, "title": h.title, "excerpt": (h.text[:220] + "…") if len(h.text) > 220 else h.text} for h in hits if h.score >= 1.2]
-        )
+        return Response([{"article_id": h.article_id, "title": h.title, "excerpt": (h.text[:220] + "…") if len(h.text) > 220 else h.text} for h in hits])
 
 
 @extend_schema(tags=["Tickets"])

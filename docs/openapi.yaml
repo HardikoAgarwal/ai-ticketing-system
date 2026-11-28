@@ -420,26 +420,15 @@ paths:
           description: No response body
   /api/v1/w/{slug}/articles/search/:
     get:
-      operationId: v1_w_articles_search_list
-      summary: Search the knowledge base (the same retrieval the AI drafts use)
+      operationId: v1_w_articles_search_retrieve
+      summary: Search the knowledge base (the same retrieval the AI drafts use), with
+        a verdict on whether the question is covered
       parameters:
-      - name: ordering
-        required: false
-        in: query
-        description: Which field to use when ordering the results.
-        schema:
-          type: string
       - in: query
         name: q
         schema:
           type: string
         required: true
-      - name: search
-        required: false
-        in: query
-        description: A search term.
-        schema:
-          type: string
       - in: path
         name: slug
         schema:
@@ -454,9 +443,7 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/KBHit'
+                $ref: '#/components/schemas/KBSearch'
           description: ''
   /api/v1/w/{slug}/categories/:
     get:
@@ -2343,16 +2330,63 @@ components:
           type: integer
         title:
           type: string
+        category_name:
+          type: string
+          nullable: true
         score:
           type: number
           format: double
+        level:
+          $ref: '#/components/schemas/LevelEnum'
+        match:
+          type: integer
         text:
           type: string
+        is_internal:
+          type: boolean
+        matched_terms:
+          type: array
+          items:
+            type: string
+        used_in_draft:
+          type: boolean
       required:
       - article_id
+      - category_name
+      - is_internal
+      - level
+      - match
+      - matched_terms
       - score
       - text
       - title
+      - used_in_draft
+    KBSearch:
+      type: object
+      properties:
+        mode:
+          $ref: '#/components/schemas/ModeEnum'
+        verdict:
+          $ref: '#/components/schemas/VerdictEnum'
+        pending:
+          type: integer
+        hits:
+          type: array
+          items:
+            $ref: '#/components/schemas/KBHit'
+      required:
+      - hits
+      - mode
+      - pending
+      - verdict
+    LevelEnum:
+      enum:
+      - strong
+      - possible
+      type: string
+      description: |-
+        * `strong` - strong
+        * `possible` - possible
     LoginRequest:
       type: object
       properties:
@@ -2529,6 +2563,14 @@ components:
         * `REPLY` - Reply
         * `NOTE` - Internal note
         * `SYSTEM` - System
+    ModeEnum:
+      enum:
+      - semantic
+      - keyword
+      type: string
+      description: |-
+        * `semantic` - semantic
+        * `keyword` - keyword
     Notification:
       type: object
       properties:
@@ -3469,6 +3511,16 @@ components:
       - email
       - full_name
       - id
+    VerdictEnum:
+      enum:
+      - covered
+      - partial
+      - none
+      type: string
+      description: |-
+        * `covered` - covered
+        * `partial` - partial
+        * `none` - none
     Workspace:
       type: object
       properties:

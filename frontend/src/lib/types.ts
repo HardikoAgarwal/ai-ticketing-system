@@ -302,8 +302,26 @@ export interface ArticleListItem {
 export interface KBHit {
   article_id: number
   title: string
+  category_name: string | null
   score: number
+  /** strong = clearly this article's topic; possible = related. Anything weaker is not returned. */
+  level: 'strong' | 'possible'
+  /** 0-100, absolute (not relative to the best hit). */
+  match: number
   text: string
+  is_internal: boolean
+  /** Words from the passage that the question matched on. */
+  matched_terms: string[]
+  /** The AI is given the best few articles when it drafts; this one is among them. */
+  used_in_draft: boolean
+}
+export interface KBSearch {
+  /** semantic = by meaning (needs the server AI key); keyword = by words. */
+  mode: 'semantic' | 'keyword'
+  verdict: 'covered' | 'partial' | 'none'
+  /** Published articles still being indexed, so not yet matchable by meaning. */
+  pending: number
+  hits: KBHit[]
 }
 export interface Suggestion {
   article_id: number

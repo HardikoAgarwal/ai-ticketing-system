@@ -1,3 +1,5 @@
+import pytest
+
 from apps.demo.seed import build_workspace
 from apps.kb import retrieval
 from apps.kb.indexing import reindex_article, split_text
@@ -21,14 +23,14 @@ def test_keyword_retrieval_ranks_relevant_article(ws):
     assert retrieval.search(ws.id, "zzzz qqqq", use_embeddings=False) == []
 
 
-def test_internal_articles_hidden_from_requester_suggestions(client_for, ws, customer, agent):
+def test_internal_articles_hidden_from_requester_suggestions(client_for, ws, customer, agent, no_embeddings):
     pub = Article.objects.create(workspace=ws, title="Refund policy", body="You can request a refund for your annual plan within 14 days.")
     internal = Article.objects.create(workspace=ws, title="Refund approvals", is_internal=True, body="Refund approvals above two thousand dollars need finance sign off.")
     for a in (pub, internal):
         reindex_article(a, embed=False)
     got = client_for(customer).get(url(ws, "suggestions/?q=how do I get a refund approval for my annual plan")).data
     assert [s["title"] for s in got] == ["Refund policy"]
-    staff = client_for(agent).get(url(ws, "articles/search/?q=refund approval finance")).data
+    staff = client_for(agent).get(url(ws, "articles/search/?q=refund approval finance")).data["hits"]
     assert "Refund approvals" in [s["title"] for s in staff]
 
 
@@ -84,3 +86,64 @@ def test_expired_demos_are_purged(db):
     Workspace.objects.filter(pk=b["workspace"].pk).update(expires_at=timezone.now() - timedelta(minutes=1))
     assert purge_expired_demos() == 1
     assert not Workspace.objects.exists() and not User.objects.filter(is_demo=True).exists()
+
+
+@pytest.fixture
+def no_embeddings(monkeypatch):
+    """Keyword engine only, and no network: the query embedding is reported unavailable."""
+    monkeypatch.setattr(retrieval, "embed_query", lambda *a, **k: None)
+
+
+def _article(ws, title, body, **kw):
+    a = Article.objects.create(workspace=ws, title=title, body=body, **kw)
+    reindex_article(a, embed=False)
+    return a
+
+
+def test_keyword_search_returns_nothing_for_uncovered_question(ws):
+    _article(ws, "Refund policy", "Annual plans can be refunded within 14 days of purchase.")
+    _article(ws, "API limits", "Requests are limited to 600 per minute and return 429.")
+    result = retrieval.search_with_info(ws.id, "what is the weather today", use_embeddings=False)
+    assert result.hits == [] and result.mode == "keyword"
+
+
+def test_a_single_shared_ordinary_word_is_not_a_match(ws):
+    _article(ws, "Quick start", "Connect a source in order to see events in your funnel.")
+    assert retrieval.search(ws.id, "where is my order", use_embeddings=False) == []
+
+
+def test_keyword_search_matches_word_forms_and_reports_terms(ws):
+    _article(ws, "Refund policy", "Annual plans can be refunded within 14 days of purchase.")
+    hits = retrieval.search(ws.id, "I was refunded twice on my plans", use_embeddings=False)
+    assert hits and hits[0].title == "Refund policy"
+    assert {"refunded", "plans"} <= set(hits[0].matched_terms)
+
+
+def test_semantic_search_applies_the_relevance_floor(ws, monkeypatch):
+    near = _article(ws, "Refund policy", "Annual plans can be refunded within 14 days.")
+    far = _article(ws, "Brand colours", "Our logo uses a deep green on white.")
+    near.chunks.update(embedding=[1.0, 0.0])
+    far.chunks.update(embedding=[0.0, 1.0])
+    monkeypatch.setattr(retrieval, "embed_query", lambda *a, **k: [0.9, 0.1])
+    result = retrieval.search_with_info(ws.id, "refund", k=5)
+    assert result.mode == "semantic"
+    assert [h.title for h in result.hits] == ["Refund policy"]  # the far article is below the floor, not "the next best"
+    assert result.hits[0].level == "strong" and result.hits[0].match > 50
+
+
+def test_semantic_search_reports_articles_still_indexing(ws, monkeypatch):
+    done = _article(ws, "Refund policy", "Annual plans can be refunded within 14 days.")
+    _article(ws, "Shipping", "Orders ship in two days.")  # no embedding yet
+    done.chunks.update(embedding=[1.0, 0.0])
+    monkeypatch.setattr(retrieval, "embed_query", lambda *a, **k: [1.0, 0.0])
+    assert retrieval.search_with_info(ws.id, "refund").pending == 1
+
+
+def test_search_endpoint_gives_verdict_and_draft_usage(client_for, ws, agent, no_embeddings):
+    _article(ws, "Refund policy", "Annual plans can be refunded within 14 days of purchase.")
+    got = client_for(agent).get(url(ws, "articles/search/?q=can I get a refund on my annual plan")).data
+    assert got["mode"] == "keyword" and got["verdict"] == "covered"
+    hit = got["hits"][0]
+    assert hit["title"] == "Refund policy" and hit["level"] == "strong" and hit["used_in_draft"] is True and hit["matched_terms"]
+    none = client_for(agent).get(url(ws, "articles/search/?q=what is the weather today")).data
+    assert none["verdict"] == "none" and none["hits"] == []

@@ -8,7 +8,7 @@ import type {
   DemoTemplate,
   DraftResponse,
   Invite,
-  KBHit,
+  KBSearch,
   Macro,
   Member,
   Message,
@@ -103,7 +103,7 @@ export const wsApi = (slug: string) => {
     createArticle: (data: Partial<Article>) => api.post<Article>(`${base}/articles/`, data).then((r) => r.data),
     updateArticle: (id: number, data: Partial<Article>) => api.patch<Article>(`${base}/articles/${id}/`, data).then((r) => r.data),
     deleteArticle: (id: number) => api.delete(`${base}/articles/${id}/`),
-    searchArticles: (q: string) => api.get<KBHit[]>(`${base}/articles/search/`, { params: { q } }).then((r) => r.data),
+    searchArticles: (q: string) => api.get<KBSearch>(`${base}/articles/search/`, { params: { q } }).then((r) => r.data),
     suggestions: (q: string) => api.get<Suggestion[]>(`${base}/suggestions/`, { params: { q } }).then((r) => r.data),
 
     macros: () => api.get<Macro[]>(`${base}/macros/`).then((r) => r.data),

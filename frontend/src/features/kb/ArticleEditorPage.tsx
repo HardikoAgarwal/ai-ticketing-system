@@ -272,7 +272,17 @@ export function ArticleEditorPage() {
 
       {!readOnly && <SaveBar dirty={dirty} saving={save.isPending} saved={saved} error={save.error} disabled={!valid} onSave={() => save.mutate()} onDiscard={() => setDraft({})} />}
       <ConfirmDialog options={confirm} onClose={() => setConfirm(null)} />
-      <AiPreviewDialog open={modal === 'preview'} onOpenChange={(o) => !o && setModal(null)} passages={passages} title={title} />
+      <AiPreviewDialog
+        open={modal === 'preview'}
+        onOpenChange={(o) => !o && setModal(null)}
+        passages={passages}
+        title={title}
+        body={body}
+        visibility={visibility}
+        hasCategory={Boolean(value.category)}
+        saved={isNew ? null : { id: articleId, indexed: Boolean(listItem.data?.indexed) }}
+        dirty={dirty}
+      />
       <TipsDialog open={modal === 'tips'} onOpenChange={(o) => !o && setModal(null)} />
       <AiSearchDialog open={modal === 'test'} onOpenChange={(o) => !o && setModal(null)} />
     </div>
