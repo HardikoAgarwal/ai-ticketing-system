@@ -38,7 +38,7 @@ function Spark({ data, color, id }: { data: number[]; color: string; id: string 
   return (
     <div className="pointer-events-none w-full" aria-hidden>
       <ResponsiveContainer width="100%" height={64}>
-        <AreaChart data={rows} margin={{ top: 4, right: 0, bottom: 0, left: 0 }}>
+        <AreaChart data={rows} margin={{ top: 4, right: 0, bottom: 0, left: 0 }} tabIndex={-1}>
           <defs>
             <linearGradient id={id} x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor={color} stopOpacity={0.4} />

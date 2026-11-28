@@ -37,7 +37,7 @@ export function TicketAging({ data, loading, error, onRetry, className }: { data
       empty={!tickets.length}
     >
       <ResponsiveContainer width="100%" height={340}>
-        <BarChart data={rows} margin={{ top: 28, right: 4, left: -20, bottom: 0 }} barCategoryGap="14%">
+        <BarChart data={rows} margin={{ top: 28, right: 4, left: -20, bottom: 0 }} barCategoryGap="14%" tabIndex={-1}>
           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={CHART.grid} />
           <XAxis dataKey="label" tickLine={false} axisLine={false} tick={{ fill: 'var(--ink-2)', fontSize: 12 }} tickMargin={8} interval={0} height={36} />
           <YAxis allowDecimals={false} tickLine={false} axisLine={false} tick={{ fill: 'var(--ink-3)', fontSize: 12 }} width={44} />

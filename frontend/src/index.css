@@ -705,9 +705,16 @@
     font-variant-numeric: tabular-nums;
   }
   /* one visible keyboard focus ring everywhere in the app (components that draw their own ring opt out with outline-none) */
-  :where(a, button, [role='button'], [role='tab'], [role='menuitem'], input, select, textarea, summary, [tabindex]):focus-visible:not(.lp *) {
+  :where(a, button, [role='button'], [role='tab'], [role='menuitem'], input, select, textarea, summary, [tabindex]):focus-visible:not(.lp *):not(.recharts-surface) {
     outline: 2px solid var(--violet);
     outline-offset: 2px;
+  }
+  /* Recharts focuses its SVG, areas and pie slices on click; the card already has an aria-label, so no green ring */
+  .recharts-wrapper :focus,
+  .recharts-wrapper :focus-visible,
+  .recharts-surface:focus,
+  .recharts-surface:focus-visible {
+    outline: none !important;
   }
   ::selection {
     background: var(--violet-soft);

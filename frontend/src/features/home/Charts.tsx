@@ -42,7 +42,7 @@ export function VolumeChart({ data, days, className }: { data: Analytics; days: 
       empty={!data.totals.created && !data.totals.resolved}
     >
       <ResponsiveContainer width="100%" height={340}>
-        <AreaChart data={rows} margin={{ top: 8, right: 4, left: -12, bottom: 0 }}>
+        <AreaChart data={rows} margin={{ top: 8, right: 4, left: -12, bottom: 0 }} tabIndex={-1}>
           <defs>
             {[
               ['opened', CHART.opened],
@@ -123,7 +123,7 @@ export function PriorityChart({ data, className }: { data: Analytics; className?
     >
       <div className="relative h-[320px] w-full sm:h-[420px]">
         <ResponsiveContainer width="100%" height="100%">
-          <PieChart margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
+          <PieChart margin={{ top: 0, right: 0, bottom: 0, left: 0 }} tabIndex={-1}>
             <Pie data={slices} dataKey="count" nameKey="label" innerRadius="40%" outerRadius="100%" paddingAngle={2} cornerRadius={8} stroke="var(--surface)" strokeWidth={2} isAnimationActive={false} label={label as never} labelLine={false}>
               {slices.map((s) => (
                 <Cell key={s.key} fill={fill(s.hue)} />
