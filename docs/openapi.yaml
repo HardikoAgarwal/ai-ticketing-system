@@ -2959,6 +2959,9 @@ components:
           maximum: 32767
           minimum: 0
           nullable: true
+        csat_comment:
+          type: string
+          maxLength: 500
         messages:
           type: array
           items:

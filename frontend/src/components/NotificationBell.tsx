@@ -101,7 +101,7 @@ function DesktopAlertsRow() {
   )
 }
 
-export function NotificationBell({ variant = 'icon', rowClassName, labelClassName, badgeClassName }: { variant?: 'icon' | 'dock'; rowClassName?: string; labelClassName?: string; /** Dock only: where the unread count shows (a badge on the right), so the caller can hide it while the sidebar is narrow. */ badgeClassName?: string }) {
+export function NotificationBell({ variant = 'icon', large, rowClassName, labelClassName, badgeClassName }: { variant?: 'icon' | 'dock'; /** Icon only: a bigger button for roomy headers. */ large?: boolean; rowClassName?: string; labelClassName?: string; /** Dock only: where the unread count shows (a badge on the right), so the caller can hide it while the sidebar is narrow. */ badgeClassName?: string }) {
   const { slug, api, staff } = useWorkspace()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
@@ -147,10 +147,15 @@ export function NotificationBell({ variant = 'icon', rowClassName, labelClassNam
             {count > 0 && <span className={cn('h-6 min-w-6 items-center justify-center rounded-md bg-rose-ink px-2 text-[13px] font-bold text-canvas tabular-nums', badgeClassName)}>{count > 99 ? '99+' : count}</span>}
           </button>
         ) : (
-          <Button variant="ghost" size="icon-sm" className="relative" aria-label={count ? `Notifications, ${count} new` : 'Notifications'}>
-            <Bell className="size-[18px]" />
+          <Button variant="ghost" size="icon-sm" className={cn('relative', large && 'size-11 rounded-full')} aria-label={count ? `Notifications, ${count} new` : 'Notifications'}>
+            <Bell className={large ? 'size-[22px]' : 'size-[18px]'} />
             {count > 0 && (
-              <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-md bg-rose-ink px-1 text-[10px] leading-none font-semibold text-canvas ring-2 ring-canvas">
+              <span
+                className={cn(
+                  'absolute flex items-center justify-center rounded-md bg-rose-ink leading-none font-semibold text-canvas ring-2',
+                  large ? 'top-1 right-1 h-[18px] min-w-[18px] px-1 text-[11px] ring-surface' : '-top-1 -right-1 h-4 min-w-4 px-1 text-[10px] ring-canvas',
+                )}
+              >
                 {count > 9 ? '9+' : count}
               </span>
             )}

@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { ArrowLeft, BookOpen, Check, Loader2, Package, Send, UserRound } from 'lucide-react'
+import { BookOpen, Check, ChevronRight, LifeBuoy, Loader2, Package, Send, UserRound } from 'lucide-react'
 import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -8,6 +8,7 @@ import { useWorkspace } from '@/auth/workspace'
 import { AiChip, AiSurface, Chip, KeyValue, KeyValueList, Panel, PanelHeader, SkeletonText } from '@/components/ds'
 import { announce } from '@/components/shell/announce'
 import { FileDropzone } from '@/components/tickets/FileDropzone'
+import { PageHeader } from '@/features/shared/PageHeader'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -34,10 +35,10 @@ function RecordCard({ record, selected, onSelect }: { record: WorkspaceRecord | 
       aria-pressed={selected}
       className={cn(
         'flex min-h-14 w-full items-start gap-3 rounded-control border bg-surface p-3 text-left outline-none transition-colors focus-visible:ring-2 focus-visible:ring-violet focus-visible:ring-offset-2 focus-visible:ring-offset-surface',
-        selected ? 'border-violet bg-lav' : 'border-line hover:border-line-strong hover:bg-surface-2',
+        selected ? 'border-brand bg-violet-soft' : 'border-line hover:border-line-strong hover:bg-surface-2',
       )}
     >
-      <span className={cn('mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-chip', selected ? 'bg-violet text-white' : 'bg-sunken text-ink-2')}>
+      <span className={cn('mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-chip', selected ? 'bg-brand text-on-brand' : 'bg-sunken text-ink-2')}>
         {selected ? <Check className="size-4" aria-hidden /> : record ? <Package className="size-4" aria-hidden /> : <UserRound className="size-4" aria-hidden />}
       </span>
       <span className="min-w-0">
@@ -52,9 +53,9 @@ function RecordCard({ record, selected, onSelect }: { record: WorkspaceRecord | 
 
 function Step({ n, title, children, last }: { n: number; title: string; children: React.ReactNode; last?: boolean }) {
   return (
-    <section aria-labelledby={`step-${n}`} className={cn('px-5 py-6 sm:px-7', !last && 'border-b border-line')}>
+    <section aria-labelledby={`step-${n}`} className={cn('px-5 py-5 sm:px-6', !last && 'border-b border-line')}>
       <h2 id={`step-${n}`} className="mb-4 flex items-center gap-2.5 text-[15px] font-semibold text-ink">
-        <span className="flex size-6 items-center justify-center rounded-chip bg-sunken text-xs font-bold text-ink-2" aria-hidden>
+        <span className="flex size-6 items-center justify-center rounded-chip bg-violet-soft text-xs font-bold text-violet ring-1 ring-violet/20 ring-inset" aria-hidden>
           {n}
         </span>
         <span>
@@ -139,16 +140,26 @@ export function NewTicketPage() {
   }
 
   return (
-    <div>
-      <Link to={`/w/${slug}/help`} className="mb-4 inline-flex min-h-9 items-center gap-1.5 rounded-control text-sm font-medium text-ink-2 outline-none hover:text-ink focus-visible:ring-2 focus-visible:ring-violet">
-        <ArrowLeft className="size-4" aria-hidden /> My requests
-      </Link>
-      <header className="mb-6">
-        <h1 className="text-[1.75rem] leading-tight font-semibold tracking-tight sm:text-[2rem]">How can we help?</h1>
-        <p className="mt-1.5 max-w-xl text-[15px] text-ink-2">Tell us what&rsquo;s going on. A few details up front means fewer back-and-forths.</p>
-      </header>
+    <div className="flex flex-col gap-5 pb-2">
+      <nav aria-label="Breadcrumb">
+        <ol className="flex min-w-0 items-center gap-2 text-[15px]">
+          <li>
+            <Link to={`/w/${slug}/help`} className="rounded-sm font-medium whitespace-nowrap text-ink-2 hover:text-ink focus-visible:ring-2 focus-visible:ring-violet focus-visible:outline-none">
+              My requests
+            </Link>
+          </li>
+          <li aria-hidden className="text-ink-3">
+            <ChevronRight className="size-4" />
+          </li>
+          <li className="min-w-0 truncate font-semibold text-ink" aria-current="page">
+            New request
+          </li>
+        </ol>
+      </nav>
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+      <PageHeader icon={LifeBuoy} title="Describe what you need" description="Tell us what is going on. A few details up front means fewer back-and-forths." />
+
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_300px]">
         <form onSubmit={submit} noValidate aria-label="New request">
         <Panel as="div" className="overflow-hidden">
           <Step n={1} title="What is this about?">
@@ -246,7 +257,7 @@ export function NewTicketPage() {
             </div>
           </Step>
 
-          <div className="flex flex-col-reverse gap-2 border-t border-line bg-surface-2 px-5 py-4 sm:flex-row sm:items-center sm:justify-end sm:px-7">
+          <div className="flex flex-col-reverse gap-2 border-t border-line bg-surface-2 px-5 py-4 sm:flex-row sm:items-center sm:justify-end sm:px-6">
             <Button type="button" variant="ghost" onClick={() => navigate(`/w/${slug}/help`)} disabled={create.isPending}>
               Cancel
             </Button>
@@ -277,9 +288,9 @@ export function NewTicketPage() {
               )}
             </div>
           </Panel>
-          <Panel tone="sunken" padded>
-            <p className="text-sm font-semibold text-ink">Tips for a quick answer</p>
-            <ul className="mt-2 list-disc space-y-1.5 pl-4 text-sm text-ink-2">
+          <Panel tone="sunken">
+            <PanelHeader title="Tips for a quick answer" />
+            <ul className="list-disc space-y-1.5 px-5 pt-1 pb-5 pl-9 text-sm text-ink-2">
               <li>Say what you expected and what happened instead.</li>
               <li>Include dates, amounts or error messages.</li>
               <li>Add a screenshot if it helps.</li>

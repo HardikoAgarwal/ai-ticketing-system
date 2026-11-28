@@ -82,7 +82,7 @@ class RequesterTicketDetailSerializer(RequesterTicketSerializer):
     attachments = AttachmentSerializer(many=True, read_only=True)
 
     class Meta(RequesterTicketSerializer.Meta):
-        fields = RequesterTicketSerializer.Meta.fields + ("messages", "attachments")
+        fields = RequesterTicketSerializer.Meta.fields + ("csat_comment", "messages", "attachments")
 
     @extend_schema_field(MessageSerializer(many=True))
     def get_messages(self, obj):

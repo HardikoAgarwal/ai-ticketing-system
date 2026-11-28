@@ -44,7 +44,7 @@ function ThemeToggle() {
  * Account menu: who you are, light/dark, sign out.
  * `avatar` = compact (top bar / customer header); `dock` = a full-width profile button for the agent sidebar (its text and arrow appear once the sidebar is open).
  */
-export function UserMenu({ variant = 'avatar', rowClassName, labelClassName, trailingClassName, status }: { variant?: 'avatar' | 'dock'; rowClassName?: string; labelClassName?: string; trailingClassName?: string; /** Live-update state, shown as a dot on the avatar and a line in the menu. */ status?: { label: string; dot: string } }) {
+export function UserMenu({ variant = 'avatar', large, rowClassName, labelClassName, trailingClassName, status }: { variant?: 'avatar' | 'dock'; /** Avatar only: a bigger avatar for roomy headers. */ large?: boolean; rowClassName?: string; labelClassName?: string; trailingClassName?: string; /** Live-update state, shown as a dot on the avatar and a line in the menu. */ status?: { label: string; dot: string } }) {
   const { user, logout } = useAuth()
   const { brief, role } = useWorkspace()
   const navigate = useNavigate()
@@ -66,8 +66,8 @@ export function UserMenu({ variant = 'avatar', rowClassName, labelClassName, tra
             <ChevronsUpDown className={cn('size-4 shrink-0 text-ink-3', trailingClassName)} aria-hidden />
           </button>
         ) : (
-          <button type="button" className="rounded-control" aria-label={`Account menu, ${user.full_name}`}>
-            <Avatar name={user.full_name} size="md" />
+          <button type="button" className={large ? 'rounded-full' : 'rounded-control'} aria-label={`Account menu, ${user.full_name}`}>
+            <Avatar name={user.full_name} size="md" className={large ? 'size-11 rounded-full text-[15px]' : undefined} />
           </button>
         )}
       </DropdownMenuTrigger>

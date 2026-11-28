@@ -127,6 +127,7 @@ export interface RequesterTicket {
   csat_score: number | null
 }
 export interface RequesterTicketDetail extends RequesterTicket {
+  csat_comment: string
   messages: Message[]
   attachments: Attachment[]
 }
