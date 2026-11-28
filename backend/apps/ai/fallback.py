@@ -15,10 +15,10 @@ from apps.workspaces.models import Category, Workspace
 CRITICAL_PATTERNS = (
     r"\b(outage|down for|completely down|can'?t (log ?in|access)|locked out|data loss|lost (all|my) data)\b",
     r"\b(security|breach|hacked|unauthori[sz]ed|fraud|scam|legal|lawyer|chargeback)\b",
-    r"\b(charged|billed)\s+(twice|double|again)\b",
 )
 HIGH_PATTERNS = (
     r"\b(urgent|asap|immediately|blocking|blocked|production|broken|crash\w*|not working|stopped working)\b",
+    r"\b(charged|billed)\s+(twice|double|again)\b",
     r"\b(wrong|incorrect|duplicate|error|failed|failing|missing|not received|never received|overdue|damaged|defective)\b",
     r"\b(refund|cancel\w*)\b.*\b(still|again|weeks?|months?)\b",
 )

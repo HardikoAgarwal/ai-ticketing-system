@@ -108,10 +108,11 @@ class FakeOpenAI:
     def push(self, content=None, exc=None):
         self.queue.append((content, exc))
 
-    def push_triage(self, category, priority, confidence=0.9, sentiment="NEUTRAL", reasoning="Test reasoning", summary="Test summary"):
+    def push_triage(self, category, priority, sentiment="NEUTRAL", reasoning="Test reasoning", summary="Test summary",
+                    second_category="none"):
         self.push(json.dumps({
-            "category": category, "priority": priority, "sentiment": sentiment,
-            "confidence": confidence, "reasoning": reasoning, "summary": summary,
+            "reasoning": reasoning, "category": category, "second_category": second_category,
+            "priority": priority, "sentiment": sentiment, "summary": summary,
         }))
 
     def _create(self, **kwargs):

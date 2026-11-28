@@ -56,7 +56,8 @@ function Stamp({ icon: Icon, label, value }: { icon: LucideIcon; label: string; 
 function AiStrip({ ticket }: { ticket: StaffTicketDetail }) {
   const state = aiState(ticket)
   const conf = ticket.ai_confidence !== null ? Math.round(ticket.ai_confidence * 100) : null
-  const lowConf = conf !== null && conf < 55
+  // 95 = one category clearly fits; 75 = another category also fits.
+  const lowConf = conf !== null && conf < 80
   const read = state === 'done' || (state === 'idle' && !!ticket.ai_summary)
   const working = state === 'working'
   const warn = state === 'failed' || state === 'limited'

@@ -136,4 +136,4 @@ Verify each provider's current free-tier terms before you rely on them.
 - Single API instance by design; scaling out means a shared channel layer and a proper worker (see decisions above).
 - Free hosts sleep and free-tier AI is rate limited; both are handled gracefully but not eliminated.
 - Email is inbound-only; outbound notifications are in-app.
-- Next: pgvector once KBs grow, a labelled evaluation set for prompt A/B tests (`prompt_version` is already logged), SSO, automation rules and outbound webhooks.
+- Next: pgvector once KBs grow, an evaluation set for draft quality (triage has one: `manage.py eval_triage`), SSO, automation rules and outbound webhooks.

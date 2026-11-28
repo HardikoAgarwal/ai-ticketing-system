@@ -10,12 +10,22 @@ from .prompts import PROMPT_VERSION, build_classification_messages, classify_sch
 
 
 class _Payload(BaseModel):
+    reasoning: str = Field(max_length=400)
     category: str
+    second_category: str = "none"
     priority: str
     sentiment: str = "NEUTRAL"
-    confidence: float = Field(ge=0, le=1)
-    reasoning: str = Field(max_length=400)
     summary: str = Field(default="", max_length=400)
+
+
+def confidence_from(payload: "_Payload") -> float:
+    """A confidence that actually separates easy tickets from hard ones.
+
+    Asked for a number, models say about 0.95 for everything (measured: 0.99 when right, 0.95 when
+    wrong). "Does another category also fit?" is observable and is what predicts a miss: on the
+    labelled set it flags ~45% of the mistakes. So confidence is high unless a second category fits.
+    """
+    return 0.75 if payload.second_category not in ("none", payload.category) else 0.95
 
 
 @dataclass(frozen=True)
@@ -60,7 +70,7 @@ def classify_ticket(ticket) -> ClassificationResult:
         category_key=payload.category,
         priority=payload.priority,
         sentiment=sentiment,
-        confidence=round(payload.confidence, 2),
+        confidence=confidence_from(payload),
         reasoning=payload.reasoning.strip(),
         summary=payload.summary.strip(),
     )

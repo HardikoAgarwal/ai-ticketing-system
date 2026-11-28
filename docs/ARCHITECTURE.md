@@ -27,8 +27,29 @@ Every tenant table has a `workspace` FK. `/api/v1/w/<slug>/...` resolves the cal
 - **Deliberately out of scope:** outbound email, SSO, automation rules, multi-language replies.
 
 ## Evolution plan
-- **Measure AI quality:** build a labelled set from real tickets and run offline evals on every prompt change (`prompt_version` is on every draft and log row); alert on drift in override rate and draft accept rate.
+- **Measure AI quality:** done for triage (`python manage.py eval_triage`, see below); next is the same for drafts, and alerting on drift in override rate and draft accept rate (`prompt_version` is on every draft and log row).
 - **Scale knowledge:** pgvector, ingestion from URLs/PDFs, feedback from approved replies into curated examples, a retrieval-quality dashboard.
 - **Channels:** outbound email and Slack, real inbound parsing with threading, an embeddable widget.
 - **Operations:** a separate autoscaled worker (Celery/RQ) and Redis channel layer, SLA breach escalation, per-tenant LLM budgets with alerts, Sentry and tracing across API, queue and LLM.
 - **Safety:** PII redaction before prompts, an audit export of suggestions versus final replies, and a guardrail that blocks a draft quoting a figure not in the fact sheet.
+
+## Triage evaluation
+`manage.py eval_triage` scores the live model, and the rule-based fallback beside it, against 75 labelled tickets: the 27 featured demo tickets plus 48 hand-written cases across the three demo workspaces (polite outages, angry trivia, tickets that span categories, other languages, prompt injection, near-empty messages). It runs inside a rolled-back transaction, so nothing is saved and the daily budget is not spent. Free-tier models allow 15 calls a minute, so calls are paced (`--pace`).
+
+Measured on `gemini-3.1-flash-lite` (prompt `2026-11-28.v5`; the last run, v6, only removes a field that was always `true`):
+
+| | AI | Keyword rules |
+|---|---|---|
+| Category right | 97% | 87% |
+| Priority exactly right | 76% | 48% |
+| Priority within one level | 99% | 91% |
+| Critical tickets rated critical | 9 of 10 | 3 of 10 |
+
+The same ticket gets the same answer every time (0 of 50 changed across two runs). What the evaluation changed:
+- The priority rubric listed a double charge as both CRITICAL and HIGH. It is now HIGH everywhere, including the rule-based fallback.
+- A calm report of an outage was rated by its tone. The prompt now says to judge impact, and a single blocked person is HIGH, not CRITICAL.
+- The ticket text is fenced in `<ticket>` tags and the prompt says never to follow instructions inside it. All injection cases were already classified correctly, so this is defence, not a fix.
+- **Confidence was meaningless.** Asked for a number, the model said 0.99 when right and 0.95 when wrong. It now reports whether a second category also fits, and confidence is 0.95 or 0.75. That flags about 40% of the mistakes, so the "Double-check" chip appears under 80%.
+- The model says why before it picks (`reasoning` is the first key of the schema).
+
+Known limits: the priority boundary between MEDIUM and the levels either side is a judgement call and is where nearly all remaining disagreements are. Triage runs once per ticket; a customer's later reply refreshes the draft but not the triage.
